@@ -1,0 +1,22 @@
+[package]
+name = "libyobicash"
+version = "0.1.0"
+authors = ["Christian Nyumbayire <chritchens@gmail.com>"]
+license = "MIT"
+description = "Library of the Yobicash blockchain, a blockchain for data"
+repository = "https://github.com/yobicash/libyobicash"
+readme = "README.md"
+keywords = ["blockchain", "p2p", "storage", "cryptography", "network"]
+categories = ["cryptography", "database", "network-programming"]
+
+[dependencies]
+error-chain = "^0.10.0"
+serde = "^1"
+serde_derive = "^1"
+sodiumoxide = { git = "https://github.com/chritchens/sodiumoxide" }
+rand = "^0.3"
+num-bigint = "^0.1"
+num-traits = "^0.1"
+byteorder = "^1"
+semver = { version = "^0.7", features = ["serde"] }
+chrono = { version = "^0.4", features = ["serde"] }
