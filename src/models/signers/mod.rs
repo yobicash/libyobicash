@@ -113,7 +113,10 @@ impl YSigners {
     }
 
     pub fn check(&self) -> YResult<()> {
-        self._check_pre_address()?;
+        self.check_len()?;
+        self.check_signers()?;
+        self.check_weights()?;
+        self.check_threshold()?;
         self.check_address()
     }
 
