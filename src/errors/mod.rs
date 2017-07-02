@@ -92,6 +92,10 @@ error_chain! {
             description("Invalid id")
         }
 
+        InvalidPrevBlock {
+            description("Invalid prev block")
+        }
+
         InvalidCoinbase {
             description("Invalid coinbase")
         }

@@ -26,6 +26,7 @@ pub struct YBlock {
     pub version: Version,
     pub height: u32,
     pub prev_id: Hash,
+    pub prev_chain_amount: YAmount,
     pub chain_amount: YAmount,
     pub coinbase: YTx,
     pub tx_ids_len: u32,
@@ -60,6 +61,7 @@ impl YBlock {
             version: version,
             height: 0,
             prev_id: Hash::default(),
+            prev_chain_amount: YAmount::zero(),
             chain_amount: YAmount::zero(),
             coinbase: coinbase,
             tx_ids_len: 0,
@@ -71,7 +73,34 @@ impl YBlock {
             segments_root: Hash::new(),
             nonce: 0,
         })
-    }    
+    }
+
+    pub fn from_prev(prev: &YBlock) -> YResult<Self> {
+        prev.check()?;
+        let version = Version::parse(VERSION)?;
+        let coinbase = YTx::new()?;
+        let height = prev.height + 1;
+        let prev_id = prev.id.to_owned();
+        let prev_chain_amount = prev.chain_amount.to_owned();
+        Ok(YBlock {
+            id: Hash::default(),
+            time: Utc::now(),
+            version: version,
+            height: height,
+            prev_id: prev_id,
+            prev_chain_amount: prev_chain_amount,
+            chain_amount: YAmount::zero(),
+            coinbase: coinbase,
+            tx_ids_len: 0,
+            tx_ids: Vec::new(),
+            s_cost: MIN_S_COST,
+            t_cost: MIN_T_COST,
+            delta: MIN_DELTA,
+            bits: MIN_BITS,
+            segments_root: Hash::new(),
+            nonce: 0,
+        })
+    }
 
     pub fn check_time(&self) -> YResult<()> {
         if self.time > Utc::now() {
@@ -92,8 +121,32 @@ impl YBlock {
         check_hash_size(&self.prev_id)
     }
 
+    pub fn check_prev_chain_amount(&self) -> YResult<()> {
+        if self.prev_chain_amount.clone() == YAmount::zero() &&
+            self.height != 0 {
+            return Err(YErrorKind::InvalidAmount.into())
+        }
+        Ok(())
+    }
+
+    pub fn check_prev(&self, prev: &YBlock) -> YResult<()> {
+        if self.height != prev.height + 1 {
+            return Err(YErrorKind::InvalidPrevBlock.into());
+        }
+        if self.prev_id != prev.id {
+            return Err(YErrorKind::InvalidPrevBlock.into());
+        }
+        if self.prev_chain_amount != prev.chain_amount {
+            return Err(YErrorKind::InvalidPrevBlock.into());
+        }
+        Ok(())
+    }
+
     pub fn check_chain_amount(&self) -> YResult<()> {
         if self.chain_amount.clone() == YAmount::zero() {
+            return Err(YErrorKind::InvalidAmount.into())
+        }
+        if self.chain_amount != self.prev_chain_amount.to_owned() + self.coinbase_amount()? {
             return Err(YErrorKind::InvalidAmount.into())
         }
         Ok(())
@@ -144,6 +197,7 @@ impl YBlock {
         self.check_time()?;
         self.check_version()?;
         self.check_prev_id()?;
+        self.check_prev_chain_amount()?;
         self.check_chain_amount()?;
         self.check_coinbase()?;
         self.check_tx_ids_len()?;
@@ -161,6 +215,8 @@ impl YBlock {
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
+        bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_all(self.chain_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
@@ -195,6 +251,8 @@ impl YBlock {
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
+        bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_all(self.chain_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
@@ -227,6 +285,8 @@ impl YBlock {
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
+        bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_all(self.chain_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
@@ -258,6 +318,7 @@ impl YBlock {
         self.check_time()?;
         self.check_version()?;
         self.check_prev_id()?;
+        self.check_prev_chain_amount()?;
         self.check_chain_amount()?;
         self.check_coinbase()?;
         self.check_tx_ids_len()?;
@@ -368,6 +429,8 @@ impl YBlock {
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
+        bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_all(self.chain_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
