@@ -29,5 +29,3 @@ pub mod block;
 pub const NAME: &str = "Yobicash";
 
 pub const VERSION: &str = "0.1.0";
-
-pub const CONFIRMATION_TIME: u32 = 20; // 20 seconds

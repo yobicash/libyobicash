@@ -1,6 +1,5 @@
 use byteorder::{ByteOrder, BigEndian};
 use chrono::{DateTime, Utc};
-use CONFIRMATION_TIME;
 use errors::*;
 use crypto::hash::*;
 use mining::utils::*;
@@ -45,7 +44,7 @@ pub fn target_bits(target: &Vec<u8>) -> YResult<u32> {
     Ok(bits)
 }
 
-pub fn retarget_bits(old: u32, old_t: DateTime<Utc>, new_t: DateTime<Utc>) -> YResult<u32> {
+pub fn retarget_bits(old: u32, old_t: DateTime<Utc>, new_t: DateTime<Utc>, confirm_t: u32) -> YResult<u32> {
     check_target_bits(old)?;
     
     if new_t <= old_t {
@@ -56,6 +55,6 @@ pub fn retarget_bits(old: u32, old_t: DateTime<Utc>, new_t: DateTime<Utc>) -> YR
     let new_stamp = new_t.timestamp() as u32;
     let old_confirm_time = new_stamp -  old_stamp;
 
-    let bits = old / old_confirm_time * CONFIRMATION_TIME;
+    let bits = old / old_confirm_time * confirm_t;
     Ok(bits)
 }

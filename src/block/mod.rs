@@ -301,9 +301,9 @@ impl YBlock {
         Ok(self.to_owned())
     } 
 
-    pub fn set_bits(&mut self, old_bits: u32, old_t: DateTime<Utc>) -> YResult<Self> {
+    pub fn set_bits(&mut self, old_bits: u32, old_t: DateTime<Utc>, confirm_t: u32) -> YResult<Self> {
         check_target_bits(old_bits)?;
-        self.bits = retarget_bits(old_bits, old_t, self.time)?; 
+        self.bits = retarget_bits(old_bits, old_t, self.time, confirm_t)?; 
         Ok(self.to_owned())
     } 
 
