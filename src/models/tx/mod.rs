@@ -192,7 +192,6 @@ impl YTx {
     }
 
     pub fn check(&self) -> YResult<()> {
-        self.check_id()?;
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -200,7 +199,8 @@ impl YTx {
         self.check_inputs()?;
         self.check_outputs_len()?;
         self.check_outputs()?;
-        self.check_signatures()
+        self.check_signatures()?;
+        self.check_id()
     }
 
     pub fn add_input(&mut self, inp: &YInput) -> YResult<Self> {

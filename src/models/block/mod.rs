@@ -119,7 +119,6 @@ impl YBlock {
     }
 
     pub fn check_tx_ids(&self) -> YResult<()> {
-        self.check_tx_ids_len()?;        
         if self.tx_ids.len() != self.tx_ids_len as usize {
             return Err(YErrorKind::InvalidLength.into());
         }
@@ -256,8 +255,18 @@ impl YBlock {
     }
 
     pub fn check(&self) -> YResult<()> {
-        self._check_pre_seed()?;
-        self._check_pre_id()?;
+        self.check_time()?;
+        self.check_version()?;
+        self.check_prev_id()?;
+        self.check_chain_amount()?;
+        self.check_coinbase()?;
+        self.check_tx_ids_len()?;
+        self.check_tx_ids()?;
+        self.check_s_cost()?;
+        self.check_t_cost()?;
+        self.check_delta()?;
+        self.check_segments_root_size()?;
+        self.check_pow()?;
         self.check_id()
     }
     
