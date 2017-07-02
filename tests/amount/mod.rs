@@ -1,6 +1,4 @@
 use libyobicash::amount::*;
-use libyobicash::errors::*;
-use libyobicash::crypto::utils::randombytes;
 
 #[test]
 fn add_amounts_succ() {
