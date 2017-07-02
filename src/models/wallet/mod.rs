@@ -15,7 +15,7 @@ impl YWallet {
         let (pk, sk) = generate_keypair()?;
         Ok(YWallet {
             public_key: pk,
-            secret_key: sk, // TODO: danger?
+            secret_key: sk,
         })
     }
 
@@ -24,7 +24,7 @@ impl YWallet {
         let (pk, sk) = generate_keypair_from_seed(seed)?;
         Ok(YWallet {
             public_key: pk,
-            secret_key: sk, // TODO: danger?
+            secret_key: sk,
         })
     }
 }
