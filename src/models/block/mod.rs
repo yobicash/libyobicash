@@ -75,16 +75,18 @@ impl YBlock {
         })
     }
 
-    pub fn from_prev(prev: &YBlock) -> YResult<Self> {
+    pub fn from_prev(prev: &YBlock, confirm_t: u32) -> YResult<Self> {
         prev.check()?;
+        let time = Utc::now();
         let version = Version::parse(VERSION)?;
         let coinbase = YTx::new()?;
         let height = prev.height + 1;
         let prev_id = prev.id.to_owned();
         let prev_chain_amount = prev.chain_amount.to_owned();
+        let bits = retarget_bits(prev.bits, prev.time, time, confirm_t)?;
         Ok(YBlock {
             id: Hash::default(),
-            time: Utc::now(),
+            time: time,
             version: version,
             height: height,
             prev_id: prev_id,
@@ -96,7 +98,7 @@ impl YBlock {
             s_cost: MIN_S_COST,
             t_cost: MIN_T_COST,
             delta: MIN_DELTA,
-            bits: MIN_BITS,
+            bits: bits,
             segments_root: Hash::new(),
             nonce: 0,
         })
@@ -129,7 +131,7 @@ impl YBlock {
         Ok(())
     }
 
-    pub fn check_prev(&self, prev: &YBlock) -> YResult<()> {
+    pub fn check_prev(&self, prev: &YBlock, confirm_t: u32) -> YResult<()> {
         if self.height != prev.height + 1 {
             return Err(YErrorKind::InvalidPrevBlock.into());
         }
@@ -137,6 +139,9 @@ impl YBlock {
             return Err(YErrorKind::InvalidPrevBlock.into());
         }
         if self.prev_chain_amount != prev.chain_amount {
+            return Err(YErrorKind::InvalidPrevBlock.into());
+        }
+        if self.bits != retarget_bits(prev.bits, prev.time, self.time, confirm_t)? {
             return Err(YErrorKind::InvalidPrevBlock.into());
         }
         Ok(())
