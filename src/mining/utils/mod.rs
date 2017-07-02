@@ -1,4 +1,4 @@
-use std::mem;
+    use std::mem;
 
 pub fn filled_vec<T: Clone>(elem: T, length: usize) -> Vec<T> {
     let mut v: Vec<T> = Vec::new();
@@ -19,6 +19,5 @@ pub fn to_int(buf: &[u8], max_value: usize) -> usize {
     unsafe {
         int = mem::transmute::<[u8; 4], u32>(arr) as usize
     };
-    let res = int % max_value; // to avoid out of ranges
-    res
+    int % max_value // to avoid an out of range
 }
