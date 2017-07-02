@@ -16,15 +16,9 @@ pub mod errors;
 pub mod length;
 pub mod size;
 pub mod crypto;
-pub mod wallet;
-pub mod address;
-pub mod signers;
-pub mod amount;
-pub mod input;
-pub mod output;
-pub mod tx;
 pub mod mining;
-pub mod block;
+pub mod amount;
+pub mod models;
 
 pub const NAME: &str = "Yobicash";
 

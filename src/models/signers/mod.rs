@@ -8,7 +8,7 @@ use crypto::sign::{PublicKey, Signature};
 use crypto::sign::check_public_key_size;
 use crypto::sign::check_signature_size;
 use crypto::sign::verify_signature;
-use address::*;
+use models::address::*;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]

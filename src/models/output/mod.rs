@@ -4,9 +4,9 @@ use size::MAX_SIZE;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
-use address::Address;
-use address::check_address;
 use amount::YAmount;
+use models::address::Address;
+use models::address::check_address;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]

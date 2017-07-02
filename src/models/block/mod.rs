@@ -8,13 +8,13 @@ use length::MAX_LEN;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
-use wallet::YWallet;
-use signers::YSigners;
-use amount::YAmount;
-use tx::YTx;
 use mining::target::*;
 use mining::por::*;
 use mining::pow::*;
+use amount::YAmount;
+use models::wallet::YWallet;
+use models::signers::YSigners;
+use models::tx::YTx;
 use std::io::Write;
 use std::cmp;
 

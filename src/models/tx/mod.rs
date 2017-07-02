@@ -11,14 +11,14 @@ use crypto::hash::hash;
 use crypto::hash::check_hash_size;
 use crypto::sign::Signature;
 use crypto::sign::sign;
-use wallet::YWallet;
-use signers::YSigners;
-use amount::YAmount;
-use input::YInput;
-use output::YOutput;
 use mining::por::Segment;
 use mining::por::segment_start_idx;
 use mining::por::read_segment;
+use amount::YAmount;
+use models::wallet::YWallet;
+use models::signers::YSigners;
+use models::input::YInput;
+use models::output::YOutput;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
