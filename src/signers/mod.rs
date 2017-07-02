@@ -82,14 +82,14 @@ impl YSigners {
         Ok(())
     }
 
-    pub fn _check_pre_address(&self) -> YResult<()> {
+    fn _check_pre_address(&self) -> YResult<()> {
         self.check_len()?;
         self.check_signers()?;
         self.check_weights()?;
         self.check_threshold()
     }
 
-    pub fn _address(&self) -> YResult<Address> {
+    fn _address(&self) -> YResult<Address> {
         self._check_pre_address()?;
         let mut bin = Vec::new();
         bin.write_u32::<BigEndian>(self.len)?;

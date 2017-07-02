@@ -141,7 +141,7 @@ impl YBlock {
         check_delta(self.delta)
     }
 
-    pub fn _check_pre_segments_seed(&self) -> YResult<()> {
+    fn _check_pre_segments_seed(&self) -> YResult<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_prev_id()?;
@@ -154,7 +154,7 @@ impl YBlock {
         self.check_delta()
     }
 
-    pub fn _segments_seed(&self) -> YResult<Hash> {
+    fn _segments_seed(&self) -> YResult<Hash> {
         self._check_pre_segments_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.id.to_vec().as_slice())?;
@@ -184,12 +184,12 @@ impl YBlock {
         check_segments_root(segs, &self.segments_root)
     }
 
-    pub fn _check_pre_seed(&self) -> YResult<()> {
+    fn _check_pre_seed(&self) -> YResult<()> {
         self._check_pre_segments_seed()?;
         self.check_segments_root_size()
     }
 
-    pub fn _seed(&self) -> YResult<Hash> {
+    fn _seed(&self) -> YResult<Hash> {
         self._check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -216,12 +216,12 @@ impl YBlock {
         Ok(())
     }
 
-    pub fn _check_pre_id(&self) -> YResult<()> {
+    fn _check_pre_id(&self) -> YResult<()> {
         self._check_pre_seed()?;
         self.check_pow()
     }
 
-    pub fn _id(&self) -> YResult<Hash> {
+    fn _id(&self) -> YResult<Hash> {
         self._check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -336,11 +336,11 @@ impl YBlock {
         Ok(self.to_owned())
     }
 
-    pub fn _target(&self) -> YResult<Vec<u8>> {
+    fn _target(&self) -> YResult<Vec<u8>> {
        target_from_bits(self.bits) 
     }
 
-    pub fn _nonce(&self) -> YResult<Vec<u8>> {
+    fn _nonce(&self) -> YResult<Vec<u8>> {
         ballon_nonce(self.nonce)
     }
 

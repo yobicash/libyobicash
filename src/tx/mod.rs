@@ -108,7 +108,7 @@ impl YTx {
         Ok(())
     }
 
-    pub fn _check_pre_checksum(&self) -> YResult<()> {
+    fn _check_pre_checksum(&self) -> YResult<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -118,7 +118,7 @@ impl YTx {
         self.check_outputs()
     }
 
-    pub fn _checksum(&self) -> YResult<Hash> {
+    fn _checksum(&self) -> YResult<Hash> {
         self._check_pre_checksum()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -151,12 +151,12 @@ impl YTx {
         self.signers.check_signatures(&cksm, &self.signatures)
     }
 
-    pub fn _check_pre_id(&self) -> YResult<()> {
+    fn _check_pre_id(&self) -> YResult<()> {
         self._check_pre_checksum()?;
         self.check_signatures()
     }
 
-    pub fn _id(&self) -> YResult<Hash> {
+    fn _id(&self) -> YResult<Hash> {
         self._check_pre_id()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
