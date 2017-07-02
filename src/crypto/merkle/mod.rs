@@ -6,7 +6,7 @@ use crypto::hash::check_hash_size;
 pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
     let mut leafs_len = leafs.len();
     if leafs_len == 0 {
-        panic!("empty leafs")
+        return Err(YErrorKind::InvalidLength.into());
     }
     let mut base: Vec<Vec<u8>> = vec![];
     for d in leafs {
@@ -37,6 +37,7 @@ pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
 }
 
 pub fn verify_merkle_root(leafs: &Vec<Hash>, root: &Hash) -> YResult<bool> {
+    check_hash_size(root)?;
     let mr = merkle_root(leafs)?;
     let ok = mr == *root;
     Ok(ok)
