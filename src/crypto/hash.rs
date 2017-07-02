@@ -1,6 +1,6 @@
 use sodiumoxide::crypto::hash as _hash;
-use check_size;
 use errors::*;
+use size::check_size;
 use crypto::utils::init;
 use crypto::utils::check_binary_size;
 

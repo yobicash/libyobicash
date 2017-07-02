@@ -1,6 +1,6 @@
 use sodiumoxide::init as _init;
 use sodiumoxide::randombytes;
-use check_size;
+use size::check_size;
 use errors::*;
 
 pub fn init() -> YResult<()> {

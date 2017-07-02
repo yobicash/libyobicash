@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, WriteBytesExt};
-use MAX_SIZE;
 use errors::*;
+use size::MAX_SIZE;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;

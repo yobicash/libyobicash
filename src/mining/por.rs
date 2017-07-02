@@ -1,8 +1,8 @@
 use rand::{Rng, StdRng, SeedableRng};
-use MAX_LEN;
-use check_size;
-use check_length;
 use errors::*;
+use length::MAX_LEN;
+use length::check_length;
+use size::check_size;
 use crypto::utils::check_binary_size;
 use crypto::hash::Hash;
 use crypto::hash::check_hash_size;
