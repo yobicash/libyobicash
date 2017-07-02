@@ -108,6 +108,13 @@ impl YTx {
         Ok(())
     }
 
+    pub fn check_tot_amount(&self, inputs_amount: &YAmount) -> YResult<()> {
+        if self.tot_amount() != inputs_amount.to_owned() {
+            return Err(YErrorKind::InvalidAmount.into());
+        }
+        Ok(())
+    }
+
     fn _check_pre_checksum(&self) -> YResult<()> {
         self.check_time()?;
         self.check_version()?;
