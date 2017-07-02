@@ -9,7 +9,7 @@ use crypto::hash::hash;
 use crypto::hash::check_hash_size;
 use crypto::merkle::merkle_root;
 use crypto::merkle::verify_merkle_root;
-use mining::target::check_target_bits;
+use mining::targetting::check_target_bits;
 use std::io::Cursor;
 
 pub const SEGMENT_SIZE: usize = 32;

@@ -1,3 +1,3 @@
-mod target;
+mod targetting;
 mod pow;
 mod por;

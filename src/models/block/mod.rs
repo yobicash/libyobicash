@@ -8,7 +8,7 @@ use length::MAX_LEN;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
-use mining::target::*;
+use mining::targetting::*;
 use mining::por::*;
 use mining::pow::*;
 use amount::YAmount;
