@@ -5,7 +5,6 @@ extern crate error_chain;
 extern crate serde_derive;
 extern crate serde;
 extern crate sodiumoxide;
-extern crate rand;
 extern crate byteorder;
 extern crate num_bigint;
 extern crate num_traits;

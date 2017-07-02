@@ -1,14 +1,16 @@
-use rand::{Rng, StdRng, SeedableRng};
+use byteorder::{BigEndian, ReadBytesExt};
 use errors::*;
 use length::MAX_LEN;
 use length::check_length;
 use size::check_size;
 use crypto::utils::check_binary_size;
 use crypto::hash::Hash;
+use crypto::hash::hash;
 use crypto::hash::check_hash_size;
 use crypto::merkle::merkle_root;
 use crypto::merkle::verify_merkle_root;
 use mining::target::check_target_bits;
+use std::io::Cursor;
 
 pub const SEGMENT_SIZE: usize = 32;
 
@@ -26,11 +28,11 @@ pub fn check_segments(segs: &Vec<Segment>) -> YResult<()> {
     Ok(())
 }
 
-pub fn segments_rng(seed: &Hash) -> YResult<StdRng> {
+pub fn read_u32_from_seed(seed: &Hash, max: u32) -> YResult<u32> {
     check_hash_size(seed)?;
-    let _seed: Vec<usize> = seed.iter().map(|el| *el as usize).collect();
-    let rng = StdRng::from_seed(_seed.as_slice());
-    Ok(rng)
+    let mut c = Cursor::new(seed.to_owned());
+    let n = c.read_u32::<BigEndian>()? % max;
+    Ok(n)
 }
 
 pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> YResult<Vec<u32>> {
@@ -39,10 +41,19 @@ pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> YResult<Vec<u32>> {
     if len > MAX_LEN as u32 {
         return Err(YErrorKind::InvalidLength.into());
     }
-    let mut rng = segments_rng(seed)?;
     let mut idxs: Vec<u32> = Vec::new();
-    for _ in 0..bits {
-        idxs.push(rng.gen_range(0, len));
+    let mut idxs_len = 0;
+    let mut _seed = seed.to_owned();
+    'push_idxs: for _ in 0..bits {
+        let n = read_u32_from_seed(seed, len)?;
+        for i in 0..idxs_len {
+            if n == idxs[i] {
+                continue 'push_idxs;
+            }
+        }
+        _seed = hash(_seed.as_slice())?;
+        idxs.push(n);
+        idxs_len += 1;
     }
     Ok(idxs)
 }
@@ -52,9 +63,8 @@ pub fn segment_start_idx(seed: &Hash, len: u32) -> YResult<u32> {
     if len > MAX_LEN as u32 {
         return Err(YErrorKind::InvalidLength.into());
     }
-    let mut rng = segments_rng(seed)?;
     let stop = len - (SEGMENT_SIZE as u32);
-    let idx = rng.gen_range(0, stop);
+    let idx = read_u32_from_seed(seed, stop)?;
     Ok(idx)
 }
 
