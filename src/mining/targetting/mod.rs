@@ -1,7 +1,7 @@
 use byteorder::{ByteOrder, BigEndian};
-use chrono::{DateTime, Utc};
 use errors::*;
-use crypto::hash::*;
+use crypto::hash::HASH_SIZE;
+use crypto::hash::check_hash_size;
 use mining::utils::*;
 
 use std::num::Wrapping;
@@ -34,27 +34,24 @@ pub fn target_from_bits(bits: u32) -> YResult<Vec<u8>> {
 }
 
 pub fn target_bits(target: &Vec<u8>) -> YResult<u32> {
-    if target.len() != HASH_SIZE {
-        return Err(YErrorKind::InvalidLength.into());
-    }
-
+    check_hash_size(target)?;
     let t_sl = &target.as_slice()[0..8];
     let target_u32 = BigEndian::read_u32(t_sl);
     let bits = target_u32.leading_zeros() as u32;
     Ok(bits)
 }
 
-pub fn retarget_bits(old: u32, old_t: DateTime<Utc>, new_t: DateTime<Utc>, confirm_t: u32) -> YResult<u32> {
-    check_target_bits(old)?;
-    
+pub fn retarget_bits(old_bits: u32, old_t: u32, new_t: u32, confirm_t: u32) -> YResult<u32> {
+    check_target_bits(old_bits)?;
     if new_t <= old_t {
         return Err(YErrorKind::InvalidTime.into());
     }
-   
-    let old_stamp = old_t.timestamp() as u32;
-    let new_stamp = new_t.timestamp() as u32;
-    let old_confirm_time = new_stamp -  old_stamp;
-
-    let bits = old / old_confirm_time * confirm_t;
+    let old_confirm_t = new_t - old_t;
+    let mut bits = old_bits / old_confirm_t * confirm_t;
+    if bits < MIN_BITS {
+        bits = MIN_BITS;
+    } else if bits > MAX_BITS {
+        bits = MAX_BITS;
+    }
     Ok(bits)
 }
