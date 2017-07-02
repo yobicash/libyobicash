@@ -48,35 +48,35 @@ pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delt
         let mut buf: Vec<Hash> = filled_vec(buf_it, s_cost);
 
         let mut buf0: Vec<u8> = Vec::new();
-        buf0.extend_from_slice(seed.clone().as_ref());
-        buf0.extend_from_slice(nonce.clone().as_ref());
+        buf0.extend_from_slice(seed.to_owned().as_ref());
+        buf0.extend_from_slice(nonce.to_owned().as_ref());
         buf[0] = hash(buf0.as_slice())?;
 
         for m in 1..s_cost {
             buf[m] = hash(buf[m-1].as_ref())?;
 
             for t in 0..t_cost {
-                let prev: Vec<u8> = buf[(m-1) % s_cost].clone();
+                let prev: Vec<u8> = buf[(m-1) % s_cost].to_owned();
                 let mut buf1b: Vec<u8> = Vec::new();
-                buf1b.extend_from_slice(prev.clone().as_slice());
-                buf1b.extend_from_slice(buf[m].clone().as_ref());
+                buf1b.extend_from_slice(prev.to_owned().as_slice());
+                buf1b.extend_from_slice(buf[m].to_owned().as_ref());
                 buf[m] = hash(buf1b.as_slice())?;
 
                 for i in 0..delta {
                     let idx_bchannel: Vec<u8> = ints_to_bchannel(t, m, i).into();
                     let mut other_seed: Vec<u8> = Vec::new();
-                    other_seed.extend_from_slice(nonce.clone().as_ref());
-                    other_seed.extend_from_slice(idx_bchannel.clone().as_slice());
+                    other_seed.extend_from_slice(nonce.to_owned().as_ref());
+                    other_seed.extend_from_slice(idx_bchannel.to_owned().as_slice());
                     let other: usize = to_int(hash(other_seed.as_slice())?.as_ref(), s_cost);
                     let mut buf2b: Vec<u8> = Vec::new();
-                    buf2b.extend_from_slice(buf[m].clone().as_ref());
-                    buf2b.extend_from_slice(buf[other].clone().as_ref());
+                    buf2b.extend_from_slice(buf[m].to_owned().as_ref());
+                    buf2b.extend_from_slice(buf[other].to_owned().as_ref());
                     buf[m] = hash(buf2b.as_slice())?;
                 }
             }
         }
 
-        let h = buf[s_cost-1].clone();
+        let h = buf[s_cost-1].to_owned();
         Ok(h)
 }
 
@@ -99,7 +99,7 @@ pub fn balloon_mine(target: &Hash, seed: &Hash, s_cost: u32, t_cost: u32, delta:
     loop {
         let _nonce = ballon_nonce(i)?;
         let digest = balloon_hash(seed, &_nonce, s_cost, t_cost, delta)?;
-        if digest.clone() <= target.clone() {
+        if digest.to_owned() <= target.to_owned() {
             nonce = Some(i);
             break;
         }
@@ -115,7 +115,7 @@ pub fn balloon_mine(target: &Hash, seed: &Hash, s_cost: u32, t_cost: u32, delta:
 pub fn balloon_verify(target: &Hash, seed: &Hash, nonce: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> YResult<bool> {
     check_hash_size(target)?;
     let res = balloon_hash(seed, nonce, s_cost, t_cost, delta)?;
-    let ok = res <= target.clone();
+    let ok = res <= target.to_owned();
     Ok(ok)
 }
 

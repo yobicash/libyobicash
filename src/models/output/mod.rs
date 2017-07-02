@@ -25,10 +25,10 @@ impl YOutput {
         if size > MAX_SIZE as u32 {
             return Err(YErrorKind::InvalidSize.into());
         }
-        if YAmount::new(size) != m.clone() {
+        if YAmount::new(size) != m.to_owned() {
             return Err(YErrorKind::InvalidAmount.into());
         }
-        let checksum = hash(data.clone().as_slice())?;
+        let checksum = hash(data.to_owned().as_slice())?;
         Ok(YOutput {
             to: to.to_owned(),
             amount: m.to_owned(),
@@ -47,10 +47,10 @@ impl YOutput {
         if self.size != size {
             return Err(YErrorKind::InvalidSize.into());
         }
-        if YAmount::new(self.size) != self.amount.clone() {
+        if YAmount::new(self.size) != self.amount.to_owned() {
             return Err(YErrorKind::InvalidAmount.into());
         }
-        let checksum = hash(self.data.clone().as_slice())?;
+        let checksum = hash(self.data.to_owned().as_slice())?;
         if self.checksum != checksum {
             return Err(YErrorKind::InvalidChecksum.into());
         }

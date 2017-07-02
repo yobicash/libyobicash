@@ -122,7 +122,7 @@ impl YBlock {
     }
 
     pub fn check_prev_chain_amount(&self) -> YResult<()> {
-        if self.prev_chain_amount.clone() == YAmount::zero() &&
+        if self.prev_chain_amount.to_owned() == YAmount::zero() &&
             self.height != 0 {
             return Err(YErrorKind::InvalidAmount.into())
         }
@@ -143,7 +143,7 @@ impl YBlock {
     }
 
     pub fn check_chain_amount(&self) -> YResult<()> {
-        if self.chain_amount.clone() == YAmount::zero() {
+        if self.chain_amount.to_owned() == YAmount::zero() {
             return Err(YErrorKind::InvalidAmount.into())
         }
         if self.chain_amount != self.prev_chain_amount.to_owned() + self.coinbase_amount()? {
@@ -157,8 +157,8 @@ impl YBlock {
         if !self.coinbase.is_coinbase()? {
             return Err(YErrorKind::InvalidCoinbase.into())
         }
-        if self.coinbase.tot_amount().clone()
-            != self.coinbase_amount()?.clone() {
+        if self.coinbase.tot_amount().to_owned()
+            != self.coinbase_amount()?.to_owned() {
             return Err(YErrorKind::InvalidCoinbase.into())
         }
         Ok(())

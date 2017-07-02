@@ -11,7 +11,7 @@ pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
     let mut base: Vec<Vec<u8>> = vec![];
     for d in leafs {
         check_hash_size(d)?;
-        base.push(d.clone());
+        base.push(d.to_owned());
     }
     while leafs_len > 1 {
         let mut j = 0;
@@ -19,12 +19,12 @@ pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
         while i < leafs_len {
             j += 1;
             let mut data: Vec<u8> = vec![];
-            let h_1 = base[i].clone();
+            let h_1 = base[i].to_owned();
             data.extend(h_1.iter().cloned());
             let h_2 = if i + 1 != leafs_len {
-                base[i + 1].clone()
+                base[i + 1].to_owned()
             } else {
-                base[i].clone()
+                base[i].to_owned()
             };
             data.extend(h_2.iter().cloned());
             base[j] = hash(data.as_slice())?;
@@ -32,7 +32,7 @@ pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
         }
         leafs_len = j;
     }
-    let r = base[0].clone();
+    let r = base[0].to_owned();
     Ok(r)
 }
 

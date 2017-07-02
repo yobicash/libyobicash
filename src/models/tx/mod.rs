@@ -237,13 +237,13 @@ impl YTx {
     pub fn outputs_amount(&self) -> YAmount {
         let mut amount = YAmount::zero();
         for i in 0..self.outputs_len as usize {
-            amount = amount.clone() + self.outputs[i].amount.clone();
+            amount = amount.to_owned() + self.outputs[i].amount.to_owned();
         }
         amount
     }
 
     pub fn tot_amount(&self) -> YAmount {
-        self.outputs_amount() + self.fee.clone() 
+        self.outputs_amount() + self.fee.to_owned() 
     }
 
     pub fn sign(&mut self, w: &YWallet) -> YResult<Self> {
@@ -283,7 +283,7 @@ impl YTx {
         if size > MAX_SIZE as u32 {
             return Err(YErrorKind::InvalidSize.into());
         }
-        if YAmount::new(size) != m.clone() {
+        if YAmount::new(size) != m.to_owned() {
             return Err(YErrorKind::InvalidSize.into());
         }
         let mut tx = YTx::new()?;
@@ -300,7 +300,7 @@ impl YTx {
         self.check()?;
         Ok(self.inputs_len == 0 &&
             self.outputs_len == 1 &&
-            self.outputs[0].amount.clone() != YAmount::zero())
+            self.outputs[0].amount.to_owned() != YAmount::zero())
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {

@@ -3,7 +3,7 @@ use std::mem;
 pub fn filled_vec<T: Clone>(elem: T, length: usize) -> Vec<T> {
     let mut v: Vec<T> = Vec::new();
     for _ in 0..length {
-        v.push(elem.clone());
+        v.push(elem.to_owned());
     }
     v
 }
