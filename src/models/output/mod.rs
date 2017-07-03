@@ -3,7 +3,6 @@ use errors::*;
 use size::MAX_SIZE;
 use crypto::hash::Hash;
 use crypto::hash::hash;
-use crypto::hash::check_hash_size;
 use amount::YAmount;
 use models::address::Address;
 use models::address::check_address;
@@ -19,19 +18,19 @@ pub struct YOutput {
 }
 
 impl YOutput {
-    pub fn new(m: &YAmount, to: &Address, data: &Vec<u8>) -> YResult<Self> {
+    pub fn new(amount: &YAmount, to: &Address, data: &Vec<u8>) -> YResult<Self> {
         check_address(to)?;
         let size = data.len() as u32;
         if size > MAX_SIZE as u32 {
             return Err(YErrorKind::InvalidSize.into());
         }
-        if YAmount::new(size) != m.to_owned() {
-            return Err(YErrorKind::InvalidAmount.into());
+        if size > 0 && YAmount::new(size) != amount.to_owned() {
+                return Err(YErrorKind::InvalidAmount.into());
         }
         let checksum = hash(data.to_owned().as_slice())?;
         Ok(YOutput {
             to: to.to_owned(),
-            amount: m.to_owned(),
+            amount: amount.to_owned(),
             size: size,
             checksum: checksum, // NB: including hash(b"")
             data: data.to_owned(),
@@ -39,7 +38,7 @@ impl YOutput {
     }
 
     pub fn check(&self) -> YResult<()> {
-        check_hash_size(&self.to)?;
+        check_address(&self.to)?;
         let size = self.data.len() as u32;
         if size > MAX_SIZE as u32 {
             return Err(YErrorKind::InvalidSize.into());
@@ -47,7 +46,8 @@ impl YOutput {
         if self.size != size {
             return Err(YErrorKind::InvalidSize.into());
         }
-        if YAmount::new(self.size) != self.amount.to_owned() {
+        if size > 0 &&
+            YAmount::new(self.size) != self.amount.to_owned() {
             return Err(YErrorKind::InvalidAmount.into());
         }
         let checksum = hash(self.data.to_owned().as_slice())?;
