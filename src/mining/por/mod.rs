@@ -30,7 +30,7 @@ pub fn check_segments(segs: &Vec<Segment>) -> Result<()> {
     Ok(())
 }
 
-pub fn read_u32_from_seed(seed: &Hash, max: u32) -> Result<u32> {
+pub fn random_u32_from_seed(seed: &Hash, max: u32) -> Result<u32> {
     check_hash_size(seed)?;
     let mut c = Cursor::new(seed.to_owned());
     let n = c.read_u32::<BigEndian>()? % max;
@@ -44,7 +44,7 @@ pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> Result<Vec<u32>> {
     let mut _seed = seed.to_owned();
     for _ in 0..bits {
         // NB: allow repetitions. Case: len << bits
-        let n = read_u32_from_seed(&_seed, len)?;
+        let n = random_u32_from_seed(&_seed, len)?;
         _seed = hash(_seed.as_slice())?;
         idxs.push(n);
     }
@@ -55,7 +55,7 @@ pub fn read_segment(seed: &Hash, data: &Vec<u8>) -> Result<Segment> {
     check_hash_size(seed)?;
     check_size(data.as_slice())?;
     let len = data.len() as u32;
-    let idx = read_u32_from_seed(seed, len)?;
+    let idx = random_u32_from_seed(seed, len)?;
     let start = idx as usize;
     let stop = if len >= (start + SEGMENT_SIZE) as u32 {
         start + SEGMENT_SIZE

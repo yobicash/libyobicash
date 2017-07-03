@@ -19,18 +19,18 @@ fn check_segment_fail() {
 }
 
 #[test]
-fn read_u32_succ() {
+fn random_u32_succ() {
     let seed = randombytes(HASH_SIZE).unwrap();
     let max = 10;
-    let num = read_u32_from_seed(&seed, max).unwrap();
+    let num = random_u32_from_seed(&seed, max).unwrap();
     assert!(num < max)
 }
 
 #[test]
-fn read_u32_fail() {
+fn random_u32_fail() {
     let seed = randombytes(HASH_SIZE+1).unwrap();
     let max = 10;
-    let res = read_u32_from_seed(&seed, max);
+    let res = random_u32_from_seed(&seed, max);
     assert!(res.is_err())
 }
 

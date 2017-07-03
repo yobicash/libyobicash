@@ -106,7 +106,22 @@ fn check_inputs_succ() {
     let max_idx = 100000;
     for _ in 0..len {
         let tx_id = randombytes(HASH_SIZE).unwrap();
-        let idx = read_u32_from_seed(&tx_id, max_idx).unwrap();
+        let idx = random_u32_from_seed(&tx_id, max_idx).unwrap();
+        let input = Input::new(&tx_id, idx).unwrap();
+        input.check().unwrap();
+        let res = tx.add_input(&input);
+        assert!(res.is_ok());
+    }
+}
+
+#[test]
+fn check_outputs_succ() {
+    let mut tx = Tx::new().unwrap();
+    let len = 10;
+    let max_idx = 100000;
+    for _ in 0..len {
+        let tx_id = randombytes(HASH_SIZE).unwrap();
+        let idx = random_u32_from_seed(&tx_id, max_idx).unwrap();
         let input = Input::new(&tx_id, idx).unwrap();
         input.check().unwrap();
         let res = tx.add_input(&input);
