@@ -12,7 +12,6 @@ use crypto::hash::check_hash_size;
 use crypto::sign::Signature;
 use crypto::sign::sign;
 use mining::por::Segment;
-use mining::por::read_u32_from_seed;
 use mining::por::read_segment;
 use amount::Amount;
 use models::wallet::Wallet;
@@ -23,17 +22,17 @@ use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Tx {
-    pub id: Hash,
-    pub time: DateTime<Utc>,
-    pub version: Version,
-    pub signers: Signers,
-    pub inputs_len: u32,
-    pub inputs: Vec<Input>,
-    pub outputs_len: u32,
-    pub outputs: Vec<Output>,
-    pub fee: Amount,
-    pub signatures_len: u32,
-    pub signatures: Vec<Signature>,
+    id: Hash,
+    time: DateTime<Utc>,
+    version: Version,
+    signers: Signers,
+    inputs_len: u32,
+    inputs: Vec<Input>,
+    outputs_len: u32,
+    outputs: Vec<Output>,
+    fee: Amount,
+    signatures_len: u32,
+    signatures: Vec<Signature>,
 }
 
 impl Tx {
@@ -55,11 +54,36 @@ impl Tx {
         })
     }
 
+    pub fn get_time(&self) -> DateTime<Utc> {
+        self.time
+    }
+
+    pub fn set_time(&mut self, time: &DateTime<Utc>) -> Result<Self> {
+        if *time > Utc::now() {
+            return Err(ErrorKind::InvalidTime.into())
+        }
+        self.time = time.to_owned();
+        Ok(self.to_owned())
+    }
+
     pub fn check_time(&self) -> Result<()> {
         if self.time > Utc::now() {
             return Err(ErrorKind::InvalidTime.into())
         }
         Ok(())
+    }
+
+    pub fn get_version(&self) -> Version {
+        self.version.to_owned()
+    }
+
+    pub fn set_version(&mut self, version: &Version) -> Result<Self> {
+        let v = Version::parse(VERSION)?;
+        if *version > v {
+            return Err(ErrorKind::InvalidVersion.into());
+        }
+        self.version = version.to_owned();
+        Ok(self.to_owned())
     }
 
     pub fn check_version(&self) -> Result<()> {
@@ -70,8 +94,22 @@ impl Tx {
         Ok(())
     }
 
+    pub fn get_signers(&self) -> Signers {
+        self.signers.to_owned()
+    }
+
+    pub fn set_signers(&mut self, signers: &Signers) -> Result<Self> {
+        signers.check()?;
+        self.signers = signers.to_owned();
+        Ok(self.to_owned())
+    }
+
     pub fn check_signers(&self) -> Result<()> {
         self.signers.check()
+    }
+
+    pub fn get_inputs_len(&self) -> u32 {
+        self.inputs_len
     }
 
     pub fn check_inputs_len(&self) -> Result<()> {
@@ -79,6 +117,23 @@ impl Tx {
             return Err(ErrorKind::InvalidLength.into());
         }    
         Ok(())
+    }
+
+    pub fn get_inputs(&self) -> Vec<Input> {
+        self.inputs.to_owned()
+    }
+
+    pub fn add_input(&mut self, inp: &Input) -> Result<Self> {
+        inp.check()?;
+        self.check_inputs()?;
+        for i in 0..self.inputs_len as usize {
+            if self.inputs[i] == *inp {
+                return Err(ErrorKind::AlreadyFound.into());
+            }
+        }
+        self.inputs_len += 1;
+        self.inputs.push(inp.to_owned());
+        Ok(self.to_owned())
     }
 
     pub fn check_inputs(&self) -> Result<()> {
@@ -101,86 +156,12 @@ impl Tx {
         Ok(())
     }
 
-    pub fn check_outputs(&self) -> Result<()> {
-        if self.outputs.len() != self.outputs_len as usize {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        for i in 0..self.outputs_len as usize {
-            self.outputs[i].check()?;
-        }
-        // NB: no check for inputs uniqueness. TODO or not TODO?
-        // it requires a sorting algo, to be used also after every
-        // add
-        Ok(())
+    pub fn get_outputs_len(&self) -> u32 {
+        self.outputs_len
     }
 
-    pub fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
-        if self.tot_amount() != inputs_amount.to_owned() {
-            return Err(ErrorKind::InvalidAmount.into());
-        }
-        Ok(())
-    }
-
-    pub fn check_pre_checksum(&self) -> Result<()> {
-        self.check_time()?;
-        self.check_version()?;
-        self.check_signers()?;
-        self.check_inputs_len()?;
-        self.check_inputs()?;
-        self.check_outputs_len()?;
-        self.check_outputs()
-    }
-
-    pub fn check_signatures_len(&self) -> Result<()> {
-        if self.signatures_len > MAX_LEN as u32 {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        if self.signatures_len != self.signatures.len() as u32 {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        Ok(())
-    }
-
-    pub fn check_signatures(&self) -> Result<()> {
-        let cksm = self.checksum()?;
-        self.signers.check_signatures(&cksm, &self.signatures)
-    }
-
-    pub fn check_pre_id(&self) -> Result<()> {
-        self.check_pre_checksum()?;
-        self.check_signatures()
-    }
-
-    pub fn check_id(&self) -> Result<()> {
-        if self.id != self.id()? {
-            return Err(ErrorKind::InvalidId.into());
-        }
-        Ok(())
-    }
-
-    pub fn check(&self) -> Result<()> {
-        self.check_time()?;
-        self.check_version()?;
-        self.check_signers()?;
-        self.check_inputs_len()?;
-        self.check_inputs()?;
-        self.check_outputs_len()?;
-        self.check_outputs()?;
-        self.check_signatures()?;
-        self.check_id()
-    }
-
-    pub fn add_input(&mut self, inp: &Input) -> Result<Self> {
-        inp.check()?;
-        self.check_inputs()?;
-        for i in 0..self.inputs_len as usize {
-            if self.inputs[i] == *inp {
-                return Err(ErrorKind::AlreadyFound.into());
-            }
-        }
-        self.inputs_len += 1;
-        self.inputs.push(inp.to_owned());
-        Ok(self.to_owned())
+    pub fn get_outputs(&self) -> Vec<Output> {
+        self.outputs.to_owned()
     }
 
     pub fn add_output(&mut self, outp: &Output) -> Result<Self> {
@@ -204,27 +185,50 @@ impl Tx {
         amount
     }
 
+    pub fn check_outputs(&self) -> Result<()> {
+        if self.outputs.len() != self.outputs_len as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        for i in 0..self.outputs_len as usize {
+            self.outputs[i].check()?;
+        }
+        // NB: no check for inputs uniqueness. TODO or not TODO?
+        // it requires a sorting algo, to be used also after every
+        // add
+        Ok(())
+    }
+
+    pub fn get_fee(&self) -> Amount {
+        self.fee.to_owned()
+    }
+
+    pub fn set_fee(&mut self, fee: &Amount) -> Self {
+        self.fee = fee.to_owned();
+        self.to_owned()
+    }
+
     pub fn tot_amount(&self) -> Amount {
         self.outputs_amount() + self.fee.to_owned() 
     }
 
-    pub fn sign(&mut self, w: &Wallet) -> Result<Self> {
-        let checksum = self.checksum()?;
-        if !self.signers.lookup_signer(&w.public_key)? {
-            return Err(ErrorKind::NotFound.into());
+    pub fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
+        if self.tot_amount() != inputs_amount.to_owned() {
+            return Err(ErrorKind::InvalidAmount.into());
         }
-        let sig = sign(&checksum, &w.secret_key)?;
-        for i in 0..self.signatures_len as usize {
-            if sig == self.signatures[i] {
-                // NB: making signing idempotent
-                return Ok(self.to_owned())
-            }
-        }
-        self.signatures.push(sig);
-        Ok(self.to_owned())
+        Ok(())
     }
 
-    pub fn checksum(&self) -> Result<Hash> {
+    pub fn check_pre_checksum(&self) -> Result<()> {
+        self.check_time()?;
+        self.check_version()?;
+        self.check_signers()?;
+        self.check_inputs_len()?;
+        self.check_inputs()?;
+        self.check_outputs_len()?;
+        self.check_outputs()
+    }
+
+    pub fn get_checksum(&self) -> Result<Hash> {
         self.check_pre_checksum()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -242,7 +246,60 @@ impl Tx {
         hash(bin.as_slice())
     }
 
-    pub fn id(&self) -> Result<Hash> {
+    pub fn get_signatures_len(&self) -> u32 {
+        self.signatures_len
+    }
+
+    pub fn check_signatures_len(&self) -> Result<()> {
+        if self.signatures_len > MAX_LEN as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        if self.signatures_len != self.signatures.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+
+    pub fn get_signatures(&self) -> Vec<Signature> {
+        self.signatures.to_owned()
+    }
+
+    pub fn sign(&mut self, w: &Wallet) -> Result<Self> {
+        let checksum = self.get_checksum()?;
+        if !self.signers.lookup_signer(&w.public_key)? {
+            return Err(ErrorKind::NotFound.into());
+        }
+        let sig = sign(&checksum, &w.secret_key)?;
+        for i in 0..self.signatures_len as usize {
+            if sig == self.signatures[i] {
+                // NB: making signing idempotent
+                return Ok(self.to_owned())
+            }
+        }
+        self.signatures.push(sig);
+        Ok(self.to_owned())
+    }
+
+    pub fn verify_signatures(&self) -> Result<bool> {
+        let cksm = self.get_checksum()?;
+        self.signers.verify_signatures(&cksm, &self.signatures)
+    }
+
+    pub fn check_signatures(&self) -> Result<()> {
+        let cksm = self.get_checksum()?;
+        self.signers.check_signatures(&cksm, &self.signatures)
+    }
+
+    pub fn check_pre_id(&self) -> Result<()> {
+        self.check_pre_checksum()?;
+        self.check_signatures()
+    }
+
+    pub fn get_id(&self) -> Hash {
+        self.id.to_owned()
+    }
+
+    pub fn calc_id(&self) -> Result<Hash> {
         self.check_pre_id()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -266,16 +323,50 @@ impl Tx {
 
     pub fn set_id(&mut self) -> Result<Self> {
         self.check_pre_id()?;
-        self.id = self.id()?;
+        self.id = self.calc_id()?;
         Ok(self.to_owned())
     }
 
-    pub fn segment_start_idx(&self, seed: &Hash) -> Result<u32> {
+    pub fn check_id(&self) -> Result<()> {
+        if self.id != self.calc_id()? {
+            return Err(ErrorKind::InvalidId.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        self.check_time()?;
+        self.check_version()?;
+        self.check_signers()?;
+        self.check_inputs_len()?;
+        self.check_inputs()?;
+        self.check_outputs_len()?;
+        self.check_outputs()?;
+        self.check_signatures()?;
+        self.check_id()
+    }
+
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
         self.check()?;
-        check_hash_size(seed)?;
-        let v = self.to_vec()?;
-        let size = v.len() as u32;
-        read_u32_from_seed(seed, size)
+        let mut bin = Vec::new();
+        bin.write_all(self.id.to_vec().as_slice())?;
+        bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
+        bin.write_all(self.version.to_string().into_bytes().as_slice())?;
+        bin.write_all(self.signers.to_vec()?.as_slice())?;
+        bin.write_u32::<BigEndian>(self.inputs_len)?;
+        for i in 0..self.inputs_len as usize {
+            bin.write_all(self.inputs[i].to_vec()?.as_slice())?;
+        }
+        bin.write_u32::<BigEndian>(self.outputs_len)?;
+        for i in 0..self.outputs_len as usize {
+            bin.write_all(self.outputs[i].to_vec()?.as_slice())?;
+        }
+        bin.write_all(self.fee.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.signatures_len)?;
+        for i in 0..self.signatures_len as usize {
+            bin.write_all(self.signatures[i].to_vec().as_slice())?;
+        }
+        Ok(bin)
     }
 
     pub fn read_segment(&self, seed: &Hash) -> Result<Segment> {
@@ -306,31 +397,9 @@ impl Tx {
 
     pub fn is_coinbase(&self) -> Result<bool> {
         self.check()?;
-        Ok(self.inputs_len == 0 &&
+        let ok = self.inputs_len == 0 &&
             self.outputs_len == 1 &&
-            self.outputs[0].get_amount() != Amount::zero())
-    }
-
-    pub fn to_vec(&self) -> Result<Vec<u8>> {
-        self.check()?;
-        let mut bin = Vec::new();
-        bin.write_all(self.id.to_vec().as_slice())?;
-        bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
-        bin.write_all(self.version.to_string().into_bytes().as_slice())?;
-        bin.write_all(self.signers.to_vec()?.as_slice())?;
-        bin.write_u32::<BigEndian>(self.inputs_len)?;
-        for i in 0..self.inputs_len as usize {
-            bin.write_all(self.inputs[i].to_vec()?.as_slice())?;
-        }
-        bin.write_u32::<BigEndian>(self.outputs_len)?;
-        for i in 0..self.outputs_len as usize {
-            bin.write_all(self.outputs[i].to_vec()?.as_slice())?;
-        }
-        bin.write_all(self.fee.to_vec().as_slice())?;
-        bin.write_u32::<BigEndian>(self.signatures_len)?;
-        for i in 0..self.signatures_len as usize {
-            bin.write_all(self.signatures[i].to_vec().as_slice())?;
-        }
-        Ok(bin)
+            self.outputs[0].get_amount() != Amount::zero();
+        Ok(ok)
     }
 }
