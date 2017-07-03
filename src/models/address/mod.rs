@@ -7,6 +7,8 @@ pub type Address = Vec<u8>;
 
 pub const ADDRESS_PREFIX: u8 = 7;
 
+pub const ADDRESS_SIZE: usize = HASH_SIZE + 1;
+
 pub fn hash_to_address(h: &Hash) -> YResult<Address> {
     check_hash_size(h)?;
     let mut addr = vec![ADDRESS_PREFIX];
@@ -15,7 +17,7 @@ pub fn hash_to_address(h: &Hash) -> YResult<Address> {
 }
 
 pub fn check_address_size(addr: &Address) -> YResult<()> {
-    if addr.len() != HASH_SIZE + 1 {
+    if addr.len() != ADDRESS_SIZE {
         return Err(YErrorKind::InvalidSize.into())
     }
     Ok(())
