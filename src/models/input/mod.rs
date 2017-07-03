@@ -29,10 +29,6 @@ impl YInput {
         Ok(self.to_owned())
     }
 
-    pub fn check_tx_id(&self) -> YResult<()> {
-        check_hash_size(&self.tx_id)
-    }
-
     pub fn get_idx(&self) -> u32 {
         self.idx
     }
@@ -43,7 +39,7 @@ impl YInput {
     }
 
     pub fn check(&self) -> YResult<()> {
-        self.check_tx_id()
+        check_hash_size(&self.tx_id)
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {

@@ -199,7 +199,7 @@ impl YTx {
     pub fn outputs_amount(&self) -> YAmount {
         let mut amount = YAmount::zero();
         for i in 0..self.outputs_len as usize {
-            amount = amount.to_owned() + self.outputs[i].amount.to_owned();
+            amount = amount.to_owned() + self.outputs[i].get_amount();
         }
         amount
     }
@@ -308,7 +308,7 @@ impl YTx {
         self.check()?;
         Ok(self.inputs_len == 0 &&
             self.outputs_len == 1 &&
-            self.outputs[0].amount.to_owned() != YAmount::zero())
+            self.outputs[0].get_amount() != YAmount::zero())
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {

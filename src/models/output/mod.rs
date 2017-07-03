@@ -10,11 +10,11 @@ use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct YOutput {
-    pub to: Address,
-    pub amount: YAmount,
-    pub size: u32,
-    pub checksum: Hash,
-    pub data: Vec<u8>,
+    to: Address,
+    amount: YAmount,
+    size: u32,
+    checksum: Hash,
+    data: Vec<u8>,
 }
 
 impl YOutput {
@@ -35,6 +35,38 @@ impl YOutput {
             checksum: checksum, // NB: including hash(b"")
             data: data.to_owned(),
         })
+    }
+
+    pub fn get_to(&self) -> Address {
+        unreachable!()
+    }
+
+    pub fn set_to(&mut self, to: &Address) -> YResult<Self> {
+        unreachable!()
+    }
+
+    pub fn get_amount(&self) -> YAmount {
+        unreachable!()
+    }
+
+    pub fn set_amount(&mut self, amount: &YAmount) -> YResult<Self> {
+        unreachable!()
+    }
+
+    pub fn get_size(&self) -> u32 {
+        unreachable!()
+    }
+
+    pub fn get_checksum(&self) -> u32 {
+        unreachable!()
+    }
+
+    pub fn get_data(&self) -> Vec<u8> {
+        unreachable!()
+    }
+
+    pub fn set_data(&mut self, data: &Vec<u8>) -> YResult<Self> {
+        unreachable!()
     }
 
     pub fn check(&self) -> YResult<()> {

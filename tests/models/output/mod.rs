@@ -35,15 +35,3 @@ fn check_output_succ() {
     let res = output.check();
     assert!(res.is_ok())
 }
-
-#[test]
-fn check_output_fail() {
-    let h = randombytes(HASH_SIZE).unwrap();
-    let to = hash_to_address(&h).unwrap();
-    let amount = 10;
-    let data = randombytes(amount).unwrap();
-    let mut output = YOutput::new(&YAmount::new(amount as u32), &to, &data).unwrap();
-    output.data = randombytes(amount-1).unwrap();
-    let res = output.check();
-    assert!(res.is_err())
-}
