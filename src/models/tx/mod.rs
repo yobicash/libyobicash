@@ -14,33 +14,33 @@ use crypto::sign::sign;
 use mining::por::Segment;
 use mining::por::read_u32_from_seed;
 use mining::por::read_segment;
-use amount::YAmount;
-use models::wallet::YWallet;
-use models::signers::YSigners;
-use models::input::YInput;
-use models::output::YOutput;
+use amount::Amount;
+use models::wallet::Wallet;
+use models::signers::Signers;
+use models::input::Input;
+use models::output::Output;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
-pub struct YTx {
+pub struct Tx {
     pub id: Hash,
     pub time: DateTime<Utc>,
     pub version: Version,
-    pub signers: YSigners,
+    pub signers: Signers,
     pub inputs_len: u32,
-    pub inputs: Vec<YInput>,
+    pub inputs: Vec<Input>,
     pub outputs_len: u32,
-    pub outputs: Vec<YOutput>,
-    pub fee: YAmount,
+    pub outputs: Vec<Output>,
+    pub fee: Amount,
     pub signatures_len: u32,
     pub signatures: Vec<Signature>,
 }
 
-impl YTx {
-    pub fn new() -> YResult<Self> {
+impl Tx {
+    pub fn new() -> Result<Self> {
         let version = Version::parse(VERSION)?;
-        let signers = YSigners::new()?;
-        Ok(YTx {
+        let signers = Signers::new()?;
+        Ok(Tx {
             id: Hash::default(),
             time: Utc::now(),
             version: version,
@@ -49,41 +49,41 @@ impl YTx {
             inputs: Vec::new(),
             outputs_len: 0,
             outputs: Vec::new(),
-            fee: YAmount::zero(),
+            fee: Amount::zero(),
             signatures_len: 0,
             signatures: Vec::new(),
         })
     }
 
-    pub fn check_time(&self) -> YResult<()> {
+    pub fn check_time(&self) -> Result<()> {
         if self.time > Utc::now() {
-            return Err(YErrorKind::InvalidTime.into())
+            return Err(ErrorKind::InvalidTime.into())
         }
         Ok(())
     }
 
-    pub fn check_version(&self) -> YResult<()> {
+    pub fn check_version(&self) -> Result<()> {
         let v = Version::parse(VERSION)?;
         if self.version > v {
-            return Err(YErrorKind::InvalidVersion.into());
+            return Err(ErrorKind::InvalidVersion.into());
         }
         Ok(())
     }
 
-    pub fn check_signers(&self) -> YResult<()> {
+    pub fn check_signers(&self) -> Result<()> {
         self.signers.check()
     }
 
-    pub fn check_inputs_len(&self) -> YResult<()> {
+    pub fn check_inputs_len(&self) -> Result<()> {
         if self.inputs_len > MAX_LEN as u32 {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }    
         Ok(())
     }
 
-    pub fn check_inputs(&self) -> YResult<()> {
+    pub fn check_inputs(&self) -> Result<()> {
         if self.inputs.len() != self.inputs_len as usize {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         for i in 0..self.inputs_len as usize {
             self.inputs[i].check()?;
@@ -94,16 +94,16 @@ impl YTx {
         Ok(())
     }
 
-    pub fn check_outputs_len(&self) -> YResult<()> {
+    pub fn check_outputs_len(&self) -> Result<()> {
         if self.outputs_len > MAX_LEN as u32 {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }    
         Ok(())
     }
 
-    pub fn check_outputs(&self) -> YResult<()> {
+    pub fn check_outputs(&self) -> Result<()> {
         if self.outputs.len() != self.outputs_len as usize {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         for i in 0..self.outputs_len as usize {
             self.outputs[i].check()?;
@@ -114,14 +114,14 @@ impl YTx {
         Ok(())
     }
 
-    pub fn check_tot_amount(&self, inputs_amount: &YAmount) -> YResult<()> {
+    pub fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
         if self.tot_amount() != inputs_amount.to_owned() {
-            return Err(YErrorKind::InvalidAmount.into());
+            return Err(ErrorKind::InvalidAmount.into());
         }
         Ok(())
     }
 
-    pub fn check_pre_checksum(&self) -> YResult<()> {
+    pub fn check_pre_checksum(&self) -> Result<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -131,34 +131,34 @@ impl YTx {
         self.check_outputs()
     }
 
-    pub fn check_signatures_len(&self) -> YResult<()> {
+    pub fn check_signatures_len(&self) -> Result<()> {
         if self.signatures_len > MAX_LEN as u32 {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         if self.signatures_len != self.signatures.len() as u32 {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         Ok(())
     }
 
-    pub fn check_signatures(&self) -> YResult<()> {
+    pub fn check_signatures(&self) -> Result<()> {
         let cksm = self.checksum()?;
         self.signers.check_signatures(&cksm, &self.signatures)
     }
 
-    pub fn check_pre_id(&self) -> YResult<()> {
+    pub fn check_pre_id(&self) -> Result<()> {
         self.check_pre_checksum()?;
         self.check_signatures()
     }
 
-    pub fn check_id(&self) -> YResult<()> {
+    pub fn check_id(&self) -> Result<()> {
         if self.id != self.id()? {
-            return Err(YErrorKind::InvalidId.into());
+            return Err(ErrorKind::InvalidId.into());
         }
         Ok(())
     }
 
-    pub fn check(&self) -> YResult<()> {
+    pub fn check(&self) -> Result<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -170,12 +170,12 @@ impl YTx {
         self.check_id()
     }
 
-    pub fn add_input(&mut self, inp: &YInput) -> YResult<Self> {
+    pub fn add_input(&mut self, inp: &Input) -> Result<Self> {
         inp.check()?;
         self.check_inputs()?;
         for i in 0..self.inputs_len as usize {
             if self.inputs[i] == *inp {
-                return Err(YErrorKind::AlreadyFound.into());
+                return Err(ErrorKind::AlreadyFound.into());
             }
         }
         self.inputs_len += 1;
@@ -183,12 +183,12 @@ impl YTx {
         Ok(self.to_owned())
     }
 
-    pub fn add_output(&mut self, outp: &YOutput) -> YResult<Self> {
+    pub fn add_output(&mut self, outp: &Output) -> Result<Self> {
         outp.check()?;
         self.check_outputs()?;
         for i in 0..self.outputs_len as usize {
             if self.outputs[i] == *outp {
-                return Err(YErrorKind::AlreadyFound.into());
+                return Err(ErrorKind::AlreadyFound.into());
             }
         }
         self.outputs_len += 1;
@@ -196,22 +196,22 @@ impl YTx {
         Ok(self.to_owned())
     }
 
-    pub fn outputs_amount(&self) -> YAmount {
-        let mut amount = YAmount::zero();
+    pub fn outputs_amount(&self) -> Amount {
+        let mut amount = Amount::zero();
         for i in 0..self.outputs_len as usize {
             amount = amount.to_owned() + self.outputs[i].get_amount();
         }
         amount
     }
 
-    pub fn tot_amount(&self) -> YAmount {
+    pub fn tot_amount(&self) -> Amount {
         self.outputs_amount() + self.fee.to_owned() 
     }
 
-    pub fn sign(&mut self, w: &YWallet) -> YResult<Self> {
+    pub fn sign(&mut self, w: &Wallet) -> Result<Self> {
         let checksum = self.checksum()?;
         if !self.signers.lookup_signer(&w.public_key)? {
-            return Err(YErrorKind::NotFound.into());
+            return Err(ErrorKind::NotFound.into());
         }
         let sig = sign(&checksum, &w.secret_key)?;
         for i in 0..self.signatures_len as usize {
@@ -224,7 +224,7 @@ impl YTx {
         Ok(self.to_owned())
     }
 
-    pub fn checksum(&self) -> YResult<Hash> {
+    pub fn checksum(&self) -> Result<Hash> {
         self.check_pre_checksum()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -242,7 +242,7 @@ impl YTx {
         hash(bin.as_slice())
     }
 
-    pub fn id(&self) -> YResult<Hash> {
+    pub fn id(&self) -> Result<Hash> {
         self.check_pre_id()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -264,13 +264,13 @@ impl YTx {
         hash(bin.as_slice())
     }
 
-    pub fn set_id(&mut self) -> YResult<Self> {
+    pub fn set_id(&mut self) -> Result<Self> {
         self.check_pre_id()?;
         self.id = self.id()?;
         Ok(self.to_owned())
     }
 
-    pub fn segment_start_idx(&self, seed: &Hash) -> YResult<u32> {
+    pub fn segment_start_idx(&self, seed: &Hash) -> Result<u32> {
         self.check()?;
         check_hash_size(seed)?;
         let v = self.to_vec()?;
@@ -278,40 +278,40 @@ impl YTx {
         read_u32_from_seed(seed, size)
     }
 
-    pub fn read_segment(&self, seed: &Hash) -> YResult<Segment> {
+    pub fn read_segment(&self, seed: &Hash) -> Result<Segment> {
         self.check()?;
         check_hash_size(seed)?;
         let v = self.to_vec()?;
         read_segment(seed, &v)
     }
 
-    pub fn coinbase(w: &YWallet, to: &YSigners, m: &YAmount, data: &Vec<u8>) -> YResult<Self> {
+    pub fn coinbase(w: &Wallet, to: &Signers, m: &Amount, data: &Vec<u8>) -> Result<Self> {
         to.check()?;
         let size = data.len() as u32;
         if size > MAX_SIZE as u32 {
-            return Err(YErrorKind::InvalidSize.into());
+            return Err(ErrorKind::InvalidSize.into());
         }
-        if YAmount::new(size) != m.to_owned() {
-            return Err(YErrorKind::InvalidSize.into());
+        if Amount::new(size) != m.to_owned() {
+            return Err(ErrorKind::InvalidSize.into());
         }
-        let mut tx = YTx::new()?;
-        let outp = YOutput::new(m, &to.address, data)?;
+        let mut tx = Tx::new()?;
+        let outp = Output::new(m, &to.address, data)?;
         tx.add_output(&outp)?.sign(w)?;
         tx.check()?;
         if !tx.is_coinbase()? {
-            return Err(YErrorKind::InvalidCoinbase.into());
+            return Err(ErrorKind::InvalidCoinbase.into());
         }
         Ok(tx)
     }
 
-    pub fn is_coinbase(&self) -> YResult<bool> {
+    pub fn is_coinbase(&self) -> Result<bool> {
         self.check()?;
         Ok(self.inputs_len == 0 &&
             self.outputs_len == 1 &&
-            self.outputs[0].get_amount() != YAmount::zero())
+            self.outputs[0].get_amount() != Amount::zero())
     }
 
-    pub fn to_vec(&self) -> YResult<Vec<u8>> {
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
         self.check()?;
         let mut bin = Vec::new();
         bin.write_all(self.id.to_vec().as_slice())?;

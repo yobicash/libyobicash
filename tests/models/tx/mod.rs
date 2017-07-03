@@ -1,30 +1,30 @@
 use chrono::Duration;
 use libyobicash::models::tx::*;
-use libyobicash::models::signers::YSigners;
-use libyobicash::models::input::YInput;
-use libyobicash::models::output::YOutput;
+use libyobicash::models::signers::Signers;
+use libyobicash::models::input::Input;
+use libyobicash::models::output::Output;
 use libyobicash::mining::por::*;
-use libyobicash::amount::YAmount;
+use libyobicash::amount::Amount;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
 
 #[test]
 fn new_tx_succ() {
-    let res = YTx::new();
+    let res = Tx::new();
     assert!(res.is_ok())
 }
 
 #[test]
 fn new_tx_check_succ() {
-   let tx = YTx::new().unwrap();
+   let tx = Tx::new().unwrap();
    let res = tx.check_pre_id();
    assert!(res.is_ok())
 }
 
 #[test]
 fn check_time_succ() {
-   let mut tx = YTx::new().unwrap();
+   let mut tx = Tx::new().unwrap();
    let d = Duration::hours(1);
    tx.time = tx.time.checked_sub_signed(d).unwrap();
    let res = tx.check_time();
@@ -33,7 +33,7 @@ fn check_time_succ() {
 
 #[test]
 fn check_time_fail() {
-   let mut tx = YTx::new().unwrap();
+   let mut tx = Tx::new().unwrap();
    let d = Duration::hours(1);
    tx.time = tx.time.checked_add_signed(d).unwrap();
    let res = tx.check_time();
@@ -42,7 +42,7 @@ fn check_time_fail() {
 
 #[test]
 fn check_version_succ() {
-    let mut tx = YTx::new().unwrap();
+    let mut tx = Tx::new().unwrap();
     if tx.version.major > 0 {
         tx.version.major = tx.version.major -1;
     } else if tx.version.minor > 0 {
@@ -58,7 +58,7 @@ fn check_version_succ() {
 
 #[test]
 fn check_version_fail() {
-    let mut tx = YTx::new().unwrap();
+    let mut tx = Tx::new().unwrap();
     tx.version.major = tx.version.major +1;
     let res = tx.check_version();
     assert!(res.is_err())
@@ -66,14 +66,14 @@ fn check_version_fail() {
 
 #[test]
 fn check_signers_succ() {
-    let mut tx = YTx::new().unwrap();
+    let mut tx = Tx::new().unwrap();
     let pk1 = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight1 = 10;
     let mut pk2 = pk1.to_owned();
     pk2[0] = pk2[0] % 2 + 1;
     let weight2 = 200;
     let threshold = weight2;
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     signers = signers
         .add_signer(&pk1, weight1).unwrap()
         .add_signer(&pk2, weight2).unwrap()
@@ -87,14 +87,14 @@ fn check_signers_succ() {
 
 #[test]
 fn check_signers_fail() {
-    let mut tx = YTx::new().unwrap();
+    let mut tx = Tx::new().unwrap();
     let pk1 = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight1 = 10;
     let mut pk2 = pk1.to_owned();
     pk2[0] = pk2[0] % 2 + 1;
     let weight2 = 200;
     let threshold = weight2;
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     signers = signers
         .add_signer(&pk1, weight1).unwrap()
         .add_signer(&pk2, weight2).unwrap()
@@ -106,13 +106,13 @@ fn check_signers_fail() {
 
 #[test]
 fn check_inputs_succ() {
-    let mut tx = YTx::new().unwrap();
+    let mut tx = Tx::new().unwrap();
     let len = 10;
     let max_idx = 100000;
     for _ in 0..len {
         let tx_id = randombytes(HASH_SIZE).unwrap();
         let idx = read_u32_from_seed(&tx_id, max_idx).unwrap();
-        let input = YInput::new(&tx_id, idx).unwrap();
+        let input = Input::new(&tx_id, idx).unwrap();
         input.check().unwrap();
         let res = tx.add_input(&input);
         assert!(res.is_ok());

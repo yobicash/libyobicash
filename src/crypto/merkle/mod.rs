@@ -3,10 +3,10 @@ use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
 
-pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
+pub fn merkle_root(leafs: &Vec<Hash>) -> Result<Hash> {
     let mut leafs_len = leafs.len();
     if leafs_len == 0 {
-        return Err(YErrorKind::InvalidLength.into());
+        return Err(ErrorKind::InvalidLength.into());
     }
     let mut base: Vec<Vec<u8>> = vec![];
     for d in leafs {
@@ -36,7 +36,7 @@ pub fn merkle_root(leafs: &Vec<Hash>) -> YResult<Hash> {
     Ok(r)
 }
 
-pub fn verify_merkle_root(leafs: &Vec<Hash>, root: &Hash) -> YResult<bool> {
+pub fn verify_merkle_root(leafs: &Vec<Hash>, root: &Hash) -> Result<bool> {
     check_hash_size(root)?;
     let mr = merkle_root(leafs)?;
     let ok = mr == *root;

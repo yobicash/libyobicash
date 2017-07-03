@@ -9,17 +9,17 @@ use std::num::Wrapping;
 pub const MIN_BITS: u32 = 1;
 pub const MAX_BITS: u32 = 256;
 
-pub fn check_target_bits(bits: u32) -> YResult<()> {
+pub fn check_target_bits(bits: u32) -> Result<()> {
     if bits < MIN_BITS {
-        return Err(YErrorKind::InvalidBits.into());
+        return Err(ErrorKind::InvalidBits.into());
     }
     if bits > MAX_BITS {
-        return Err(YErrorKind::InvalidBits.into());
+        return Err(ErrorKind::InvalidBits.into());
     }
     Ok(())
 }
 
-pub fn target_from_bits(bits: u32) -> YResult<Vec<u8>> {
+pub fn target_from_bits(bits: u32) -> Result<Vec<u8>> {
     check_target_bits(bits)?;
     let min_target_u32 = Wrapping(u32::max_value());
     let target_u32 = (min_target_u32 >> (bits as usize)).0;
@@ -33,7 +33,7 @@ pub fn target_from_bits(bits: u32) -> YResult<Vec<u8>> {
     Ok(v)
 }
 
-pub fn target_bits(target: &Vec<u8>) -> YResult<u32> {
+pub fn target_bits(target: &Vec<u8>) -> Result<u32> {
     check_hash_size(target)?;
     let t_sl = &target.as_slice()[0..8];
     let target_u32 = BigEndian::read_u32(t_sl);
@@ -41,10 +41,10 @@ pub fn target_bits(target: &Vec<u8>) -> YResult<u32> {
     Ok(bits)
 }
 
-pub fn retarget_bits(old_bits: u32, old_t: u64, new_t: u64, confirm_t: u32) -> YResult<u32> {
+pub fn retarget_bits(old_bits: u32, old_t: u64, new_t: u64, confirm_t: u32) -> Result<u32> {
     check_target_bits(old_bits)?;
     if new_t <= old_t {
-        return Err(YErrorKind::InvalidTime.into());
+        return Err(ErrorKind::InvalidTime.into());
     }
     let old_confirm_t = new_t - old_t;
     let mut bits = ((old_bits as u64) / old_confirm_t * (confirm_t as u64)) as u32;

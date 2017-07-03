@@ -12,7 +12,7 @@ use models::address::*;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
-pub struct YSigners {
+pub struct Signers {
     pub address: Address,
     pub len: u32,
     pub signers: Vec<PublicKey>,
@@ -20,8 +20,8 @@ pub struct YSigners {
     pub threshold: u32,
 }
 
-impl YSigners {
-    pub fn new() -> YResult<Self> {
+impl Signers {
+    pub fn new() -> Result<Self> {
         let len = 0;
         let signers: Vec<PublicKey> = Vec::new();
         let weights: Vec<u32> = Vec::new();
@@ -37,7 +37,7 @@ impl YSigners {
         bin.write_u32::<BigEndian>(threshold)?;
         let addr_hash = hash(bin.as_slice())?;
         let address = hash_to_address(&addr_hash)?;
-        Ok(YSigners {
+        Ok(Signers {
             address: address,
             len: len,
             signers: signers,
@@ -46,16 +46,16 @@ impl YSigners {
         })
     }
 
-    pub fn check_len(&self) -> YResult<()> {
+    pub fn check_len(&self) -> Result<()> {
         if self.len > MAX_LEN as u32 {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         Ok(())
     }
 
-    pub fn check_signers(&self) -> YResult<()> {
+    pub fn check_signers(&self) -> Result<()> {
         if self.signers.len() != self.len as usize {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         for i in 0..self.len as usize {
             check_public_key_size(&self.signers[i])?;
@@ -66,37 +66,37 @@ impl YSigners {
         Ok(())
     }
 
-    pub fn check_weights(&self) -> YResult<()> {
+    pub fn check_weights(&self) -> Result<()> {
         self.check_len()?;
         if self.weights.len() != self.len as usize {
-            return Err(YErrorKind::InvalidLength.into());
+            return Err(ErrorKind::InvalidLength.into());
         }
         Ok(())
     }
 
-    pub fn check_threshold(&self) -> YResult<()> {
+    pub fn check_threshold(&self) -> Result<()> {
         if self.weights_sum() < self.threshold {
-            return Err(YErrorKind::InvalidSum.into());
+            return Err(ErrorKind::InvalidSum.into());
         }
         Ok(())
     }
 
-    pub fn check_pre_address(&self) -> YResult<()> {
+    pub fn check_pre_address(&self) -> Result<()> {
         self.check_len()?;
         self.check_signers()?;
         self.check_weights()?;
         self.check_threshold()
     }
 
-    pub fn check_address(&self) -> YResult<()> {
+    pub fn check_address(&self) -> Result<()> {
         check_address(&self.address)?;
         if self.address != self.address()? {
-            return Err(YErrorKind::InvalidAddress.into());
+            return Err(ErrorKind::InvalidAddress.into());
         }
         Ok(())
     }
 
-    pub fn check(&self) -> YResult<()> {
+    pub fn check(&self) -> Result<()> {
         self.check_len()?;
         self.check_signers()?;
         self.check_weights()?;
@@ -104,7 +104,7 @@ impl YSigners {
         self.check_address()
     }
 
-    pub fn address(&self) -> YResult<Address> {
+    pub fn address(&self) -> Result<Address> {
         self.check_pre_address()?;
         let mut bin = Vec::new();
         bin.write_u32::<BigEndian>(self.len)?;
@@ -119,13 +119,13 @@ impl YSigners {
         hash_to_address(&addr_hash)
     }
 
-    pub fn add_signer(&mut self, pk: &PublicKey, weight: u32) -> YResult<Self> {
+    pub fn add_signer(&mut self, pk: &PublicKey, weight: u32) -> Result<Self> {
         check_public_key_size(pk)?;
         self.check_signers()?;
         self.check_weights()?;
         for i in 0..self.len as usize {
             if self.signers[i] == *pk {
-                return Err(YErrorKind::AlreadyFound.into());
+                return Err(ErrorKind::AlreadyFound.into());
             }
         }
         self.len += 1;
@@ -134,7 +134,7 @@ impl YSigners {
         Ok(self.to_owned())
     }
 
-    pub fn lookup_signer(&self, pk: &PublicKey) -> YResult<bool> {
+    pub fn lookup_signer(&self, pk: &PublicKey) -> Result<bool> {
         check_public_key_size(pk)?;
         self.check_signers()?;
         for i in 0..self.len as usize {
@@ -145,7 +145,7 @@ impl YSigners {
         Ok(false)
     }
 
-    pub fn find_signer_idx(&self, pk: &PublicKey) -> YResult<i32> {
+    pub fn find_signer_idx(&self, pk: &PublicKey) -> Result<i32> {
         check_public_key_size(pk)?;
         self.check_signers()?;
         for i in 0..self.len as usize {
@@ -156,7 +156,7 @@ impl YSigners {
         Ok(-1)
     }
 
-    pub fn find_signer_weight(&self, pk: &PublicKey) -> YResult<Option<u32>> {
+    pub fn find_signer_weight(&self, pk: &PublicKey) -> Result<Option<u32>> {
         check_public_key_size(pk)?;
         self.check_signers()?;
         let idx = self.find_signer_idx(pk)?;
@@ -176,19 +176,19 @@ impl YSigners {
         weights_sum 
     }
 
-    pub fn set_threshold(&mut self, threshold: u32) -> YResult<Self> {
+    pub fn set_threshold(&mut self, threshold: u32) -> Result<Self> {
         self.threshold = threshold;
         self.check_threshold()?;
         Ok(self.to_owned())
     }
 
-    pub fn set_address(&mut self) -> YResult<Self> {
+    pub fn set_address(&mut self) -> Result<Self> {
         self.check_pre_address()?;
         self.address = self.address()?;
         Ok(self.to_owned())
     }
 
-    pub fn verify_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> YResult<bool> {
+    pub fn verify_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> Result<bool> {
         check_hash_size(msg)?;
         for i in 0..sigs.len() {
             check_signature_size(&sigs[i])?;
@@ -206,7 +206,7 @@ impl YSigners {
         Ok(sum_weights >= self.threshold)
     }
 
-    pub fn check_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> YResult<()> {
+    pub fn check_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> Result<()> {
         check_hash_size(msg)?;
         for i in 0..sigs.len() {
             check_signature_size(&sigs[i])?;
@@ -216,12 +216,12 @@ impl YSigners {
         // in signers
         // it requires a sorting algo
         if !self.verify_signatures(msg, sigs)? {
-            return Err(YErrorKind::InvalidSignature.into());
+            return Err(ErrorKind::InvalidSignature.into());
         }
         Ok(())
     }
 
-    pub fn to_vec(&self) -> YResult<Vec<u8>> {
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
         self.check()?;
         let mut bin = Vec::new();
         bin.write_all(self.address.as_slice())?;

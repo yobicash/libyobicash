@@ -9,24 +9,24 @@ pub const ADDRESS_PREFIX: u8 = 7;
 
 pub const ADDRESS_SIZE: usize = HASH_SIZE + 1;
 
-pub fn hash_to_address(h: &Hash) -> YResult<Address> {
+pub fn hash_to_address(h: &Hash) -> Result<Address> {
     check_hash_size(h)?;
     let mut addr = vec![ADDRESS_PREFIX];
     addr.extend_from_slice(h.as_slice());
     Ok(addr)
 }
 
-pub fn check_address_size(addr: &Address) -> YResult<()> {
+pub fn check_address_size(addr: &Address) -> Result<()> {
     if addr.len() != ADDRESS_SIZE {
-        return Err(YErrorKind::InvalidSize.into())
+        return Err(ErrorKind::InvalidSize.into())
     }
     Ok(())
 }
 
-pub fn check_address(addr: &Address) -> YResult<()> {
+pub fn check_address(addr: &Address) -> Result<()> {
     check_address_size(addr)?;
     if addr[0] != ADDRESS_PREFIX {
-        return Err(YErrorKind::InvalidAddress.into())
+        return Err(ErrorKind::InvalidAddress.into())
     }
     Ok(())
 }

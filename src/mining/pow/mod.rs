@@ -9,34 +9,34 @@ pub const MIN_S_COST: u32 = 1;
 pub const MIN_T_COST: u32 = 1;
 pub const MIN_DELTA: u32 = 3;
 
-pub fn check_s_cost(s_cost: u32) -> YResult<()> {
+pub fn check_s_cost(s_cost: u32) -> Result<()> {
     if s_cost < MIN_S_COST {
-        return Err(YErrorKind::InvalidSCost.into());
+        return Err(ErrorKind::InvalidSCost.into());
     }
     Ok(())
 }
 
-pub fn check_t_cost(t_cost: u32) -> YResult<()> {
+pub fn check_t_cost(t_cost: u32) -> Result<()> {
     if t_cost < MIN_T_COST {
-        return Err(YErrorKind::InvalidTCost.into());
+        return Err(ErrorKind::InvalidTCost.into());
     }
     Ok(())
 }
 
-pub fn check_delta(delta: u32) -> YResult<()> {
+pub fn check_delta(delta: u32) -> Result<()> {
     if delta < MIN_DELTA {
-        return Err(YErrorKind::InvalidDelta.into());
+        return Err(ErrorKind::InvalidDelta.into());
     }
     Ok(())
 }
 
-pub fn balloon_nonce_from_u32(n: u32) -> YResult<Hash> {
+pub fn balloon_nonce_from_u32(n: u32) -> Result<Hash> {
     let mut buf = [0; 4];
     BigEndian::write_u32(&mut buf, n);
     hash(&buf[..])
 }
 
-pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delta: u32) -> YResult<Hash> {
+pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delta: u32) -> Result<Hash> {
         check_hash_size(seed)?;
         check_hash_size(nonce)?;
         check_s_cost(_s_cost)?;
@@ -48,7 +48,7 @@ pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delt
         let delta = _delta as usize;
 
         if delta < 3 {
-            return Err(YErrorKind::InvalidDelta.into());
+            return Err(ErrorKind::InvalidDelta.into());
         }
 
         let mut buf_it = Vec::new();
@@ -88,7 +88,7 @@ pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delt
         Ok(h)
 }
 
-pub fn balloon_mine(target_bits: u32, seed: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> YResult<Option<u32>> {
+pub fn balloon_mine(target_bits: u32, seed: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> Result<Option<u32>> {
     check_target_bits(target_bits)?;
     check_hash_size(seed)?;
     check_s_cost(s_cost)?;
@@ -115,7 +115,7 @@ pub fn balloon_mine(target_bits: u32, seed: &Hash, s_cost: u32, t_cost: u32, del
     Ok(nonce)
 }
 
-pub fn balloon_verify(target_bits: u32, seed: &Hash, nonce: u32, s_cost: u32, t_cost: u32, delta: u32) -> YResult<bool> {
+pub fn balloon_verify(target_bits: u32, seed: &Hash, nonce: u32, s_cost: u32, t_cost: u32, delta: u32) -> Result<bool> {
     check_target_bits(target_bits)?;
     check_hash_size(seed)?;
     check_s_cost(s_cost)?;
@@ -128,7 +128,7 @@ pub fn balloon_verify(target_bits: u32, seed: &Hash, nonce: u32, s_cost: u32, t_
     Ok(ok)
 }
 
-pub fn balloon_memory(s_cost: u32, t_cost: u32, delta: u32) -> YResult<u32> {
+pub fn balloon_memory(s_cost: u32, t_cost: u32, delta: u32) -> Result<u32> {
     check_s_cost(s_cost)?;
     check_t_cost(t_cost)?;
     check_delta(delta)?;

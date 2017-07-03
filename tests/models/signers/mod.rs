@@ -1,5 +1,5 @@
 use libyobicash::models::signers::*;
-use libyobicash::models::wallet::YWallet;
+use libyobicash::models::wallet::Wallet;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::sign::sign;
@@ -7,20 +7,20 @@ use libyobicash::crypto::utils::randombytes;
 
 #[test]
 fn new_signers_succ() {
-    let res = YSigners::new();
+    let res = Signers::new();
     assert!(res.is_ok())
 }
 
 #[test]
 fn new_signers_check_succ() {
-    let signers = YSigners::new().unwrap();
+    let signers = Signers::new().unwrap();
     let res = signers.check();
     assert!(res.is_ok())
 }
 
 #[test]
 fn signers_add_signer_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
@@ -30,7 +30,7 @@ fn signers_add_signer_succ() {
 
 #[test]
 fn signers_add_signer_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE + 1).unwrap();
     let weight = 0;
     let res = signers.add_signer(&pk, weight);
@@ -39,7 +39,7 @@ fn signers_add_signer_fail() {
 
 #[test]
 fn signers_lookup_signer_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
@@ -49,7 +49,7 @@ fn signers_lookup_signer_succ() {
 
 #[test]
 fn signers_lookup_signer_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let mut pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
@@ -60,7 +60,7 @@ fn signers_lookup_signer_fail() {
 
 #[test]
 fn signers_find_signer_idx_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
@@ -70,7 +70,7 @@ fn signers_find_signer_idx_succ() {
 
 #[test]
 fn signers_find_signer_idx_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let mut pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
@@ -81,7 +81,7 @@ fn signers_find_signer_idx_fail() {
 
 #[test]
 fn signers_find_signer_weight_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -91,7 +91,7 @@ fn signers_find_signer_weight_succ() {
 
 #[test]
 fn signers_find_signer_weight_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let mut pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -102,7 +102,7 @@ fn signers_find_signer_weight_fail() {
 
 #[test]
 fn check_weights_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -112,7 +112,7 @@ fn check_weights_succ() {
 
 #[test]
 fn check_weights_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -123,7 +123,7 @@ fn check_weights_fail() {
 
 #[test]
 fn set_threshold_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -133,7 +133,7 @@ fn set_threshold_succ() {
 
 #[test]
 fn set_threshold_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -143,7 +143,7 @@ fn set_threshold_fail() {
 
 #[test]
 fn set_address_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -154,7 +154,7 @@ fn set_address_succ() {
 
 #[test]
 fn set_address_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -166,7 +166,7 @@ fn set_address_fail() {
 
 #[test]
 fn check_succ() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -178,7 +178,7 @@ fn check_succ() {
 
 #[test]
 fn check_fail() {
-    let mut signers = YSigners::new().unwrap();
+    let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 10;
     signers.add_signer(&pk, weight).unwrap();
@@ -191,8 +191,8 @@ fn check_fail() {
 
 #[test]
 fn verify_signatures_succ() {
-    let mut signers = YSigners::new().unwrap();
-    let wallet = YWallet::new().unwrap();
+    let mut signers = Signers::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let weight = 10;
     signers.add_signer(&wallet.public_key, weight).unwrap();
     signers.set_threshold(weight-1).unwrap();
@@ -206,8 +206,8 @@ fn verify_signatures_succ() {
 
 #[test]
 fn verify_signatures_fail() {
-    let mut signers = YSigners::new().unwrap();
-    let wallet = YWallet::new().unwrap();
+    let mut signers = Signers::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let weight = 10;
     signers.add_signer(&wallet.public_key, weight).unwrap();
     signers.set_threshold(weight-1).unwrap();
@@ -222,8 +222,8 @@ fn verify_signatures_fail() {
 
 #[test]
 fn check_signatures_succ() {
-    let mut signers = YSigners::new().unwrap();
-    let wallet = YWallet::new().unwrap();
+    let mut signers = Signers::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let weight = 10;
     signers.add_signer(&wallet.public_key, weight).unwrap();
     signers.set_threshold(weight-1).unwrap();
@@ -237,8 +237,8 @@ fn check_signatures_succ() {
 
 #[test]
 fn check_signatures_fail() {
-    let mut signers = YSigners::new().unwrap();
-    let wallet = YWallet::new().unwrap();
+    let mut signers = Signers::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let weight = 10;
     signers.add_signer(&wallet.public_key, weight).unwrap();
     signers.set_threshold(weight-1).unwrap();

@@ -4,7 +4,7 @@ use std::io::Error as IOError;
 
 error_chain! {
     types {
-        YError, YErrorKind, YResultExt, YResult;
+        Error, ErrorKind, ResultExt, Result;
     }
 
     links {}

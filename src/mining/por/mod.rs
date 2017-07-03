@@ -14,15 +14,15 @@ pub const SEGMENT_SIZE: usize = 32;
 
 pub type Segment = Vec<u8>;
 
-pub fn check_segment_size(seg: &Segment) -> YResult<()> {
+pub fn check_segment_size(seg: &Segment) -> Result<()> {
     check_size(seg)?;
     if seg.len() > SEGMENT_SIZE {
-        return Err(YErrorKind::InvalidLength.into())
+        return Err(ErrorKind::InvalidLength.into())
     }
     Ok(())
 }
 
-pub fn check_segments(segs: &Vec<Segment>) -> YResult<()> {
+pub fn check_segments(segs: &Vec<Segment>) -> Result<()> {
     check_length(segs)?;
     for _ in 0..segs.len() {
         check_segment_size(&segs[0])?;
@@ -30,14 +30,14 @@ pub fn check_segments(segs: &Vec<Segment>) -> YResult<()> {
     Ok(())
 }
 
-pub fn read_u32_from_seed(seed: &Hash, max: u32) -> YResult<u32> {
+pub fn read_u32_from_seed(seed: &Hash, max: u32) -> Result<u32> {
     check_hash_size(seed)?;
     let mut c = Cursor::new(seed.to_owned());
     let n = c.read_u32::<BigEndian>()? % max;
     Ok(n)
 }
 
-pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> YResult<Vec<u32>> {
+pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> Result<Vec<u32>> {
     check_hash_size(seed)?;
     check_target_bits(bits)?;
     let mut idxs: Vec<u32> = Vec::new();
@@ -51,7 +51,7 @@ pub fn segments_idxs(seed: &Hash, bits: u32, len: u32) -> YResult<Vec<u32>> {
     Ok(idxs)
 }
 
-pub fn read_segment(seed: &Hash, data: &Vec<u8>) -> YResult<Segment> {
+pub fn read_segment(seed: &Hash, data: &Vec<u8>) -> Result<Segment> {
     check_hash_size(seed)?;
     check_size(data.as_slice())?;
     let len = data.len() as u32;
@@ -68,7 +68,7 @@ pub fn read_segment(seed: &Hash, data: &Vec<u8>) -> YResult<Segment> {
     Ok(seg)
 }
 
-pub fn segments_to_hashes(segs: &Vec<Segment>) -> YResult<Vec<Hash>> {
+pub fn segments_to_hashes(segs: &Vec<Segment>) -> Result<Vec<Hash>> {
     check_segments(segs)?;
     let mut hashes = Vec::new();
     for i in 0..segs.len() {
@@ -78,13 +78,13 @@ pub fn segments_to_hashes(segs: &Vec<Segment>) -> YResult<Vec<Hash>> {
     Ok(hashes)
 }
 
-pub fn segments_root(segs: &Vec<Segment>) -> YResult<Hash> {
+pub fn segments_root(segs: &Vec<Segment>) -> Result<Hash> {
     check_segments(segs)?;
     let leafs = segments_to_hashes(segs)?;
     merkle_root(&leafs)
 }
 
-pub fn verify_segments_root(segs: &Vec<Segment>, root: &Hash) -> YResult<bool> {
+pub fn verify_segments_root(segs: &Vec<Segment>, root: &Hash) -> Result<bool> {
     check_segments(segs)?;
     check_hash_size(root)?;
     let leafs = segments_to_hashes(segs)?;

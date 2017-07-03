@@ -3,24 +3,24 @@ use sodiumoxide::randombytes;
 use size::check_size;
 use errors::*;
 
-pub fn init() -> YResult<()> {
+pub fn init() -> Result<()> {
     if !_init() {
-        return Err(YErrorKind::NotThreadSafe.into());
+        return Err(ErrorKind::NotThreadSafe.into());
     }
     Ok(())
 }
 
-pub fn randombytes(len: usize) -> YResult<Vec<u8>> {
+pub fn randombytes(len: usize) -> Result<Vec<u8>> {
     init()?;
     let bin = randombytes::randombytes(len);
     Ok(bin)
 }
 
-pub fn check_binary_size(bin: &[u8], tlen: u32) -> YResult<()> {
+pub fn check_binary_size(bin: &[u8], tlen: u32) -> Result<()> {
     check_size(bin)?;
     let len = bin.len();
     if len != tlen as usize {
-        return Err(YErrorKind::InvalidLength.into());
+        return Err(ErrorKind::InvalidLength.into());
     }
     Ok(())
 }
