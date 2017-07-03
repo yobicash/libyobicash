@@ -344,7 +344,7 @@ impl YBlock {
     }
     
     pub fn coinbase_amount(&self) -> YResult<YAmount> {
-        let mem = balloon_memory(self.s_cost, self.t_cost, self.delta);
+        let mem = balloon_memory(self.s_cost, self.t_cost, self.delta)?;
         Ok(YAmount::new(mem))
     }
     
@@ -409,9 +409,8 @@ impl YBlock {
     }
 
     pub fn mine(&mut self) -> YResult<Self> {
-        let t = self._target()?;
         let s = self._seed()?;
-        if let Some(nonce) = balloon_mine(&t, &s, self.s_cost, self.t_cost, self.delta)? {
+        if let Some(nonce) = balloon_mine(self.bits, &s, self.s_cost, self.t_cost, self.delta)? {
             self.nonce = nonce;
         } else {
             return Err(YErrorKind::NotFound.into());
@@ -423,15 +422,9 @@ impl YBlock {
        target_from_bits(self.bits) 
     }
 
-    fn _nonce(&self) -> YResult<Vec<u8>> {
-        ballon_nonce(self.nonce)
-    }
-
     pub fn verify_mining(&self) -> YResult<bool> {
-        let t = self._target()?;
         let s = self._seed()?;
-        let n = self._nonce()?;
-        balloon_verify(&t, &s, &n, self.s_cost, self.t_cost, self.delta)
+        balloon_verify(self.bits, &s, self.nonce, self.s_cost, self.t_cost, self.delta)
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {

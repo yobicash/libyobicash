@@ -2,6 +2,8 @@ use byteorder::{ByteOrder, BigEndian};
 use errors::*;
 use crypto::hash::*;
 use mining::utils::*;
+use mining::targetting::check_target_bits;
+use mining::targetting::target_from_bits;
 
 pub const MIN_S_COST: u32 = 1;
 pub const MIN_T_COST: u32 = 1;
@@ -26,6 +28,12 @@ pub fn check_delta(delta: u32) -> YResult<()> {
         return Err(YErrorKind::InvalidDelta.into());
     }
     Ok(())
+}
+
+pub fn balloon_nonce_from_u32(n: u32) -> YResult<Hash> {
+    let mut buf = [0; 4];
+    BigEndian::write_u32(&mut buf, n);
+    hash(&buf[..])
 }
 
 pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delta: u32) -> YResult<Hash> {
@@ -80,14 +88,8 @@ pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delt
         Ok(h)
 }
 
-pub fn ballon_nonce(n: u32) -> YResult<Hash> {
-    let mut buf = [0; 4];
-    BigEndian::write_u32(&mut buf, n);
-    hash(&buf[..])
-}
-
-pub fn balloon_mine(target: &Hash, seed: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> YResult<Option<u32>> {
-    check_hash_size(target)?;
+pub fn balloon_mine(target_bits: u32, seed: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> YResult<Option<u32>> {
+    check_target_bits(target_bits)?;
     check_hash_size(seed)?;
     check_s_cost(s_cost)?;
     check_t_cost(t_cost)?;
@@ -95,9 +97,10 @@ pub fn balloon_mine(target: &Hash, seed: &Hash, s_cost: u32, t_cost: u32, delta:
 
     let mut i: u32 = 0;
     let mut nonce: Option<u32> = None;
+    let target = target_from_bits(target_bits)?;
 
     loop {
-        let _nonce = ballon_nonce(i)?;
+        let _nonce = balloon_nonce_from_u32(i)?;
         let digest = balloon_hash(seed, &_nonce, s_cost, t_cost, delta)?;
         if digest.to_owned() <= target.to_owned() {
             nonce = Some(i);
@@ -112,13 +115,23 @@ pub fn balloon_mine(target: &Hash, seed: &Hash, s_cost: u32, t_cost: u32, delta:
     Ok(nonce)
 }
 
-pub fn balloon_verify(target: &Hash, seed: &Hash, nonce: &Hash, s_cost: u32, t_cost: u32, delta: u32) -> YResult<bool> {
-    check_hash_size(target)?;
-    let res = balloon_hash(seed, nonce, s_cost, t_cost, delta)?;
+pub fn balloon_verify(target_bits: u32, seed: &Hash, nonce: u32, s_cost: u32, t_cost: u32, delta: u32) -> YResult<bool> {
+    check_target_bits(target_bits)?;
+    check_hash_size(seed)?;
+    check_s_cost(s_cost)?;
+    check_t_cost(t_cost)?;
+    check_delta(delta)?;
+    let _nonce = balloon_nonce_from_u32(nonce)?;
+    let res = balloon_hash(seed, &_nonce, s_cost, t_cost, delta)?;
+    let target = target_from_bits(target_bits)?;
     let ok = res <= target.to_owned();
     Ok(ok)
 }
 
-pub fn balloon_memory(s_cost: u32, t_cost: u32, delta: u32) -> u32 {
-    s_cost * ( 1 + (s_cost-1) * (1 + t_cost * (1 + 2 * delta)))
+pub fn balloon_memory(s_cost: u32, t_cost: u32, delta: u32) -> YResult<u32> {
+    check_s_cost(s_cost)?;
+    check_t_cost(t_cost)?;
+    check_delta(delta)?;
+    let mem = s_cost * ( 1 + (s_cost-1) * (1 + t_cost * (1 + 2 * delta)));
+    Ok(mem)
 }
