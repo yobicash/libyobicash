@@ -24,7 +24,8 @@ fn signers_add_signer_succ() {
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
     let weight = 0;
     signers.add_signer(&pk, weight).unwrap();
-    let res = signers.check_pre_address();
+    signers.set_address().unwrap();
+    let res = signers.check();
     assert!(res.is_ok())
 }
 
@@ -98,16 +99,6 @@ fn signers_find_signer_weight_fail() {
     pk = randombytes(PUBLICKEY_SIZE + 1).unwrap();
     let res = signers.find_signer_weight(&pk);
     assert!(res.is_err())
-}
-
-#[test]
-fn check_weights_succ() {
-    let mut signers = Signers::new().unwrap();
-    let pk = randombytes(PUBLICKEY_SIZE).unwrap();
-    let weight = 10;
-    signers.add_signer(&pk, weight).unwrap();
-    let res = signers.check_weights();
-    assert!(res.is_ok())
 }
 
 #[test]

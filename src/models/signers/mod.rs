@@ -50,7 +50,7 @@ impl Signers {
         self.len
     }
 
-    pub fn check_len(&self) -> Result<()> {
+    fn check_len(&self) -> Result<()> {
         if self.len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -110,7 +110,7 @@ impl Signers {
         Ok(self.to_owned())
     }
 
-    pub fn check_signers(&self) -> Result<()> {
+    fn check_signers(&self) -> Result<()> {
         if self.signers.len() != self.len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -135,7 +135,7 @@ impl Signers {
         weights_sum 
     }
 
-    pub fn check_weights(&self) -> Result<()> {
+    fn check_weights(&self) -> Result<()> {
         self.check_len()?;
         if self.weights.len() != self.len as usize {
             return Err(ErrorKind::InvalidLength.into());
@@ -153,14 +153,14 @@ impl Signers {
         Ok(self.to_owned())
     }
 
-    pub fn check_threshold(&self) -> Result<()> {
+    fn check_threshold(&self) -> Result<()> {
         if self.weights_sum() < self.threshold {
             return Err(ErrorKind::InvalidSum.into());
         }
         Ok(())
     }
 
-    pub fn check_pre_address(&self) -> Result<()> {
+    fn check_pre_address(&self) -> Result<()> {
         self.check_len()?;
         self.check_signers()?;
         self.check_weights()?;
@@ -192,7 +192,7 @@ impl Signers {
         Ok(self.to_owned())
     }
 
-    pub fn check_address(&self) -> Result<()> {
+    fn check_address(&self) -> Result<()> {
         check_address(&self.address)?;
         if self.address != self.calc_address()? {
             return Err(ErrorKind::InvalidAddress.into());
