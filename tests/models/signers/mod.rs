@@ -111,17 +111,6 @@ fn check_weights_succ() {
 }
 
 #[test]
-fn check_weights_fail() {
-    let mut signers = Signers::new().unwrap();
-    let pk = randombytes(PUBLICKEY_SIZE).unwrap();
-    let weight = 10;
-    signers.add_signer(&pk, weight).unwrap();
-    signers.weights = Vec::new();
-    let res = signers.check_weights();
-    assert!(res.is_err())
-}
-
-#[test]
 fn set_threshold_succ() {
     let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
@@ -153,18 +142,6 @@ fn set_address_succ() {
 }
 
 #[test]
-fn set_address_fail() {
-    let mut signers = Signers::new().unwrap();
-    let pk = randombytes(PUBLICKEY_SIZE).unwrap();
-    let weight = 10;
-    signers.add_signer(&pk, weight).unwrap();
-    signers.set_threshold(weight-1).unwrap();
-    signers.weights = Vec::new();
-    let res = signers.set_address();
-    assert!(res.is_err())
-}
-
-#[test]
 fn check_succ() {
     let mut signers = Signers::new().unwrap();
     let pk = randombytes(PUBLICKEY_SIZE).unwrap();
@@ -174,19 +151,6 @@ fn check_succ() {
     signers.set_address().unwrap();
     let res = signers.check();
     assert!(res.is_ok())
-}
-
-#[test]
-fn check_fail() {
-    let mut signers = Signers::new().unwrap();
-    let pk = randombytes(PUBLICKEY_SIZE).unwrap();
-    let weight = 10;
-    signers.add_signer(&pk, weight).unwrap();
-    signers.set_threshold(weight-1).unwrap();
-    signers.set_address().unwrap();
-    signers.address[1] = signers.address[1] % 2 + 1;
-    let res = signers.check();
-    assert!(res.is_err())
 }
 
 #[test]

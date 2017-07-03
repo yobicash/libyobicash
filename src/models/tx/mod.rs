@@ -295,7 +295,7 @@ impl Tx {
             return Err(ErrorKind::InvalidSize.into());
         }
         let mut tx = Tx::new()?;
-        let outp = Output::new(m, &to.address, data)?;
+        let outp = Output::new(m, &to.get_address(), data)?;
         tx.add_output(&outp)?.sign(w)?;
         tx.check()?;
         if !tx.is_coinbase()? {

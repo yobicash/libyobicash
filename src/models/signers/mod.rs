@@ -13,11 +13,11 @@ use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Signers {
-    pub address: Address,
-    pub len: u32,
-    pub signers: Vec<PublicKey>,
-    pub weights: Vec<u32>,
-    pub threshold: u32,
+    address: Address,
+    len: u32,
+    signers: Vec<PublicKey>,
+    weights: Vec<u32>,
+    threshold: u32,
 }
 
 impl Signers {
@@ -46,6 +46,10 @@ impl Signers {
         })
     }
 
+    pub fn get_len(&self) -> u32 {
+        self.len
+    }
+
     pub fn check_len(&self) -> Result<()> {
         if self.len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
@@ -53,85 +57,8 @@ impl Signers {
         Ok(())
     }
 
-    pub fn check_signers(&self) -> Result<()> {
-        if self.signers.len() != self.len as usize {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        for i in 0..self.len as usize {
-            check_public_key_size(&self.signers[i])?;
-        }
-        // NB: no check for signers uniqueness. TODO or not TODO?
-        // it requires a sorting algo, to be used also after every
-        // add
-        Ok(())
-    }
-
-    pub fn check_weights(&self) -> Result<()> {
-        self.check_len()?;
-        if self.weights.len() != self.len as usize {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        Ok(())
-    }
-
-    pub fn check_threshold(&self) -> Result<()> {
-        if self.weights_sum() < self.threshold {
-            return Err(ErrorKind::InvalidSum.into());
-        }
-        Ok(())
-    }
-
-    pub fn check_pre_address(&self) -> Result<()> {
-        self.check_len()?;
-        self.check_signers()?;
-        self.check_weights()?;
-        self.check_threshold()
-    }
-
-    pub fn check_address(&self) -> Result<()> {
-        check_address(&self.address)?;
-        if self.address != self.address()? {
-            return Err(ErrorKind::InvalidAddress.into());
-        }
-        Ok(())
-    }
-
-    pub fn check(&self) -> Result<()> {
-        self.check_len()?;
-        self.check_signers()?;
-        self.check_weights()?;
-        self.check_threshold()?;
-        self.check_address()
-    }
-
-    pub fn address(&self) -> Result<Address> {
-        self.check_pre_address()?;
-        let mut bin = Vec::new();
-        bin.write_u32::<BigEndian>(self.len)?;
-        for i in 0..self.len as usize {
-            bin.write_all(self.signers[i].as_slice())?;
-        }
-        for i in 0..self.len as usize {
-            bin.write_u32::<BigEndian>(self.weights[i])?;
-        }
-        bin.write_u32::<BigEndian>(self.threshold)?;
-        let addr_hash = hash(bin.as_slice())?;
-        hash_to_address(&addr_hash)
-    }
-
-    pub fn add_signer(&mut self, pk: &PublicKey, weight: u32) -> Result<Self> {
-        check_public_key_size(pk)?;
-        self.check_signers()?;
-        self.check_weights()?;
-        for i in 0..self.len as usize {
-            if self.signers[i] == *pk {
-                return Err(ErrorKind::AlreadyFound.into());
-            }
-        }
-        self.len += 1;
-        self.signers.push(pk.to_owned());
-        self.weights.push(weight);
-        Ok(self.to_owned())
+    pub fn get_signers(&self) -> Vec<PublicKey> {
+        self.signers.to_owned()
     }
 
     pub fn lookup_signer(&self, pk: &PublicKey) -> Result<bool> {
@@ -168,6 +95,38 @@ impl Signers {
         Ok(sig)
     }
 
+    pub fn add_signer(&mut self, pk: &PublicKey, weight: u32) -> Result<Self> {
+        check_public_key_size(pk)?;
+        self.check_signers()?;
+        self.check_weights()?;
+        for i in 0..self.len as usize {
+            if self.signers[i] == *pk {
+                return Err(ErrorKind::AlreadyFound.into());
+            }
+        }
+        self.len += 1;
+        self.signers.push(pk.to_owned());
+        self.weights.push(weight);
+        Ok(self.to_owned())
+    }
+
+    pub fn check_signers(&self) -> Result<()> {
+        if self.signers.len() != self.len as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        for i in 0..self.len as usize {
+            check_public_key_size(&self.signers[i])?;
+        }
+        // NB: no check for signers uniqueness. TODO or not TODO?
+        // it requires a sorting algo, to be used also after every
+        // add
+        Ok(())
+    }
+
+    pub fn get_weights(&self) -> Vec<u32> {
+        self.weights.to_owned()
+    }
+
     pub fn weights_sum(&self) -> u32 {
         let mut weights_sum = 0;
         for i in 0..self.weights.len() {
@@ -176,16 +135,92 @@ impl Signers {
         weights_sum 
     }
 
+    pub fn check_weights(&self) -> Result<()> {
+        self.check_len()?;
+        if self.weights.len() != self.len as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+
+    pub fn get_threshold(&self) -> u32 {
+        self.threshold
+    }
+
     pub fn set_threshold(&mut self, threshold: u32) -> Result<Self> {
         self.threshold = threshold;
         self.check_threshold()?;
         Ok(self.to_owned())
     }
 
+    pub fn check_threshold(&self) -> Result<()> {
+        if self.weights_sum() < self.threshold {
+            return Err(ErrorKind::InvalidSum.into());
+        }
+        Ok(())
+    }
+
+    pub fn check_pre_address(&self) -> Result<()> {
+        self.check_len()?;
+        self.check_signers()?;
+        self.check_weights()?;
+        self.check_threshold()
+    }
+
+    pub fn calc_address(&self) -> Result<Address> {
+        self.check_pre_address()?;
+        let mut bin = Vec::new();
+        bin.write_u32::<BigEndian>(self.len)?;
+        for i in 0..self.len as usize {
+            bin.write_all(self.signers[i].as_slice())?;
+        }
+        for i in 0..self.len as usize {
+            bin.write_u32::<BigEndian>(self.weights[i])?;
+        }
+        bin.write_u32::<BigEndian>(self.threshold)?;
+        let addr_hash = hash(bin.as_slice())?;
+        hash_to_address(&addr_hash)
+    }
+
+    pub fn get_address(&self) -> Address {
+        self.address.to_owned()
+    }
+
     pub fn set_address(&mut self) -> Result<Self> {
         self.check_pre_address()?;
-        self.address = self.address()?;
+        self.address = self.calc_address()?;
         Ok(self.to_owned())
+    }
+
+    pub fn check_address(&self) -> Result<()> {
+        check_address(&self.address)?;
+        if self.address != self.calc_address()? {
+            return Err(ErrorKind::InvalidAddress.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        self.check_len()?;
+        self.check_signers()?;
+        self.check_weights()?;
+        self.check_threshold()?;
+        self.check_address()
+    }
+
+    pub fn to_vec(&self) -> Result<Vec<u8>> {
+        self.check()?;
+        let mut bin = Vec::new();
+        bin.write_all(self.address.as_slice())?;
+        bin.write_u32::<BigEndian>(self.len)?;
+        for i in 0..self.len as usize {
+            bin.write_all(self.signers[i].as_slice())?;
+        }
+        for i in 0..self.len as usize {
+            bin.write_u32::<BigEndian>(self.weights[i])?;
+        }
+        bin.write_u32::<BigEndian>(self.threshold)?;
+        Ok(bin)
     }
 
     pub fn verify_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> Result<bool> {
@@ -219,20 +254,5 @@ impl Signers {
             return Err(ErrorKind::InvalidSignature.into());
         }
         Ok(())
-    }
-
-    pub fn to_vec(&self) -> Result<Vec<u8>> {
-        self.check()?;
-        let mut bin = Vec::new();
-        bin.write_all(self.address.as_slice())?;
-        bin.write_u32::<BigEndian>(self.len)?;
-        for i in 0..self.len as usize {
-            bin.write_all(self.signers[i].as_slice())?;
-        }
-        for i in 0..self.len as usize {
-            bin.write_u32::<BigEndian>(self.weights[i])?;
-        }
-        bin.write_u32::<BigEndian>(self.threshold)?;
-        Ok(bin)
     }
 }
