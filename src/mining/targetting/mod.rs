@@ -41,13 +41,13 @@ pub fn target_bits(target: &Vec<u8>) -> YResult<u32> {
     Ok(bits)
 }
 
-pub fn retarget_bits(old_bits: u32, old_t: u32, new_t: u32, confirm_t: u32) -> YResult<u32> {
+pub fn retarget_bits(old_bits: u32, old_t: u64, new_t: u64, confirm_t: u32) -> YResult<u32> {
     check_target_bits(old_bits)?;
     if new_t <= old_t {
         return Err(YErrorKind::InvalidTime.into());
     }
     let old_confirm_t = new_t - old_t;
-    let mut bits = old_bits / old_confirm_t * confirm_t;
+    let mut bits = ((old_bits as u64) / old_confirm_t * (confirm_t as u64)) as u32;
     if bits < MIN_BITS {
         bits = MIN_BITS;
     } else if bits > MAX_BITS {

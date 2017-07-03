@@ -60,6 +60,9 @@ impl YSigners {
         for i in 0..self.len as usize {
             check_public_key_size(&self.signers[i])?;
         }
+        // NB: no check for signers uniqueness. TODO or not TODO?
+        // it requires a sorting algo, to be used also after every
+        // add
         Ok(())
     }
 
@@ -208,6 +211,10 @@ impl YSigners {
         for i in 0..sigs.len() {
             check_signature_size(&sigs[i])?;
         }
+        // NB: no check for signatures uniqueness. TODO or not TODO?
+        // this is strictly dependent on (non-)enforced uniqueness
+        // in signers
+        // it requires a sorting algo
         if !self.verify_signatures(msg, sigs)? {
             return Err(YErrorKind::InvalidSignature.into());
         }

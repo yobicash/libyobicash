@@ -88,6 +88,9 @@ impl YTx {
         for i in 0..self.inputs_len as usize {
             self.inputs[i].check()?;
         }
+        // NB: no check for inputs uniqueness. TODO or not TODO?
+        // it requires a sorting algo, to be used also after every
+        // add
         Ok(())
     }
 
@@ -105,6 +108,9 @@ impl YTx {
         for i in 0..self.outputs_len as usize {
             self.outputs[i].check()?;
         }
+        // NB: no check for inputs uniqueness. TODO or not TODO?
+        // it requires a sorting algo, to be used also after every
+        // add
         Ok(())
     }
 
@@ -164,6 +170,60 @@ impl YTx {
         self.check_id()
     }
 
+    pub fn add_input(&mut self, inp: &YInput) -> YResult<Self> {
+        inp.check()?;
+        self.check_inputs()?;
+        for i in 0..self.inputs_len as usize {
+            if self.inputs[i] == *inp {
+                return Err(YErrorKind::AlreadyFound.into());
+            }
+        }
+        self.inputs_len += 1;
+        self.inputs.push(inp.to_owned());
+        Ok(self.to_owned())
+    }
+
+    pub fn add_output(&mut self, outp: &YOutput) -> YResult<Self> {
+        outp.check()?;
+        self.check_outputs()?;
+        for i in 0..self.outputs_len as usize {
+            if self.outputs[i] == *outp {
+                return Err(YErrorKind::AlreadyFound.into());
+            }
+        }
+        self.outputs_len += 1;
+        self.outputs.push(outp.to_owned());
+        Ok(self.to_owned())
+    }
+
+    pub fn outputs_amount(&self) -> YAmount {
+        let mut amount = YAmount::zero();
+        for i in 0..self.outputs_len as usize {
+            amount = amount.to_owned() + self.outputs[i].amount.to_owned();
+        }
+        amount
+    }
+
+    pub fn tot_amount(&self) -> YAmount {
+        self.outputs_amount() + self.fee.to_owned() 
+    }
+
+    pub fn sign(&mut self, w: &YWallet) -> YResult<Self> {
+        let checksum = self.checksum()?;
+        if !self.signers.lookup_signer(&w.public_key)? {
+            return Err(YErrorKind::NotFound.into());
+        }
+        let sig = sign(&checksum, &w.secret_key)?;
+        for i in 0..self.signatures_len as usize {
+            if sig == self.signatures[i] {
+                // NB: making signing idempotent
+                return Ok(self.to_owned())
+            }
+        }
+        self.signatures.push(sig);
+        Ok(self.to_owned())
+    }
+
     pub fn checksum(&self) -> YResult<Hash> {
         self.check_pre_checksum()?;
         let mut bin = Vec::new();
@@ -207,58 +267,6 @@ impl YTx {
     pub fn set_id(&mut self) -> YResult<Self> {
         self.check_pre_id()?;
         self.id = self.id()?;
-        Ok(self.to_owned())
-    }
-
-    pub fn add_input(&mut self, inp: &YInput) -> YResult<Self> {
-        self.check_inputs()?;
-        for i in 0..self.inputs_len as usize {
-            if self.inputs[i] == *inp {
-                return Err(YErrorKind::AlreadyFound.into());
-            }
-        }
-        self.inputs_len += 1;
-        self.inputs.push(inp.to_owned());
-        Ok(self.to_owned())
-    }
-
-    pub fn add_output(&mut self, outp: &YOutput) -> YResult<Self> {
-        self.check_outputs()?;
-        for i in 0..self.outputs_len as usize {
-            if self.outputs[i] == *outp {
-                return Err(YErrorKind::AlreadyFound.into());
-            }
-        }
-        self.outputs_len += 1;
-        self.outputs.push(outp.to_owned());
-        Ok(self.to_owned())
-    }
-
-    pub fn outputs_amount(&self) -> YAmount {
-        let mut amount = YAmount::zero();
-        for i in 0..self.outputs_len as usize {
-            amount = amount.to_owned() + self.outputs[i].amount.to_owned();
-        }
-        amount
-    }
-
-    pub fn tot_amount(&self) -> YAmount {
-        self.outputs_amount() + self.fee.to_owned() 
-    }
-
-    pub fn sign(&mut self, w: &YWallet) -> YResult<Self> {
-        let checksum = self.checksum()?;
-        if !self.signers.lookup_signer(&w.public_key)? {
-            return Err(YErrorKind::NotFound.into());
-        }
-        let sig = sign(&checksum, &w.secret_key)?;
-        for i in 0..self.signatures_len as usize {
-            if sig == self.signatures[i] {
-                // NB: making signing idempotent
-                return Ok(self.to_owned())
-            }
-        }
-        self.signatures.push(sig);
         Ok(self.to_owned())
     }
 

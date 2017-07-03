@@ -83,8 +83,8 @@ impl YBlock {
         let height = prev.height + 1;
         let prev_id = prev.id.to_owned();
         let prev_chain_amount = prev.chain_amount.to_owned();
-        let old_t = prev.time.timestamp() as u32;
-        let new_t = time.timestamp() as u32;
+        let old_t = prev.time.timestamp() as u64;
+        let new_t = time.timestamp() as u64;
         let bits = retarget_bits(prev.bits, old_t, new_t, confirm_t)?;
         Ok(YBlock {
             id: Hash::default(),
@@ -143,8 +143,8 @@ impl YBlock {
         if self.prev_chain_amount != prev.chain_amount {
             return Err(YErrorKind::InvalidPrevBlock.into());
         }
-        let old_t = prev.time.timestamp() as u32;
-        let new_t = self.time.timestamp() as u32;
+        let old_t = prev.time.timestamp() as u64;
+        let new_t = self.time.timestamp() as u64;
         if self.bits != retarget_bits(prev.bits, old_t, new_t, confirm_t)? {
             return Err(YErrorKind::InvalidPrevBlock.into());
         }
@@ -383,9 +383,9 @@ impl YBlock {
         Ok(self.to_owned())
     } 
 
-    pub fn set_bits(&mut self, old_bits: u32, old_t: u32, confirm_t: u32) -> YResult<Self> {
+    pub fn set_bits(&mut self, old_bits: u32, old_t: u64, confirm_t: u32) -> YResult<Self> {
         check_target_bits(old_bits)?;
-        let new_t = self.time.timestamp() as u32;
+        let new_t = self.time.timestamp() as u64;
         self.bits = retarget_bits(old_bits, old_t, new_t, confirm_t)?; 
         Ok(self.to_owned())
     } 
