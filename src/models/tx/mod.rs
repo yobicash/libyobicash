@@ -115,7 +115,7 @@ impl YTx {
         Ok(())
     }
 
-    fn _check_pre_checksum(&self) -> YResult<()> {
+    pub fn check_pre_checksum(&self) -> YResult<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -125,8 +125,47 @@ impl YTx {
         self.check_outputs()
     }
 
-    fn _checksum(&self) -> YResult<Hash> {
-        self._check_pre_checksum()?;
+    pub fn check_signatures_len(&self) -> YResult<()> {
+        if self.signatures_len > MAX_LEN as u32 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        if self.signatures_len != self.signatures.len() as u32 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+
+    pub fn check_signatures(&self) -> YResult<()> {
+        let cksm = self.checksum()?;
+        self.signers.check_signatures(&cksm, &self.signatures)
+    }
+
+    pub fn check_pre_id(&self) -> YResult<()> {
+        self.check_pre_checksum()?;
+        self.check_signatures()
+    }
+
+    pub fn check_id(&self) -> YResult<()> {
+        if self.id != self.id()? {
+            return Err(YErrorKind::InvalidId.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        self.check_time()?;
+        self.check_version()?;
+        self.check_signers()?;
+        self.check_inputs_len()?;
+        self.check_inputs()?;
+        self.check_outputs_len()?;
+        self.check_outputs()?;
+        self.check_signatures()?;
+        self.check_id()
+    }
+
+    pub fn checksum(&self) -> YResult<Hash> {
+        self.check_pre_checksum()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
@@ -143,28 +182,8 @@ impl YTx {
         hash(bin.as_slice())
     }
 
-    pub fn check_signatures_len(&self) -> YResult<()> {
-        if self.signatures_len > MAX_LEN as u32 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        if self.signatures_len != self.signatures.len() as u32 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        Ok(())
-    }
-
-    pub fn check_signatures(&self) -> YResult<()> {
-        let cksm = self._checksum()?;
-        self.signers.check_signatures(&cksm, &self.signatures)
-    }
-
-    fn _check_pre_id(&self) -> YResult<()> {
-        self._check_pre_checksum()?;
-        self.check_signatures()
-    }
-
-    fn _id(&self) -> YResult<Hash> {
-        self._check_pre_id()?;
+    pub fn id(&self) -> YResult<Hash> {
+        self.check_pre_id()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
@@ -186,28 +205,9 @@ impl YTx {
     }
 
     pub fn set_id(&mut self) -> YResult<Self> {
-        self._check_pre_id()?;
-        self.id = self._id()?;
+        self.check_pre_id()?;
+        self.id = self.id()?;
         Ok(self.to_owned())
-    }
-
-    pub fn check_id(&self) -> YResult<()> {
-        if self.id != self._id()? {
-            return Err(YErrorKind::InvalidId.into());
-        }
-        Ok(())
-    }
-
-    pub fn check(&self) -> YResult<()> {
-        self.check_time()?;
-        self.check_version()?;
-        self.check_signers()?;
-        self.check_inputs_len()?;
-        self.check_inputs()?;
-        self.check_outputs_len()?;
-        self.check_outputs()?;
-        self.check_signatures()?;
-        self.check_id()
     }
 
     pub fn add_input(&mut self, inp: &YInput) -> YResult<Self> {
@@ -247,7 +247,7 @@ impl YTx {
     }
 
     pub fn sign(&mut self, w: &YWallet) -> YResult<Self> {
-        let checksum = self._checksum()?;
+        let checksum = self.checksum()?;
         if !self.signers.lookup_signer(&w.public_key)? {
             return Err(YErrorKind::NotFound.into());
         }

@@ -202,7 +202,7 @@ impl YBlock {
         check_delta(self.delta)
     }
 
-    fn _check_pre_segments_seed(&self) -> YResult<()> {
+    pub fn check_pre_segments_seed(&self) -> YResult<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_prev_id()?;
@@ -216,8 +216,61 @@ impl YBlock {
         self.check_delta()
     }
 
-    fn _segments_seed(&self) -> YResult<Hash> {
-        self._check_pre_segments_seed()?;
+    pub fn check_segments_root_size(&self) -> YResult<()> {
+        check_hash_size(&self.segments_root)
+    }
+
+    pub fn check_segments_root(&self, segs: &Vec<Segment>) -> YResult<()> {
+        check_hash_size(&self.segments_root)?;
+        if !verify_segments_root(segs, &self.segments_root)? {
+            return Err(YErrorKind::InvalidSegmentsRoot.into());
+        }
+        Ok(())
+    }
+
+    pub fn check_pre_seed(&self) -> YResult<()> {
+        self.check_pre_segments_seed()?;
+        self.check_segments_root_size()
+    }
+
+    pub fn check_pow(&self) -> YResult<()> {
+        if !self.verify_pow()? {
+            return Err(YErrorKind::InvalidPOW.into())
+        }
+        Ok(())
+    }
+
+    pub fn check_pre_id(&self) -> YResult<()> {
+        self.check_pre_seed()?;
+        self.check_pow()
+    }
+
+    pub fn check_id(&self) -> YResult<()> {
+        if self.id != self.id()? {
+            return Err(YErrorKind::InvalidId.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        self.check_time()?;
+        self.check_version()?;
+        self.check_prev_id()?;
+        self.check_prev_chain_amount()?;
+        self.check_chain_amount()?;
+        self.check_coinbase()?;
+        self.check_tx_ids_len()?;
+        self.check_tx_ids()?;
+        self.check_s_cost()?;
+        self.check_t_cost()?;
+        self.check_delta()?;
+        self.check_segments_root_size()?;
+        self.check_pow()?;
+        self.check_id()
+    }
+
+    pub fn segments_seed(&self) -> YResult<Hash> {
+        self.check_pre_segments_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.id.to_vec().as_slice())?;
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -239,25 +292,8 @@ impl YBlock {
         Ok(h)
     }
 
-    pub fn check_segments_root_size(&self) -> YResult<()> {
-        check_hash_size(&self.segments_root)
-    }
-
-    pub fn check_segments_root(&self, segs: &Vec<Segment>) -> YResult<()> {
-        check_hash_size(&self.segments_root)?;
-        if !verify_segments_root(segs, &self.segments_root)? {
-            return Err(YErrorKind::InvalidSegmentsRoot.into());
-        }
-        Ok(())
-    }
-
-    fn _check_pre_seed(&self) -> YResult<()> {
-        self._check_pre_segments_seed()?;
-        self.check_segments_root_size()
-    }
-
-    fn _seed(&self) -> YResult<Hash> {
-        self._check_pre_seed()?;
+    pub fn seed(&self) -> YResult<Hash> {
+        self.check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
@@ -278,20 +314,8 @@ impl YBlock {
         hash(bin.as_slice())
     }
 
-    pub fn check_pow(&self) -> YResult<()> {
-        if !self.verify_mining()? {
-            return Err(YErrorKind::InvalidPOW.into())
-        }
-        Ok(())
-    }
-
-    fn _check_pre_id(&self) -> YResult<()> {
-        self._check_pre_seed()?;
-        self.check_pow()
-    }
-
-    fn _id(&self) -> YResult<Hash> {
-        self._check_pre_seed()?;
+    pub fn id(&self) -> YResult<Hash> {
+        self.check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
         bin.write_all(self.version.to_string().into_bytes().as_slice())?;
@@ -314,33 +338,9 @@ impl YBlock {
     }
 
     pub fn set_id(&mut self) -> YResult<Self> {
-        self._check_pre_id()?;
-        self.id = self._id()?;
+        self.check_pre_id()?;
+        self.id = self.id()?;
         Ok(self.to_owned())
-    }
-
-    pub fn check_id(&self) -> YResult<()> {
-        if self.id != self._id()? {
-            return Err(YErrorKind::InvalidId.into());
-        }
-        Ok(())
-    }
-
-    pub fn check(&self) -> YResult<()> {
-        self.check_time()?;
-        self.check_version()?;
-        self.check_prev_id()?;
-        self.check_prev_chain_amount()?;
-        self.check_chain_amount()?;
-        self.check_coinbase()?;
-        self.check_tx_ids_len()?;
-        self.check_tx_ids()?;
-        self.check_s_cost()?;
-        self.check_t_cost()?;
-        self.check_delta()?;
-        self.check_segments_root_size()?;
-        self.check_pow()?;
-        self.check_id()
     }
     
     pub fn coinbase_amount(&self) -> YResult<YAmount> {
@@ -391,7 +391,7 @@ impl YBlock {
     } 
 
     pub fn get_segments_blocks(&self) -> YResult<Vec<u32>> {
-        let seed = self._segments_seed()?;
+        let seed = self.segments_seed()?;
         segments_idxs(&seed, self.bits, self.height)
     }
 
@@ -409,7 +409,7 @@ impl YBlock {
     }
 
     pub fn mine(&mut self) -> YResult<Self> {
-        let s = self._seed()?;
+        let s = self.seed()?;
         if let Some(nonce) = balloon_mine(self.bits, &s, self.s_cost, self.t_cost, self.delta)? {
             self.nonce = nonce;
         } else {
@@ -418,17 +418,17 @@ impl YBlock {
         Ok(self.to_owned())
     }
 
-    fn _target(&self) -> YResult<Vec<u8>> {
+    pub fn target(&self) -> YResult<Vec<u8>> {
        target_from_bits(self.bits) 
     }
 
-    pub fn verify_mining(&self) -> YResult<bool> {
-        let s = self._seed()?;
+    pub fn verify_pow(&self) -> YResult<bool> {
+        let s = self.seed()?;
         balloon_verify(self.bits, &s, self.nonce, self.s_cost, self.t_cost, self.delta)
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {
-        self._check_pre_seed()?;
+        self.check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.id.to_vec().as_slice())?;
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;

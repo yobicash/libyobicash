@@ -78,6 +78,13 @@ impl YSigners {
         Ok(())
     }
 
+    pub fn check_pre_address(&self) -> YResult<()> {
+        self.check_len()?;
+        self.check_signers()?;
+        self.check_weights()?;
+        self.check_threshold()
+    }
+
     pub fn check_address(&self) -> YResult<()> {
         check_address(&self.address)?;
         if self.address != self.address()? {
@@ -92,13 +99,6 @@ impl YSigners {
         self.check_weights()?;
         self.check_threshold()?;
         self.check_address()
-    }
-
-    pub fn check_pre_address(&self) -> YResult<()> {
-        self.check_len()?;
-        self.check_signers()?;
-        self.check_weights()?;
-        self.check_threshold()
     }
 
     pub fn address(&self) -> YResult<Address> {
