@@ -120,15 +120,3 @@ fn check_inputs_succ() {
     let res = tx.check_inputs();
     assert!(res.is_ok())
 }
-
-#[test]
-fn check_inputs_fail() {
-    let mut tx = YTx::new().unwrap();
-    let tx_id = randombytes(HASH_SIZE).unwrap();
-    let max_idx = 100000;
-    let idx = read_u32_from_seed(&tx_id, max_idx).unwrap();
-    let mut input = YInput::new(&tx_id, idx).unwrap();
-    input.tx_id = randombytes(HASH_SIZE+1).unwrap();
-    let res = tx.add_input(&input);
-    assert!(res.is_err());
-}

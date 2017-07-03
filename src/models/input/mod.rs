@@ -6,8 +6,8 @@ use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct YInput {
-    pub tx_id: Hash,
-    pub idx: u32,
+    tx_id: Hash,
+    idx: u32,
 }
 
 impl YInput {
@@ -19,8 +19,31 @@ impl YInput {
         })
     }
 
-    pub fn check(&self) -> YResult<()> {
+    pub fn get_tx_id(&self) -> Hash {
+        self.tx_id.to_owned()
+    }
+
+    pub fn set_tx_id(&mut self, tx_id: &Hash) -> YResult<Self> {
+        check_hash_size(tx_id)?;
+        self.tx_id = tx_id.to_owned();
+        Ok(self.to_owned())
+    }
+
+    pub fn check_tx_id(&self) -> YResult<()> {
         check_hash_size(&self.tx_id)
+    }
+
+    pub fn get_idx(&self) -> u32 {
+        self.idx
+    }
+
+    pub fn set_idx(&mut self, idx: u32) -> Self {
+        self.idx = idx;
+        self.to_owned()
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        self.check_tx_id()
     }
 
     pub fn to_vec(&self) -> YResult<Vec<u8>> {

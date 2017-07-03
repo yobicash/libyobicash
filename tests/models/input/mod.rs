@@ -26,13 +26,3 @@ fn check_input_succ() {
     let res = input.check();
     assert!(res.is_ok())
 }
-
-#[test]
-fn check_input_fail() {
-    let tx_id = randombytes(HASH_SIZE).unwrap();
-    let idx = 10;
-    let mut input = YInput::new(&tx_id, idx).unwrap();
-    input.tx_id = randombytes(HASH_SIZE+1).unwrap();
-    let res = input.check();
-    assert!(res.is_err())
-}
