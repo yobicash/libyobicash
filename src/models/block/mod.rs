@@ -166,7 +166,7 @@ impl Block {
         if !self.coinbase.is_coinbase()? {
             return Err(ErrorKind::InvalidCoinbase.into())
         }
-        if self.coinbase.tot_amount().to_owned()
+        if self.coinbase.get_tot_amount().to_owned()
             != self.coinbase_amount()?.to_owned() {
             return Err(ErrorKind::InvalidCoinbase.into())
         }

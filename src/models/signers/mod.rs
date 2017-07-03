@@ -228,10 +228,10 @@ impl Signers {
         let mut sum_weights = 0;
         for i in 0..sigs.len() {
             for j in 0..self.len as usize {
-                let pk = self.signers[i].to_owned();
-                let sig = sigs[j].to_owned();
+                let sig = sigs[i].to_owned();
+                let pk = self.signers[j].to_owned();
                 if verify_signature(&sig, &msg, &pk)? {
-                    sum_weights += self.weights[i];
+                    sum_weights += self.weights[j];
                 }
             }
         }

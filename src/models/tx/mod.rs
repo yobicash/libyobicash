@@ -174,7 +174,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn outputs_amount(&self) -> Amount {
+    pub fn get_outputs_amount(&self) -> Amount {
         let mut amount = Amount::zero();
         for i in 0..self.outputs_len as usize {
             amount = amount.to_owned() + self.outputs[i].get_amount();
@@ -201,12 +201,12 @@ impl Tx {
         self.to_owned()
     }
 
-    pub fn tot_amount(&self) -> Amount {
-        self.outputs_amount() + self.fee.to_owned() 
+    pub fn get_tot_amount(&self) -> Amount {
+        self.get_outputs_amount() + self.fee.to_owned() 
     }
 
-    fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
-        if self.tot_amount() != inputs_amount.to_owned() {
+    pub fn check_balance(&self, inputs_amount: &Amount) -> Result<()> {
+        if self.get_tot_amount() != inputs_amount.to_owned() {
             return Err(ErrorKind::InvalidAmount.into());
         }
         Ok(())
@@ -266,11 +266,11 @@ impl Tx {
         let sig = sign(&checksum, &w.secret_key)?;
         for i in 0..self.signatures_len as usize {
             if sig == self.signatures[i] {
-                // NB: making signing idempotent
                 return Ok(self.to_owned())
             }
         }
         self.signatures.push(sig);
+        self.signatures_len += 1;
         Ok(self.to_owned())
     }
 
@@ -279,7 +279,7 @@ impl Tx {
         self.signers.verify_signatures(&cksm, &self.signatures)
     }
 
-    fn check_signatures(&self) -> Result<()> {
+    pub fn check_signatures(&self) -> Result<()> {
         let cksm = self.get_checksum()?;
         self.signers.check_signatures(&cksm, &self.signatures)
     }
@@ -336,6 +336,7 @@ impl Tx {
         self.check_inputs()?;
         self.check_outputs_len()?;
         self.check_outputs()?;
+        self.check_signatures_len()?;
         self.check_signatures()?;
         self.check_id()
     }
