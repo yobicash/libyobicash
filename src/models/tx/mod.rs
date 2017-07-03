@@ -12,7 +12,7 @@ use crypto::hash::check_hash_size;
 use crypto::sign::Signature;
 use crypto::sign::sign;
 use mining::por::Segment;
-use mining::por::segment_start_idx;
+use mining::por::read_u32_from_seed;
 use mining::por::read_segment;
 use amount::YAmount;
 use models::wallet::YWallet;
@@ -267,7 +267,7 @@ impl YTx {
         check_hash_size(seed)?;
         let v = self.to_vec()?;
         let size = v.len() as u32;
-        segment_start_idx(seed, size)
+        read_u32_from_seed(seed, size)
     }
 
     pub fn read_segment(&self, seed: &Hash) -> YResult<Segment> {

@@ -245,7 +245,10 @@ impl YBlock {
 
     pub fn check_segments_root(&self, segs: &Vec<Segment>) -> YResult<()> {
         check_hash_size(&self.segments_root)?;
-        check_segments_root(segs, &self.segments_root)
+        if !verify_segments_root(segs, &self.segments_root)? {
+            return Err(YErrorKind::InvalidSegmentsRoot.into());
+        }
+        Ok(())
     }
 
     fn _check_pre_seed(&self) -> YResult<()> {
