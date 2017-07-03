@@ -16,13 +16,6 @@ fn new_tx_succ() {
 }
 
 #[test]
-fn new_tx_check_succ() {
-   let tx = Tx::new().unwrap();
-   let res = tx.check_pre_id();
-   assert!(res.is_ok())
-}
-
-#[test]
 fn check_time_succ() {
     let mut tx = Tx::new().unwrap();
     let mut time = tx.get_time();
@@ -119,6 +112,4 @@ fn check_inputs_succ() {
         let res = tx.add_input(&input);
         assert!(res.is_ok());
     }
-    let res = tx.check_inputs();
-    assert!(res.is_ok())
 }

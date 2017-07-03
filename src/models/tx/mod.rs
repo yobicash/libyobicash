@@ -66,7 +66,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn check_time(&self) -> Result<()> {
+    fn check_time(&self) -> Result<()> {
         if self.time > Utc::now() {
             return Err(ErrorKind::InvalidTime.into())
         }
@@ -86,7 +86,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn check_version(&self) -> Result<()> {
+    fn check_version(&self) -> Result<()> {
         let v = Version::parse(VERSION)?;
         if self.version > v {
             return Err(ErrorKind::InvalidVersion.into());
@@ -104,7 +104,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn check_signers(&self) -> Result<()> {
+    fn check_signers(&self) -> Result<()> {
         self.signers.check()
     }
 
@@ -112,7 +112,7 @@ impl Tx {
         self.inputs_len
     }
 
-    pub fn check_inputs_len(&self) -> Result<()> {
+    fn check_inputs_len(&self) -> Result<()> {
         if self.inputs_len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
         }    
@@ -136,7 +136,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn check_inputs(&self) -> Result<()> {
+    fn check_inputs(&self) -> Result<()> {
         if self.inputs.len() != self.inputs_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -146,10 +146,10 @@ impl Tx {
         Ok(())
     }
 
-    pub fn check_outputs_len(&self) -> Result<()> {
+    fn check_outputs_len(&self) -> Result<()> {
         if self.outputs_len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
-        }    
+        }
         Ok(())
     }
 
@@ -182,7 +182,7 @@ impl Tx {
         amount
     }
 
-    pub fn check_outputs(&self) -> Result<()> {
+    fn check_outputs(&self) -> Result<()> {
         if self.outputs.len() != self.outputs_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -205,14 +205,14 @@ impl Tx {
         self.outputs_amount() + self.fee.to_owned() 
     }
 
-    pub fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
+    fn check_tot_amount(&self, inputs_amount: &Amount) -> Result<()> {
         if self.tot_amount() != inputs_amount.to_owned() {
             return Err(ErrorKind::InvalidAmount.into());
         }
         Ok(())
     }
 
-    pub fn check_pre_checksum(&self) -> Result<()> {
+    fn check_pre_checksum(&self) -> Result<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_signers()?;
@@ -244,7 +244,7 @@ impl Tx {
         self.signatures_len
     }
 
-    pub fn check_signatures_len(&self) -> Result<()> {
+    fn check_signatures_len(&self) -> Result<()> {
         if self.signatures_len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -279,12 +279,12 @@ impl Tx {
         self.signers.verify_signatures(&cksm, &self.signatures)
     }
 
-    pub fn check_signatures(&self) -> Result<()> {
+    fn check_signatures(&self) -> Result<()> {
         let cksm = self.get_checksum()?;
         self.signers.check_signatures(&cksm, &self.signatures)
     }
 
-    pub fn check_pre_id(&self) -> Result<()> {
+    fn check_pre_id(&self) -> Result<()> {
         self.check_pre_checksum()?;
         self.check_signatures()
     }
@@ -321,7 +321,7 @@ impl Tx {
         Ok(self.to_owned())
     }
 
-    pub fn check_id(&self) -> Result<()> {
+    fn check_id(&self) -> Result<()> {
         if self.id != self.calc_id()? {
             return Err(ErrorKind::InvalidId.into());
         }
