@@ -143,9 +143,6 @@ impl Tx {
         for i in 0..self.inputs_len as usize {
             self.inputs[i].check()?;
         }
-        // NB: no check for inputs uniqueness. TODO or not TODO?
-        // it requires a sorting algo, to be used also after every
-        // add
         Ok(())
     }
 
@@ -192,9 +189,6 @@ impl Tx {
         for i in 0..self.outputs_len as usize {
             self.outputs[i].check()?;
         }
-        // NB: no check for inputs uniqueness. TODO or not TODO?
-        // it requires a sorting algo, to be used also after every
-        // add
         Ok(())
     }
 
