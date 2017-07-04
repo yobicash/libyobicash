@@ -72,10 +72,10 @@ fn set_segments_root_succ() {}
 fn set_segments_root_fail() {}
 
 #[test]
-fn check_segments_root_succ() {}
+fn check_por_succ() {}
 
 #[test]
-fn check_segments_root_fail() {}
+fn check_por_fail() {}
 
 #[test]
 fn mine_succ() {}

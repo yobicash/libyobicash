@@ -18,7 +18,6 @@ use models::tx::Tx;
 use std::io::Write;
 use std::cmp;
 
-// NB: the coinbase is spendable right after its emission
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Block {
     pub id: Hash,
@@ -27,13 +26,13 @@ pub struct Block {
     pub height: u32,
     pub prev_id: Hash,
     pub prev_chain_amount: Amount,
+    pub s_cost: u32,
+    pub t_cost: u32,
+    pub delta: u32,
     pub coinbase_amount: Amount,
     pub coinbase: Tx,
     pub tx_ids_len: u32,
     pub tx_ids: Vec<Hash>,
-    pub s_cost: u32,
-    pub t_cost: u32,
-    pub delta: u32,
     pub bits: u32,
     pub segments_root: Hash,
     pub nonce: u32,
@@ -69,13 +68,13 @@ impl Block {
             height: 0,
             prev_id: Hash::default(),
             prev_chain_amount: Amount::zero(),
+            s_cost: MIN_S_COST,
+            t_cost: MIN_T_COST,
+            delta: MIN_DELTA,
             coinbase_amount: Amount::zero(),
             coinbase: coinbase,
             tx_ids_len: 0,
             tx_ids: Vec::new(),
-            s_cost: MIN_S_COST,
-            t_cost: MIN_T_COST,
-            delta: MIN_DELTA,
             bits: MIN_BITS,
             segments_root: Hash::new(),
             nonce: 0,
@@ -94,7 +93,7 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn check_time(&self) -> Result<()> {
+    fn check_time(&self) -> Result<()> {
         if self.time > Utc::now() {
             return Err(ErrorKind::InvalidTime.into());
         }
@@ -114,7 +113,7 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn check_version(&self) -> Result<()> {
+    fn check_version(&self) -> Result<()> {
         let v = Version::parse(VERSION)?;
         if self.version > v {
             return Err(ErrorKind::InvalidVersion.into());
@@ -130,7 +129,7 @@ impl Block {
         self.prev_id.to_owned()
     }
 
-    pub fn check_prev_id(&self) -> Result<()> {
+    fn check_prev_id(&self) -> Result<()> {
         check_hash_size(&self.prev_id)
     }
 
@@ -138,12 +137,54 @@ impl Block {
         self.prev_chain_amount.to_owned()
     }
 
-    pub fn check_prev_chain_amount(&self) -> Result<()> {
+    fn check_prev_chain_amount(&self) -> Result<()> {
         if self.prev_chain_amount.to_owned() == Amount::zero() &&
             self.height != 0 {
             return Err(ErrorKind::InvalidAmount.into())
         }
         Ok(())
+    }
+
+    pub fn get_s_cost(&self) -> u32 {
+        self.s_cost
+    }
+
+    pub fn set_s_cost(&mut self, s_cost: u32) -> Result<Self> {
+        check_s_cost(s_cost)?;
+        self.s_cost = s_cost;
+        Ok(self.to_owned())
+    }
+
+    fn check_s_cost(&self) -> Result<()> {
+        check_s_cost(self.s_cost)
+    }
+
+    pub fn get_t_cost(&self) -> u32 {
+        self.t_cost
+    }
+
+    pub fn set_t_cost(&mut self, t_cost: u32) -> Result<Self> {
+        check_t_cost(t_cost)?;
+        self.t_cost = t_cost;
+        Ok(self.to_owned())
+    }
+
+    fn check_t_cost(&self) -> Result<()> {
+        check_t_cost(self.t_cost)
+    }
+
+    pub fn get_delta(&self) -> u32 {
+        self.delta
+    }
+
+    pub fn set_delta(&mut self, delta: u32) -> Result<Self> {
+        check_delta(delta)?;
+        self.delta = delta;
+        Ok(self.to_owned())
+    }
+
+    fn check_delta(&self) -> Result<()> {
+        check_delta(self.delta)
     }
 
     pub fn get_coinbase_amount(&self) -> Amount {
@@ -155,7 +196,7 @@ impl Block {
         Ok(Amount::new(mem))
     }
 
-    pub fn check_coinbase_amount(&self) -> Result<()> {
+    fn check_coinbase_amount(&self) -> Result<()> {
         if self.coinbase_amount.to_owned() == Amount::zero() {
             return Err(ErrorKind::InvalidAmount.into())
         }
@@ -178,7 +219,7 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn check_coinbase(&self) -> Result<()> {
+    fn check_coinbase(&self) -> Result<()> {
         self.coinbase.check()?;
         self.coinbase.check_coinbase()?;
         if self.coinbase.get_tot_amount().to_owned()
@@ -192,7 +233,7 @@ impl Block {
         self.tx_ids_len
     }
 
-    pub fn check_tx_ids_len(&self) -> Result<()> {
+    fn check_tx_ids_len(&self) -> Result<()> {
         if self.tx_ids_len > MAX_LEN as u32 {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -215,7 +256,7 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn check_tx_ids(&self) -> Result<()> {
+    fn check_tx_ids(&self) -> Result<()> {
         if self.tx_ids.len() != self.tx_ids_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -223,48 +264,6 @@ impl Block {
             check_hash_size(&self.tx_ids[i])?;
         }
         Ok(())
-    }
-
-    pub fn get_s_cost(&self) -> u32 {
-        self.s_cost
-    }
-
-    pub fn set_s_cost(&mut self, s_cost: u32) -> Result<Self> {
-        check_s_cost(s_cost)?;
-        self.s_cost = s_cost;
-        Ok(self.to_owned())
-    }
-
-    pub fn check_s_cost(&self) -> Result<()> {
-        check_s_cost(self.s_cost)
-    }
-
-    pub fn get_t_cost(&self) -> u32 {
-        self.t_cost
-    }
-
-    pub fn set_t_cost(&mut self, t_cost: u32) -> Result<Self> {
-        check_t_cost(t_cost)?;
-        self.t_cost = t_cost;
-        Ok(self.to_owned())
-    }
-
-    pub fn check_t_cost(&self) -> Result<()> {
-        check_t_cost(self.t_cost)
-    }
-
-    pub fn get_delta(&self) -> u32 {
-        self.delta
-    }
-
-    pub fn set_delta(&mut self, delta: u32) -> Result<Self> {
-        check_delta(delta)?;
-        self.delta = delta;
-        Ok(self.to_owned())
-    }
-
-    pub fn check_delta(&self) -> Result<()> {
-        check_delta(self.delta)
     }
 
     pub fn get_bits(&self) -> u32 {
@@ -282,22 +281,22 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn check_bits(&self) -> Result<()> {
+    fn check_bits(&self) -> Result<()> {
         check_target_bits(self.bits)
     }
 
-    pub fn check_pre_segments_seed(&self) -> Result<()> {
+    fn check_pre_segments_seed(&self) -> Result<()> {
         self.check_time()?;
         self.check_version()?;
         self.check_prev_id()?;
         self.check_prev_chain_amount()?;
+        self.check_s_cost()?;
+        self.check_t_cost()?;
+        self.check_delta()?;
         self.check_coinbase_amount()?;
         self.check_coinbase()?;
         self.check_tx_ids_len()?;
         self.check_tx_ids()?;
-        self.check_s_cost()?;
-        self.check_t_cost()?;
-        self.check_delta()?;
         self.check_bits()
     }
 
@@ -306,7 +305,7 @@ impl Block {
     }
 
     pub fn get_segments_blocks(&self) -> Result<Vec<u32>> {
-        let seed = self.segments_seed()?;
+        let seed = self.calc_segments_seed()?;
         segments_idxs(&seed, self.bits, self.height)
     }
 
@@ -323,11 +322,11 @@ impl Block {
         verify_segments_root(segs, &self.segments_root)
     }
 
-    pub fn check_segments_root_size(&self) -> Result<()> {
+    fn check_segments_root(&self) -> Result<()> {
         check_hash_size(&self.segments_root)
     }
 
-    pub fn check_segments_root(&self, segs: &Vec<Segment>) -> Result<()> {
+    pub fn check_por(&self, segs: &Vec<Segment>) -> Result<()> {
         check_hash_size(&self.segments_root)?;
         if !verify_segments_root(segs, &self.segments_root)? {
             return Err(ErrorKind::InvalidSegmentsRoot.into());
@@ -335,12 +334,12 @@ impl Block {
         Ok(())
     }
 
-    pub fn check_pre_seed(&self) -> Result<()> {
+    fn check_pre_seed(&self) -> Result<()> {
         self.check_pre_segments_seed()?;
-        self.check_segments_root_size()
+        self.check_segments_root()
     }
 
-    pub fn seed(&self) -> Result<Hash> {
+    pub fn calc_seed(&self) -> Result<Hash> {
         self.check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -348,22 +347,22 @@ impl Block {
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
         bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.s_cost)?;
+        bin.write_u32::<BigEndian>(self.t_cost)?;
+        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_all(self.coinbase_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
             bin.write_all(self.tx_ids[i].to_vec().as_slice())?;
         }
-        bin.write_u32::<BigEndian>(self.s_cost)?;
-        bin.write_u32::<BigEndian>(self.t_cost)?;
-        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_u32::<BigEndian>(self.bits)?;
         bin.write_all(self.segments_root.to_vec().as_slice())?;
         hash(bin.as_slice())
     }
 
     pub fn mine(&mut self) -> Result<Self> {
-        let s = self.seed()?;
+        let s = self.calc_seed()?;
         if let Some(nonce) = balloon_mine(self.bits, &s, self.s_cost, self.t_cost, self.delta)? {
             self.nonce = nonce;
         } else {
@@ -373,7 +372,7 @@ impl Block {
     }
 
     pub fn verify_pow(&self) -> Result<bool> {
-        let s = self.seed()?;
+        let s = self.calc_seed()?;
         balloon_verify(self.bits, &s, self.nonce, self.s_cost, self.t_cost, self.delta)
     }
 
@@ -384,7 +383,7 @@ impl Block {
         Ok(())
     }
 
-    pub fn check_pre_id(&self) -> Result<()> {
+    fn check_pre_id(&self) -> Result<()> {
         self.check_pre_seed()?;
         self.check_pow()
     }
@@ -393,7 +392,7 @@ impl Block {
         self.id.to_owned()
     }
 
-    pub fn id(&self) -> Result<Hash> {
+    pub fn calc_id(&self) -> Result<Hash> {
         self.check_pre_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -401,23 +400,23 @@ impl Block {
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
         bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.s_cost)?;
+        bin.write_u32::<BigEndian>(self.t_cost)?;
+        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_all(self.coinbase_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
             bin.write_all(self.tx_ids[i].to_vec().as_slice())?;
         }
-        bin.write_u32::<BigEndian>(self.s_cost)?;
-        bin.write_u32::<BigEndian>(self.t_cost)?;
-        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_u32::<BigEndian>(self.bits)?;
         bin.write_all(self.segments_root.to_vec().as_slice())?;
         bin.write_u32::<BigEndian>(self.nonce)?;
         hash(bin.as_slice())
     }
 
-    pub fn check_id(&self) -> Result<()> {
-        if self.id != self.id()? {
+    fn check_id(&self) -> Result<()> {
+        if self.id != self.calc_id()? {
             return Err(ErrorKind::InvalidId.into());
         }
         Ok(())
@@ -428,20 +427,20 @@ impl Block {
         self.check_version()?;
         self.check_prev_id()?;
         self.check_prev_chain_amount()?;
+        self.check_s_cost()?;
+        self.check_t_cost()?;
+        self.check_delta()?;
         self.check_coinbase_amount()?;
         self.check_coinbase()?;
         self.check_tx_ids_len()?;
         self.check_tx_ids()?;
-        self.check_s_cost()?;
-        self.check_t_cost()?;
-        self.check_delta()?;
         self.check_bits()?;
-        self.check_segments_root_size()?;
+        self.check_segments_root()?;
         self.check_pow()?;
         self.check_id()
     }
 
-    pub fn segments_seed(&self) -> Result<Hash> {
+    pub fn calc_segments_seed(&self) -> Result<Hash> {
         self.check_pre_segments_seed()?;
         let mut bin = Vec::new();
         bin.write_all(self.id.to_vec().as_slice())?;
@@ -450,15 +449,15 @@ impl Block {
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
         bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.s_cost)?;
+        bin.write_u32::<BigEndian>(self.t_cost)?;
+        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_all(self.coinbase_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
             bin.write_all(self.tx_ids[i].to_vec().as_slice())?;
         }
-        bin.write_u32::<BigEndian>(self.s_cost)?;
-        bin.write_u32::<BigEndian>(self.t_cost)?;
-        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_u32::<BigEndian>(self.bits)?;
         let h = hash(bin.as_slice())?;
         Ok(h)
@@ -466,7 +465,7 @@ impl Block {
 
     pub fn finalize(&mut self) -> Result<Self> {
         self.check_pre_id()?;
-        self.id = self.id()?;
+        self.id = self.calc_id()?;
         Ok(self.to_owned())
     }
 
@@ -479,15 +478,15 @@ impl Block {
         bin.write_u32::<BigEndian>(self.height)?;
         bin.write_all(self.prev_id.as_slice())?;
         bin.write_all(self.prev_chain_amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.s_cost)?;
+        bin.write_u32::<BigEndian>(self.t_cost)?;
+        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_all(self.coinbase_amount.to_vec().as_slice())?;
         bin.write_all(self.coinbase.to_vec()?.as_slice())?;
         bin.write_u32::<BigEndian>(self.tx_ids_len)?;
         for i in 0..self.tx_ids_len as usize {
             bin.write_all(self.tx_ids[i].to_vec().as_slice())?;
         }
-        bin.write_u32::<BigEndian>(self.s_cost)?;
-        bin.write_u32::<BigEndian>(self.t_cost)?;
-        bin.write_u32::<BigEndian>(self.delta)?;
         bin.write_u32::<BigEndian>(self.bits)?;
         bin.write_all(self.segments_root.to_vec().as_slice())?;
         bin.write_u32::<BigEndian>(self.nonce)?;
@@ -516,13 +515,13 @@ impl Block {
             height: height,
             prev_id: prev_id,
             prev_chain_amount: prev_chain_amount,
+            s_cost: s_cost,
+            t_cost: t_cost,
+            delta: delta,
             coinbase_amount: coinbase_amount,
             coinbase: coinbase,
             tx_ids_len: 0,
             tx_ids: Vec::new(),
-            s_cost: s_cost,
-            t_cost: t_cost,
-            delta: delta,
             bits: bits,
             segments_root: Hash::new(),
             nonce: 0,
