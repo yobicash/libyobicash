@@ -177,7 +177,7 @@ impl Tx {
     pub fn get_outputs_amount(&self) -> Amount {
         let mut amount = Amount::zero();
         for i in 0..self.outputs_len as usize {
-            amount = amount.to_owned() + self.outputs[i].get_amount();
+            amount = amount + self.outputs[i].get_amount();
         }
         amount
     }
@@ -385,7 +385,7 @@ impl Tx {
             .add_signer(&wallet.public_key, 1)?
             .finalize()?;
         signers.check()?;
-        let mut tx = Tx::new()?
+        let tx = Tx::new()?
             .add_output(&outp)?
             .set_signers(&signers)?
             .sign(wallet)?
