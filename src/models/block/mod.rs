@@ -11,7 +11,7 @@ use crypto::hash::check_hash_size;
 use mining::targetting::*;
 use mining::por::*;
 use mining::pow::*;
-use amount::Amount;
+use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
 use models::tx::Tx;

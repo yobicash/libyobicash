@@ -16,7 +16,6 @@ pub mod length;
 pub mod size;
 pub mod crypto;
 pub mod mining;
-pub mod amount;
 pub mod models;
 
 pub const NAME: &str = "Yobicash";

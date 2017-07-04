@@ -13,7 +13,7 @@ use crypto::sign::Signature;
 use crypto::sign::sign;
 use mining::por::Segment;
 use mining::por::read_segment;
-use amount::Amount;
+use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
 use models::input::Input;

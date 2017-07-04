@@ -1,4 +1,4 @@
-use libyobicash::amount::*;
+use libyobicash::models::amount::*;
 
 #[test]
 fn add_amounts_succ() {

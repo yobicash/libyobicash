@@ -3,7 +3,7 @@ use errors::*;
 use size::MAX_SIZE;
 use crypto::hash::Hash;
 use crypto::hash::hash;
-use amount::Amount;
+use models::amount::Amount;
 use models::address::Address;
 use models::address::check_address;
 use std::io::Write;

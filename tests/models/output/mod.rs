@@ -1,6 +1,6 @@
 use libyobicash::models::output::*;
-use libyobicash::amount::Amount;
 use libyobicash::models::address::hash_to_address;
+use libyobicash::models::amount::Amount;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
 
