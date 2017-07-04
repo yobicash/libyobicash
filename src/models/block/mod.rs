@@ -163,9 +163,7 @@ impl Block {
 
     pub fn check_coinbase(&self) -> Result<()> {
         self.coinbase.check()?;
-        if !self.coinbase.is_coinbase()? {
-            return Err(ErrorKind::InvalidCoinbase.into())
-        }
+        self.coinbase.check_coinbase()?;
         if self.coinbase.get_tot_amount().to_owned()
             != self.coinbase_amount()?.to_owned() {
             return Err(ErrorKind::InvalidCoinbase.into())

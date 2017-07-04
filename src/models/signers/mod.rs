@@ -183,7 +183,7 @@ impl Signers {
         self.address.to_owned()
     }
 
-    pub fn set_address(&mut self) -> Result<Self> {
+    pub fn finalize(&mut self) -> Result<Self> {
         self.check_pre_address()?;
         self.address = self.calc_address()?;
         Ok(self.to_owned())

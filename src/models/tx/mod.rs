@@ -315,7 +315,7 @@ impl Tx {
         hash(bin.as_slice())
     }
 
-    pub fn set_id(&mut self) -> Result<Self> {
+    pub fn finalize(&mut self) -> Result<Self> {
         self.check_pre_id()?;
         self.id = self.calc_id()?;
         Ok(self.to_owned())
@@ -371,30 +371,43 @@ impl Tx {
         read_segment(seed, &v)
     }
 
-    pub fn coinbase(w: &Wallet, to: &Signers, m: &Amount, data: &Vec<u8>) -> Result<Self> {
+    pub fn coinbase(wallet: &Wallet, to: &Signers, amount: &Amount, data: &Vec<u8>) -> Result<Self> {
         to.check()?;
         let size = data.len() as u32;
         if size > MAX_SIZE as u32 {
             return Err(ErrorKind::InvalidSize.into());
         }
-        if Amount::new(size) != m.to_owned() {
+        if size >0 && Amount::new(size) != amount.to_owned() {
             return Err(ErrorKind::InvalidSize.into());
         }
-        let mut tx = Tx::new()?;
-        let outp = Output::new(m, &to.get_address(), data)?;
-        tx.add_output(&outp)?.sign(w)?;
+        let outp = Output::new(amount, &to.get_address(), data)?;
+        let signers = Signers::new()?
+            .add_signer(&wallet.public_key, 1)?
+            .finalize()?;
+        signers.check()?;
+        let mut tx = Tx::new()?
+            .add_output(&outp)?
+            .set_signers(&signers)?
+            .sign(wallet)?
+            .finalize()?;
         tx.check()?;
-        if !tx.is_coinbase()? {
-            return Err(ErrorKind::InvalidCoinbase.into());
-        }
         Ok(tx)
     }
 
     pub fn is_coinbase(&self) -> Result<bool> {
         self.check()?;
-        let ok = self.inputs_len == 0 &&
+        let ok = self.signers.get_len() == 1 &&
+            self.signers.get_threshold() == 0 &&
+            self.inputs_len == 0 &&
             self.outputs_len == 1 &&
             self.outputs[0].get_amount() != Amount::zero();
         Ok(ok)
+    }
+
+    pub fn check_coinbase(&self) -> Result<()> {
+        if !self.is_coinbase()? {
+            return Err(ErrorKind::InvalidCoinbase.into())
+        }
+        Ok(())
     }
 }

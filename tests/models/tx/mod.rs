@@ -77,7 +77,7 @@ fn set_signers_succ() {
         .add_signer(&pk1, weight1).unwrap()
         .add_signer(&pk2, weight2).unwrap()
         .set_threshold(threshold).unwrap()
-        .set_address().unwrap();
+        .finalize().unwrap();
     signers.check().unwrap();
     let res = tx.set_signers(&signers);
     assert!(res.is_ok())
@@ -175,7 +175,6 @@ fn check_balance_succ() {
 
 #[test]
 fn sign_succ() {
-    let mut tx = Tx::new().unwrap();
     let seed1 = randombytes(HASH_SIZE).unwrap();
     let wallet1 = Wallet::from_seed(&seed1).unwrap();
     let weight1 = 10;
@@ -192,18 +191,19 @@ fn sign_succ() {
         .add_signer(&wallet2.public_key, weight2).unwrap()
         .add_signer(&wallet3.public_key, weight3).unwrap()
         .set_threshold(threshold).unwrap()
-        .set_address().unwrap();
+        .finalize().unwrap();
     signers.check().unwrap();
-    tx.set_signers(&signers).unwrap();
-    tx.sign(&wallet1).unwrap();
-    tx.sign(&wallet3).unwrap();
+    let tx = Tx::new().unwrap()
+        .set_signers(&signers).unwrap()
+        .sign(&wallet1).unwrap()
+        .sign(&wallet3).unwrap()
+        .finalize().unwrap();
     let res = tx.check_signatures();
     assert!(res.is_ok())
 }
 
 #[test]
 fn sign_fail() {
-    let mut tx = Tx::new().unwrap();
     let seed1 = randombytes(HASH_SIZE).unwrap();
     let wallet1 = Wallet::from_seed(&seed1).unwrap();
     let weight1 = 10;
@@ -220,17 +220,18 @@ fn sign_fail() {
         .add_signer(&wallet2.public_key, weight2).unwrap()
         .add_signer(&wallet3.public_key, weight3).unwrap()
         .set_threshold(threshold).unwrap()
-        .set_address().unwrap();
+        .finalize().unwrap();
     signers.check().unwrap();
-    tx.set_signers(&signers).unwrap();
-    tx.sign(&wallet1).unwrap();
-    tx.sign(&wallet2).unwrap();
-    let res = tx.check_signatures();
+    let res = Tx::new().unwrap()
+        .set_signers(&signers).unwrap()
+        .sign(&wallet1).unwrap()
+        .sign(&wallet2).unwrap()
+        .finalize();
     assert!(res.is_err())
 }
 
 #[test]
-fn id_succ() {
+fn finalize_succ() {
     let mut tx = Tx::new().unwrap();
     let len = 10;
     let max_idx = 100000;
@@ -241,8 +242,6 @@ fn id_succ() {
         input.check().unwrap();
         tx.add_input(&input).unwrap();
     }
-    let inputs_amount = 110;
-    let mut tot_amount = Amount::new(0);
     for _ in 0..len {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
@@ -271,13 +270,13 @@ fn id_succ() {
         .add_signer(&wallet2.public_key, weight2).unwrap()
         .add_signer(&wallet3.public_key, weight3).unwrap()
         .set_threshold(threshold).unwrap()
-        .set_address().unwrap();
+        .finalize().unwrap();
     signers.check().unwrap();
     tx.set_signers(&signers).unwrap();
     tx.sign(&wallet1).unwrap();
     tx.sign(&wallet3).unwrap();
     tx.check_signatures().unwrap();
-    let res = tx.set_id();
+    let res = tx.finalize();
     assert!(res.is_ok())
 }
 
@@ -293,8 +292,6 @@ fn check_succ() {
         input.check().unwrap();
         tx.add_input(&input).unwrap();
     }
-    let inputs_amount = 110;
-    let mut tot_amount = Amount::new(0);
     for _ in 0..len {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
@@ -323,13 +320,64 @@ fn check_succ() {
         .add_signer(&wallet2.public_key, weight2).unwrap()
         .add_signer(&wallet3.public_key, weight3).unwrap()
         .set_threshold(threshold).unwrap()
-        .set_address().unwrap();
+        .finalize().unwrap();
     signers.check().unwrap();
-    tx.set_signers(&signers).unwrap();
-    tx.sign(&wallet1).unwrap();
-    tx.sign(&wallet3).unwrap();
-    tx.check_signatures().unwrap();
-    tx.set_id().unwrap();
-    let res = tx.check();
+    let res = tx.set_signers(&signers).unwrap()
+        .sign(&wallet1).unwrap()
+        .sign(&wallet3).unwrap()
+        .finalize().unwrap()
+        .check();
     assert!(res.is_ok())
+}
+
+#[test]
+fn new_coinbase_succ() {
+    let wallet = Wallet::new().unwrap();
+    let seed1 = randombytes(HASH_SIZE).unwrap();
+    let wallet1 = Wallet::from_seed(&seed1).unwrap();
+    let weight1 = 10;
+    let seed2 = randombytes(HASH_SIZE).unwrap();
+    let wallet2 = Wallet::from_seed(&seed2).unwrap();
+    let weight2 = 50;
+    let seed3 = randombytes(HASH_SIZE).unwrap();
+    let wallet3 = Wallet::from_seed(&seed3).unwrap();
+    let weight3 = 100;
+    let threshold = weight1 + weight3;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet1.public_key, weight1).unwrap()
+        .add_signer(&wallet2.public_key, weight2).unwrap()
+        .add_signer(&wallet3.public_key, weight3).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let c_amount = Amount::new(10);
+    let res = Tx::coinbase(&wallet, &to, &c_amount, &Vec::new());
+    assert!(res.is_ok())
+}
+
+#[test]
+fn new_coinbase_fail() {
+    let wallet = Wallet::new().unwrap();
+    let seed1 = randombytes(HASH_SIZE).unwrap();
+    let wallet1 = Wallet::from_seed(&seed1).unwrap();
+    let weight1 = 10;
+    let seed2 = randombytes(HASH_SIZE).unwrap();
+    let wallet2 = Wallet::from_seed(&seed2).unwrap();
+    let weight2 = 50;
+    let seed3 = randombytes(HASH_SIZE).unwrap();
+    let wallet3 = Wallet::from_seed(&seed3).unwrap();
+    let weight3 = 100;
+    let threshold = weight1 + weight3;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet1.public_key, weight1).unwrap()
+        .add_signer(&wallet2.public_key, weight2).unwrap()
+        .add_signer(&wallet3.public_key, weight3).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let c_amount = Amount::new(10);
+    let res = Tx::coinbase(&wallet, &to, &c_amount, &vec![1]);
+    assert!(res.is_err())
 }
