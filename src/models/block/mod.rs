@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use VERSION;
 use errors::*;
 use length::MAX_LEN;
+use size::check_size;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
@@ -215,6 +216,8 @@ impl Block {
     }
     
     pub fn set_coinbase(&mut self, w: &Wallet, to: &Signers, data: &Vec<u8>) -> Result<Self> {
+        to.check()?;
+        check_size(data)?;
         self.coinbase = Tx::coinbase(w, to, &self.calc_coinbase_amount()?, data)?;
         Ok(self.to_owned())
     }
@@ -245,7 +248,7 @@ impl Block {
     }
 
     pub fn add_tx_id(&mut self, tx_id: &Hash) -> Result<Self> {
-        self.check_tx_ids()?;
+        check_hash_size(tx_id)?;
         for i in 0..self.tx_ids_len as usize {
             if self.tx_ids[i] == *tx_id {
                 return Err(ErrorKind::AlreadyFound.into());
@@ -314,6 +317,7 @@ impl Block {
     }
 
     pub fn set_segments_root(&mut self, segs: &Vec<Segment>) -> Result<Self> {
+        check_segments(&segs)?;
         self.segments_root = segments_root(segs)?;
         Ok(self.to_owned())
     }

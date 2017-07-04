@@ -1,6 +1,7 @@
 use byteorder::{BigEndian, WriteBytesExt};
 use errors::*;
 use size::MAX_SIZE;
+use size::check_size;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use models::amount::Amount;
@@ -20,6 +21,7 @@ pub struct Output {
 impl Output {
     pub fn new(amount: &Amount, to: &Address, data: &Vec<u8>) -> Result<Self> {
         check_address(to)?;
+        check_size(data)?;
         let size = data.len() as u32;
         if size > MAX_SIZE as u32 {
             return Err(ErrorKind::InvalidSize.into());
