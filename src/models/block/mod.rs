@@ -4,8 +4,8 @@ use semver::Version;
 use chrono::{DateTime, Utc};
 use VERSION;
 use errors::*;
-use length::MAX_LEN;
 use size::check_size;
+use length::MAX_LEN;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
@@ -225,8 +225,8 @@ impl Block {
     pub fn set_coinbase(&mut self, w: &Wallet, to: &Signers, data: &Vec<u8>) -> Result<Self> {
         to.check()?;
         check_size(data)?;
-        let len = data.len() as u32;
-        if len > 0 && Amount::new(len) != self.get_coinbase_amount() {
+        let size = data.len() as u32;
+        if size > 0 && Amount::new(size) != self.get_coinbase_amount() {
             return Err(ErrorKind::InvalidSize.into());
         }
         self.coinbase = Tx::coinbase(w, to, &self.calc_coinbase_amount()?, data)?;

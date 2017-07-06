@@ -1,41 +1,29 @@
-use byteorder::{BigEndian, WriteBytesExt};
 use errors::*;
-use size::MAX_SIZE;
-use size::check_size;
-use crypto::hash::Hash;
-use crypto::hash::hash;
 use models::amount::Amount;
 use models::address::Address;
 use models::address::check_address;
+use models::content::Content;
 use std::io::Write;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Output {
     to: Address,
     amount: Amount,
-    size: u32,
-    checksum: Hash,
-    data: Vec<u8>,
+    content: Content,
 }
 
 impl Output {
-    pub fn new(amount: &Amount, to: &Address, data: &Vec<u8>) -> Result<Self> {
+    pub fn new(amount: &Amount, to: &Address, content: &Content) -> Result<Self> {
         check_address(to)?;
-        check_size(data)?;
-        let size = data.len() as u32;
-        if size > MAX_SIZE as u32 {
-            return Err(ErrorKind::InvalidSize.into());
-        }
+        content.check()?;
+        let size = content.get_size();
         if size > 0 && Amount::new(size) != amount.to_owned() {
                 return Err(ErrorKind::InvalidAmount.into());
         }
-        let checksum = hash(data.to_owned().as_slice())?;
         Ok(Output {
             to: to.to_owned(),
             amount: amount.to_owned(),
-            size: size,
-            checksum: checksum, // NB: including hash(b"")
-            data: data.to_owned(),
+            content: content.to_owned(),
         })
     }
 
@@ -53,34 +41,27 @@ impl Output {
         self.amount.to_owned()
     }
 
-    pub fn get_size(&self) -> u32 {
-        self.size
+    pub fn set_amount(&mut self, amount: &Amount) -> Result<Self> {
+        self.amount = amount.to_owned();
+        Ok(self.to_owned())
     }
 
-    pub fn get_checksum(&self) -> Result<Hash> {
-        hash(self.data.to_owned().as_slice())
+    pub fn get_content(&self) -> Content {
+        self.content.to_owned()
     }
 
-    pub fn get_data(&self) -> Vec<u8> {
-        self.data.to_owned()
+    pub fn set_content(&mut self, content: &Content) -> Result<Self> {
+        content.check()?;
+        self.content = content.to_owned();
+        Ok(self.to_owned())
     }
 
     pub fn check(&self) -> Result<()> {
         check_address(&self.to)?;
-        let size = self.data.len() as u32;
-        if size > MAX_SIZE as u32 {
-            return Err(ErrorKind::InvalidSize.into());
-        }
-        if self.size != size {
-            return Err(ErrorKind::InvalidSize.into());
-        }
-        if size > 0 &&
-            Amount::new(self.size) != self.amount.to_owned() {
+        self.content.check()?;
+        let size = self.content.get_size();
+        if size > 0 && Amount::new(size) != self.amount.to_owned() {
             return Err(ErrorKind::InvalidAmount.into());
-        }
-        let checksum = self.get_checksum()?;
-        if self.checksum != checksum {
-            return Err(ErrorKind::InvalidChecksum.into());
         }
         Ok(())
     }
@@ -89,10 +70,8 @@ impl Output {
         self.check()?;
         let mut bin = Vec::new();
         bin.write_all(self.to.as_slice())?;
-        bin.write_u32::<BigEndian>(self.size)?;
         bin.write_all(self.amount.to_vec().as_slice())?;
-        // NB: wo\ data: it will/could be dropped later
-        bin.write_all(self.checksum.to_vec().as_slice())?;
+        bin.write_all(self.content.to_vec()?.as_slice())?;
         Ok(bin)
     }
 }

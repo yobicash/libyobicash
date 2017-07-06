@@ -5,6 +5,7 @@ use libyobicash::models::address::hash_to_address;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::input::Input;
 use libyobicash::models::amount::Amount;
+use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
 use libyobicash::mining::por::*;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
@@ -120,6 +121,7 @@ fn add_input_succ() {
 #[test]
 fn add_output_succ() {
     let mut tx = Tx::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let len = 10;
     let max_amount = 100;
     let mut get_outputs_amount = Amount::new(0);
@@ -129,7 +131,8 @@ fn add_output_succ() {
         let amount = random_u32_from_seed(&seed, max_amount).unwrap();
         let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
-        let output = Output::new(&_amount, &to, &data).unwrap();
+        let content = Content::new(&wallet, &data).unwrap();
+        let output = Output::new(&_amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
@@ -150,6 +153,7 @@ fn set_fee_succ() {
 #[test]
 fn check_balance_succ() {
     let mut tx = Tx::new().unwrap();
+    let wallet = Wallet::new().unwrap();
     let len = 10;
     let inputs_amount = 110;
     let mut tot_amount = Amount::new(0);
@@ -159,7 +163,8 @@ fn check_balance_succ() {
         let amount = 10;
         let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
-        let output = Output::new(&_amount, &to, &data).unwrap();
+        let content = Content::new(&wallet, &data).unwrap();
+        let output = Output::new(&_amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
@@ -232,6 +237,7 @@ fn sign_fail() {
 
 #[test]
 fn finalize_succ() {
+    let wallet = Wallet::new().unwrap();
     let mut tx = Tx::new().unwrap();
     let len = 10;
     let max_idx = 100000;
@@ -248,7 +254,8 @@ fn finalize_succ() {
         let amount = 10;
         let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
-        let output = Output::new(&_amount, &to, &data).unwrap();
+        let content = Content::new(&wallet, &data).unwrap();
+        let output = Output::new(&_amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }
@@ -282,6 +289,7 @@ fn finalize_succ() {
 
 #[test]
 fn check_succ() {
+    let wallet = Wallet::new().unwrap();
     let mut tx = Tx::new().unwrap();
     let len = 10;
     let max_idx = 100000;
@@ -298,7 +306,8 @@ fn check_succ() {
         let amount = 10;
         let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
-        let output = Output::new(&_amount, &to, &data).unwrap();
+        let content = Content::new(&wallet, &data).unwrap();
+        let output = Output::new(&_amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }

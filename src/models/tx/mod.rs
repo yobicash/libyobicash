@@ -4,9 +4,8 @@ use semver::Version;
 use chrono::{DateTime, Utc};
 use VERSION;
 use errors::*;
-use length::MAX_LEN;
-use size::MAX_SIZE;
 use size::check_size;
+use length::MAX_LEN;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
@@ -18,6 +17,7 @@ use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
 use models::input::Input;
+use models::content::Content;
 use models::output::Output;
 use std::io::Write;
 
@@ -376,13 +376,11 @@ impl Tx {
         to.check()?;
         check_size(data)?;
         let size = data.len() as u32;
-        if size > MAX_SIZE as u32 {
+        if size > 0 && Amount::new(size) != amount.to_owned() {
             return Err(ErrorKind::InvalidSize.into());
         }
-        if size >0 && Amount::new(size) != amount.to_owned() {
-            return Err(ErrorKind::InvalidSize.into());
-        }
-        let outp = Output::new(amount, &to.get_address(), data)?;
+        let content = Content::new(wallet, data)?;
+        let outp = Output::new(amount, &to.get_address(), &content)?;
         let signers = Signers::new()?
             .add_signer(&wallet.public_key, 1)?
             .finalize()?;
