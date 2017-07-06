@@ -6,9 +6,7 @@ use VERSION;
 use errors::*;
 use size::check_size;
 use length::MAX_LEN;
-use crypto::hash::Hash;
-use crypto::hash::hash;
-use crypto::hash::check_hash_size;
+use crypto::hash::*;
 use crypto::sign::Signature;
 use crypto::sign::sign;
 use mining::por::Segment;
@@ -20,6 +18,7 @@ use models::input::Input;
 use models::content::Content;
 use models::output::Output;
 use std::io::Write;
+use std::iter::repeat;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Tx {
@@ -40,8 +39,9 @@ impl Tx {
     pub fn new() -> Result<Self> {
         let version = Version::parse(VERSION)?;
         let signers = Signers::new()?;
+        let id: Vec<u8> = repeat(0u8).take(HASH_SIZE).collect();
         Ok(Tx {
-            id: Hash::default(),
+            id: id,
             time: Utc::now(),
             version: version,
             signers: signers,

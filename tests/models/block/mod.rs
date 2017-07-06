@@ -9,6 +9,7 @@ use libyobicash::mining::por::*;
 use libyobicash::mining::pow::*;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
+use std::iter::repeat;
 
 #[test]
 fn new_block_succ() {
@@ -107,6 +108,22 @@ fn set_delta_fail() {
     let mut block = Block::new().unwrap();
     let delta = MIN_DELTA - 1;
     let res = block.set_delta(delta);
+    assert!(res.is_err())
+}
+
+#[test]
+fn set_bits_succ() {
+    let mut block = Block::new().unwrap();
+    let bits = MIN_BITS;
+    let res = block.set_bits(bits);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn set_bits_fail() {
+    let mut block = Block::new().unwrap();
+    let bits = MAX_BITS + 1;
+    let res = block.set_bits(bits);
     assert!(res.is_err())
 }
 
@@ -222,28 +239,201 @@ fn set_segments_root_fail() {
 }
 
 #[test]
-fn check_por_succ() {}
+fn pow_succ() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut block = Block::new().unwrap();
+    block = block
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    block = block.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    block = block.set_bits(bits).unwrap();
+    let res = block.pow();
+    assert!(res.is_ok())
+}
 
 #[test]
-fn check_por_fail() {}
+fn finalize_succ() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut block = Block::new().unwrap();
+    block = block
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    block = block.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    block = block
+        .set_bits(bits).unwrap()
+        .pow().unwrap();
+    let res = block.finalize();
+    assert!(res.is_ok())
+}
 
 #[test]
-fn mine_succ() {}
+fn check_succ() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut block = Block::new().unwrap();
+    block = block
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    block = block.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    block = block
+        .set_bits(bits).unwrap()
+        .pow().unwrap()
+        .finalize().unwrap();
+    let res = block.check();
+    assert!(res.is_ok())
+}
 
 #[test]
-fn mine_fail() {}
+fn from_prev_succ() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut prev = Block::new().unwrap();
+    prev = prev
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    prev = prev.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    prev = prev
+        .set_bits(bits).unwrap()
+        .pow().unwrap()
+        .finalize().unwrap();
+    let confirm_t = 20;
+    let res = Block::from_prev(&prev, confirm_t);
+    assert!(res.is_ok())
+}
 
 #[test]
-fn check_pow_succ() {}
+fn from_prev_fail() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut prev = Block::new().unwrap();
+    prev = prev
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    prev = prev.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    prev = prev
+        .set_bits(bits).unwrap()
+        .pow().unwrap()
+        .finalize().unwrap();
+    prev = prev.set_bits(bits + 1).unwrap();
+    let confirm_t = 20;
+    let res = Block::from_prev(&prev, confirm_t);
+    assert!(res.is_err())
+}
 
 #[test]
-fn from_prev_succ() {}
+fn check_prev_succ() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut prev = Block::new().unwrap();
+    prev = prev
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    prev = prev.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    prev = prev
+        .set_bits(bits).unwrap()
+        .pow().unwrap()
+        .finalize().unwrap();
+    let confirm_t = 20;
+    let block = Block::from_prev(&prev, confirm_t).unwrap();
+    let res = block.check_prev(&prev, confirm_t);
+    assert!(res.is_ok())
+}
 
 #[test]
-fn from_prev_fail() {}
-
-#[test]
-fn check_prev_succ() {}
-
-#[test]
-fn check_prev_fail() {}
+fn check_prev_fail() {
+    let seed = repeat(0u8).take(HASH_SIZE).collect();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 1;
+    let threshold = 0;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    to.check().unwrap();
+    let mut prev = Block::new().unwrap();
+    prev = prev
+        .set_s_cost(MIN_S_COST).unwrap()
+        .set_t_cost(MIN_T_COST).unwrap()
+        .set_delta(MIN_DELTA).unwrap();
+    let data = Vec::new(); // TODO: c_amount.to_u32()?;
+    prev = prev.set_coinbase(&wallet, &to, &data).unwrap();
+    let bits = MIN_BITS;
+    prev = prev
+        .set_bits(bits).unwrap()
+        .pow().unwrap()
+        .finalize().unwrap();
+    let confirm_t = 20;
+    let block = Block::from_prev(&prev, confirm_t).unwrap();
+    let prev = prev.set_bits(bits+1).unwrap();
+    let res = block.check_prev(&prev, confirm_t);
+    assert!(res.is_err())
+}

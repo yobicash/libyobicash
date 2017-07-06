@@ -6,9 +6,7 @@ use VERSION;
 use errors::*;
 use size::check_size;
 use length::MAX_LEN;
-use crypto::hash::Hash;
-use crypto::hash::hash;
-use crypto::hash::check_hash_size;
+use crypto::hash::*;
 use mining::targetting::*;
 use mining::por::*;
 use mining::pow::*;
@@ -18,6 +16,7 @@ use models::signers::Signers;
 use models::tx::Tx;
 use std::io::Write;
 use std::cmp;
+use std::iter::repeat;
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Block {
@@ -66,12 +65,17 @@ impl Block {
         let delta = MIN_DELTA;
         let coinbase_amount = Amount::new(balloon_memory(s_cost, t_cost, delta)?);
         let coinbase = Tx::new()?;
+        let id: Vec<u8> = repeat(0u8).take(HASH_SIZE).collect();
+        let prev_id: Vec<u8> = repeat(0u8).take(HASH_SIZE).collect();
+        let segment: Vec<u8> = repeat(0u8).take(HASH_SIZE).collect();
+        let segs = vec![segment];
+        let segments_root = segments_root(&segs)?;
         Ok(Block {
-            id: Hash::default(),
+            id: id,
             time: Utc::now(),
             version: version,
             height: 0,
-            prev_id: Hash::default(),
+            prev_id: prev_id,
             prev_chain_amount: Amount::zero(),
             s_cost: s_cost,
             t_cost: t_cost,
@@ -81,7 +85,7 @@ impl Block {
             tx_ids_len: 0,
             tx_ids: Vec::new(),
             bits: MIN_BITS,
-            segments_root: Hash::new(),
+            segments_root: segments_root,
             nonce: 0,
         })
     }
@@ -130,8 +134,19 @@ impl Block {
         self.height
     }
 
+    pub fn set_height(&mut self, height: u32) -> Result<Self> {
+        self.height = height;
+        Ok(self.to_owned())
+    }
+
     pub fn get_prev_id(&self) -> Hash {
         self.prev_id.to_owned()
+    }
+
+    pub fn set_prev_id(&mut self, prev_id: &Hash) -> Result<Self> {
+        check_hash_size(prev_id)?;
+        self.prev_id = prev_id.to_owned();
+        Ok(self.to_owned())
     }
 
     fn check_prev_id(&self) -> Result<()> {
@@ -288,7 +303,13 @@ impl Block {
        target_from_bits(self.bits) 
     }
 
-    pub fn set_bits(&mut self, old_bits: u32, old_t: u64, confirm_t: u32) -> Result<Self> {
+    pub fn set_bits(&mut self, bits: u32) -> Result<Self> {
+        check_target_bits(bits)?;
+        self.bits = bits; 
+        Ok(self.to_owned())
+    }
+
+    pub fn set_bits_by_retargetting(&mut self, old_bits: u32, old_t: u64, confirm_t: u32) -> Result<Self> {
         check_target_bits(old_bits)?;
         let new_t = self.time.timestamp() as u64;
         self.bits = retarget_bits(old_bits, old_t, new_t, confirm_t)?; 
@@ -336,26 +357,8 @@ impl Block {
         Ok(self.to_owned())
     }
 
-    pub fn verify_segments_root(&self, segs: &Vec<Segment>) -> Result<bool> {
-        if segs.len() != self.bits as usize {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        verify_segments_root(segs, &self.segments_root)
-    }
-
     fn check_segments_root(&self) -> Result<()> {
         check_hash_size(&self.segments_root)
-    }
-
-    pub fn check_por(&self, segs: &Vec<Segment>) -> Result<()> {
-        check_hash_size(&self.segments_root)?;
-        if segs.len() != self.bits as usize {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-        if !verify_segments_root(segs, &self.segments_root)? {
-            return Err(ErrorKind::InvalidSegmentsRoot.into());
-        }
-        Ok(())
     }
 
     fn check_pre_seed(&self) -> Result<()> {
@@ -385,7 +388,7 @@ impl Block {
         hash(bin.as_slice())
     }
 
-    pub fn mine(&mut self) -> Result<Self> {
+    pub fn pow(&mut self) -> Result<Self> {
         let s = self.calc_seed()?;
         if let Some(nonce) = balloon_mine(self.bits, &s, self.s_cost, self.t_cost, self.delta)? {
             self.nonce = nonce;
@@ -405,6 +408,15 @@ impl Block {
             return Err(ErrorKind::InvalidPOW.into())
         }
         Ok(())
+    }
+
+    pub fn get_nonce(&self) -> u32 {
+        self.nonce
+    }
+
+    pub fn set_nonce(&mut self, nonce: u32) -> Self {
+        self.nonce = nonce;
+        self.to_owned()
     }
 
     fn check_pre_id(&self) -> Result<()> {
