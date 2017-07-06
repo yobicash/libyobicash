@@ -17,6 +17,7 @@ use models::signers::Signers;
 use models::input::Input;
 use models::content::Content;
 use models::output::Output;
+use models::outpoint::OutPoint;
 use std::io::Write;
 use std::iter::repeat;
 
@@ -409,5 +410,15 @@ impl Tx {
             return Err(ErrorKind::InvalidCoinbase.into())
         }
         Ok(())
+    }
+
+    pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, wallet: &Wallet) -> Result<Self> {
+        for i in 0..outpoints.len() {
+            outpoints[i].check()?;
+        }
+        // TODO
+        let mut tx = Tx::new()?;
+        // TODO
+        Ok(tx)
     }
 }

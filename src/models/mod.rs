@@ -5,5 +5,6 @@ pub mod amount;
 pub mod content;
 pub mod input;
 pub mod output;
+pub mod outpoint;
 pub mod tx;
 pub mod block;

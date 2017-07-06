@@ -1,7 +1,5 @@
 use chrono::Duration;
 use libyobicash::models::block::*;
-use libyobicash::models::tx::Tx;
-use libyobicash::models::amount::Amount;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::mining::targetting::*;
@@ -331,6 +329,9 @@ fn from_prev_succ() {
         .finalize().unwrap();
     to.check().unwrap();
     let mut prev = Block::new().unwrap();
+    let mut prev_time = prev.get_time();
+    prev_time = prev_time - Duration::seconds(40);
+    prev = prev.set_time(&prev_time).unwrap();
     prev = prev
         .set_s_cost(MIN_S_COST).unwrap()
         .set_t_cost(MIN_T_COST).unwrap()
@@ -360,6 +361,9 @@ fn from_prev_fail() {
         .finalize().unwrap();
     to.check().unwrap();
     let mut prev = Block::new().unwrap();
+    let mut prev_time = prev.get_time();
+    prev_time = prev_time - Duration::seconds(40);
+    prev = prev.set_time(&prev_time).unwrap();
     prev = prev
         .set_s_cost(MIN_S_COST).unwrap()
         .set_t_cost(MIN_T_COST).unwrap()
@@ -390,6 +394,9 @@ fn check_prev_succ() {
         .finalize().unwrap();
     to.check().unwrap();
     let mut prev = Block::new().unwrap();
+    let mut prev_time = prev.get_time();
+    prev_time = prev_time - Duration::seconds(40);
+    prev = prev.set_time(&prev_time).unwrap();
     prev = prev
         .set_s_cost(MIN_S_COST).unwrap()
         .set_t_cost(MIN_T_COST).unwrap()
@@ -420,6 +427,9 @@ fn check_prev_fail() {
         .finalize().unwrap();
     to.check().unwrap();
     let mut prev = Block::new().unwrap();
+    let mut prev_time = prev.get_time();
+    prev_time = prev_time - Duration::seconds(40);
+    prev = prev.set_time(&prev_time).unwrap();
     prev = prev
         .set_s_cost(MIN_S_COST).unwrap()
         .set_t_cost(MIN_T_COST).unwrap()
