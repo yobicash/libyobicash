@@ -61,6 +61,10 @@ impl cmp::Ord for Block {
 impl Block {
     pub fn new() -> Result<Self> {
         let version = Version::parse(VERSION)?;
+        let s_cost = MIN_S_COST;
+        let t_cost = MIN_T_COST;
+        let delta = MIN_DELTA;
+        let coinbase_amount = Amount::new(balloon_memory(s_cost, t_cost, delta)?);
         let coinbase = Tx::new()?;
         Ok(Block {
             id: Hash::default(),
@@ -69,10 +73,10 @@ impl Block {
             height: 0,
             prev_id: Hash::default(),
             prev_chain_amount: Amount::zero(),
-            s_cost: MIN_S_COST,
-            t_cost: MIN_T_COST,
-            delta: MIN_DELTA,
-            coinbase_amount: Amount::zero(),
+            s_cost: s_cost,
+            t_cost: t_cost,
+            delta: delta,
+            coinbase_amount: coinbase_amount,
             coinbase: coinbase,
             tx_ids_len: 0,
             tx_ids: Vec::new(),
@@ -153,6 +157,7 @@ impl Block {
     pub fn set_s_cost(&mut self, s_cost: u32) -> Result<Self> {
         check_s_cost(s_cost)?;
         self.s_cost = s_cost;
+        self.coinbase_amount = self.calc_coinbase_amount()?;
         Ok(self.to_owned())
     }
 
@@ -167,6 +172,7 @@ impl Block {
     pub fn set_t_cost(&mut self, t_cost: u32) -> Result<Self> {
         check_t_cost(t_cost)?;
         self.t_cost = t_cost;
+        self.coinbase_amount = self.calc_coinbase_amount()?;
         Ok(self.to_owned())
     }
 
@@ -181,6 +187,7 @@ impl Block {
     pub fn set_delta(&mut self, delta: u32) -> Result<Self> {
         check_delta(delta)?;
         self.delta = delta;
+        self.coinbase_amount = self.calc_coinbase_amount()?;
         Ok(self.to_owned())
     }
 
@@ -218,6 +225,10 @@ impl Block {
     pub fn set_coinbase(&mut self, w: &Wallet, to: &Signers, data: &Vec<u8>) -> Result<Self> {
         to.check()?;
         check_size(data)?;
+        let len = data.len() as u32;
+        if len > 0 && Amount::new(len) != self.get_coinbase_amount() {
+            return Err(ErrorKind::InvalidSize.into());
+        }
         self.coinbase = Tx::coinbase(w, to, &self.calc_coinbase_amount()?, data)?;
         Ok(self.to_owned())
     }
@@ -318,11 +329,17 @@ impl Block {
 
     pub fn set_segments_root(&mut self, segs: &Vec<Segment>) -> Result<Self> {
         check_segments(&segs)?;
+        if segs.len() != self.bits as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
         self.segments_root = segments_root(segs)?;
         Ok(self.to_owned())
     }
 
     pub fn verify_segments_root(&self, segs: &Vec<Segment>) -> Result<bool> {
+        if segs.len() != self.bits as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
         verify_segments_root(segs, &self.segments_root)
     }
 
@@ -332,6 +349,9 @@ impl Block {
 
     pub fn check_por(&self, segs: &Vec<Segment>) -> Result<()> {
         check_hash_size(&self.segments_root)?;
+        if segs.len() != self.bits as usize {
+            return Err(ErrorKind::InvalidLength.into());
+        }
         if !verify_segments_root(segs, &self.segments_root)? {
             return Err(ErrorKind::InvalidSegmentsRoot.into());
         }
@@ -533,6 +553,7 @@ impl Block {
     }
 
     pub fn check_prev(&self, prev: &Block, confirm_t: u32) -> Result<()> {
+        prev.check()?;
         if self.height != prev.height + 1 {
             return Err(ErrorKind::InvalidPrevBlock.into());
         }
@@ -550,11 +571,13 @@ impl Block {
         Ok(())
     }
 
-    pub fn select(new: &Block, old: &Block) -> Block {
+    pub fn select(new: &Block, old: &Block) -> Result<Block> {
+        new.check()?;
+        old.check()?;
         if new > old {
-            new.to_owned()
+            Ok(new.to_owned())
         } else {
-            old.to_owned()
+            Ok(old.to_owned())
         }
     }
 }

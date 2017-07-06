@@ -6,6 +6,7 @@ use VERSION;
 use errors::*;
 use length::MAX_LEN;
 use size::MAX_SIZE;
+use size::check_size;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
@@ -373,6 +374,7 @@ impl Tx {
 
     pub fn coinbase(wallet: &Wallet, to: &Signers, amount: &Amount, data: &Vec<u8>) -> Result<Self> {
         to.check()?;
+        check_size(data)?;
         let size = data.len() as u32;
         if size > MAX_SIZE as u32 {
             return Err(ErrorKind::InvalidSize.into());
