@@ -447,3 +447,26 @@ fn check_prev_fail() {
     let res = block.check_prev(&prev, confirm_t);
     assert!(res.is_err())
 }
+
+#[test]
+fn unique_blocks_succ() {
+    let len = 10;
+    let mut blocks: Vec<Block> = Vec::new();
+    for i in 0..len {
+        let mut block = Block::new().unwrap();
+        let time = block.get_time() - Duration::hours(i);
+        block.set_time(&time).unwrap();
+        blocks.push(block);
+    }
+    let res = check_unique_blocks(&blocks);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn unique_blocks_fail() {
+    let len = 10;
+    let block = Block::new().unwrap();
+    let blocks: Vec<Block> = repeat(block).take(len).collect();
+    let res = check_unique_blocks(&blocks);
+    assert!(res.is_err())
+}

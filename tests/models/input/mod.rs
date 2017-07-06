@@ -1,6 +1,8 @@
 use libyobicash::models::input::*;
+use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
+use std::iter::repeat;
 
 #[test]
 fn new_input_succ() {
@@ -25,4 +27,28 @@ fn check_input_succ() {
     let input = Input::new(&tx_id, idx).unwrap();
     let res = input.check();
     assert!(res.is_ok())
+}
+
+#[test]
+fn unique_inputs_succ() {
+    let len = 10;
+    let mut inputs: Vec<Input> = Vec::new();
+    for i in 0..len {
+        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let input = Input::new(&tx_id, i).unwrap();
+        inputs.push(input);
+    }
+    let res = check_unique_inputs(&inputs);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn unique_inputs_fail() {
+    let idx = 10;
+    let tx_id = balloon_nonce_from_u32(idx).unwrap();
+    let input = Input::new(&tx_id, idx).unwrap();
+    let len = 10;
+    let inputs: Vec<Input> = repeat(input).take(len).collect();
+    let res = check_unique_inputs(&inputs);
+    assert!(res.is_err())
 }

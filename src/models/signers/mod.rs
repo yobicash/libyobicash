@@ -1,17 +1,18 @@
 use byteorder::{BigEndian, WriteBytesExt};
+use itertools::Itertools;
 use errors::*;
 use length::MAX_LEN;
+use length::check_length;
 use crypto::hash::Hash;
 use crypto::hash::hash;
 use crypto::hash::check_hash_size;
-use crypto::sign::{PublicKey, Signature};
-use crypto::sign::check_public_key_size;
-use crypto::sign::check_signature_size;
-use crypto::sign::verify_signature;
+use crypto::sign::*;
 use models::address::*;
 use std::io::Write;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Signers {
     address: Address,
     len: u32,
@@ -111,10 +112,13 @@ impl Signers {
     }
 
     fn check_signers(&self) -> Result<()> {
-        if self.signers.len() != self.len as usize {
+        check_length(&self.signers)?;
+        let len = self.signers.len();
+        if len != self.len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
-        for i in 0..self.len as usize {
+        check_unique_public_keys(&self.signers)?;
+        for i in 0..len as usize {
             check_public_key_size(&self.signers[i])?;
         }
         Ok(())
@@ -240,7 +244,10 @@ impl Signers {
 
     pub fn check_signatures(&self, msg: &Hash, sigs: &Vec<Signature>) -> Result<()> {
         check_hash_size(msg)?;
-        for i in 0..sigs.len() {
+        check_length(sigs)?;
+        check_unique_signatures(&sigs)?;
+        let len = sigs.len();
+        for i in 0..len {
             check_signature_size(&sigs[i])?;
         }
         if !self.verify_signatures(msg, sigs)? {
@@ -248,4 +255,84 @@ impl Signers {
         }
         Ok(())
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Signerses {
+    length: u32,
+    idx: u32,
+    items: Vec<Signers>,
+}
+
+impl Signerses {
+    pub fn new(items: &Vec<Signers>) -> Result<Signerses> {
+        check_length(items)?;
+        let len = items.len();
+        for i in 0..items.len() {
+            items[i].check()?;
+        }
+        Ok(Signerses {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Signers) {
+        self.items.push(item)
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Signers> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Signerses {
+    type Output = Signers;
+
+    fn index(&self, idx: usize) -> &Signers {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Signerses {
+    type Item = Signers;
+
+    fn next(&mut self) -> Option<Signers> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_signerses(sigs: &Vec<Signers>) -> Result<()> {
+    let uniques: Vec<Signers> = Signerses::new(sigs)?.unique().collect();
+    if uniques.len() != sigs.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

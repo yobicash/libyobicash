@@ -16,6 +16,7 @@ serde_derive = "^1"
 sodiumoxide = { git = "https://github.com/chritchens/sodiumoxide" }
 num-bigint = "^0.1"
 num-traits = "^0.1"
+itertools = "^0.6.0"
 byteorder = "^1"
 semver = { version = "^0.7", features = ["serde"] }
 chrono = { version = "^0.4", features = ["serde"] }

@@ -1,10 +1,18 @@
 use byteorder::{BigEndian, WriteBytesExt};
+use num_traits::Zero;
+use itertools::Itertools;
+use length::check_length;
 use crypto::hash::Hash;
 use crypto::hash::check_hash_size;
+use models::amount::Amount;
+use models::input::Input;
 use models::output::Output;
 use errors::*;
 use std::io::Write;
+use std::ops::Index;
+use std::iter::Iterator;
 
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct OutPoint {
     tx_id: Hash,
     idx: u32,
@@ -47,4 +55,111 @@ impl OutPoint {
         bin.write_all(self.output.to_vec()?.as_slice())?;
         Ok(bin)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct OutPoints {
+    length: u32,
+    idx: u32,
+    items: Vec<OutPoint>,
+}
+
+impl OutPoints {
+    pub fn new(items: &Vec<OutPoint>) -> Result<OutPoints> {
+        check_length(items)?;
+        let len = items.len();
+        for i in 0..items.len() {
+            items[i].check()?;
+        }
+        Ok(OutPoints {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: OutPoint) {
+        self.items.push(item)
+    }
+
+    pub fn tot_amount(&self) -> Amount {
+        let mut tot_amount = Amount::zero();
+        for outpoint in self.to_owned() {
+            tot_amount = tot_amount + outpoint.output.get_amount();
+        }
+        tot_amount
+    }
+
+    pub fn to_inputs(&self) -> Result<Vec<Input>> {
+        let mut inputs: Vec<Input> = Vec::new(); 
+        for outpoint in self.to_owned() {
+            let tx_id = outpoint.get_tx_id();
+            let idx = outpoint.get_idx();
+            let input = Input::new(&tx_id, idx)?;
+            inputs.push(input);
+        }
+        Ok(inputs)
+    }
+
+    pub fn to_outputs(&self) -> Vec<Output> {
+        let mut outputs: Vec<Output> = Vec::new(); 
+        for outpoint in self.to_owned() {
+            outputs.push(outpoint.output);
+        }
+        outputs
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<OutPoint> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for OutPoints {
+    type Output = OutPoint;
+
+    fn index(&self, idx: usize) -> &OutPoint {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for OutPoints {
+    type Item = OutPoint;
+
+    fn next(&mut self) -> Option<OutPoint> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_outpoints(outpoints: &Vec<OutPoint>) -> Result<()> {
+    let uniques: Vec<OutPoint> = OutPoints::new(outpoints)?.unique().collect();
+    if uniques.len() != outpoints.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

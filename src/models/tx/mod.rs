@@ -1,27 +1,32 @@
 use byteorder::{BigEndian, WriteBytesExt};
 use num_traits::Zero;
+use itertools::Itertools;
 use semver::Version;
 use chrono::{DateTime, Utc};
 use VERSION;
 use errors::*;
 use size::check_size;
 use length::MAX_LEN;
+use length::check_length;
 use crypto::hash::*;
 use crypto::sign::Signature;
 use crypto::sign::sign;
+use crypto::sign::check_unique_signatures;
 use mining::por::Segment;
 use mining::por::read_segment;
 use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
-use models::input::Input;
+use models::input::*;
 use models::content::Content;
-use models::output::Output;
-use models::outpoint::OutPoint;
+use models::output::*;
+use models::outpoint::*;
 use std::io::Write;
 use std::iter::repeat;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Tx {
     id: Hash,
     time: DateTime<Utc>,
@@ -139,10 +144,13 @@ impl Tx {
     }
 
     fn check_inputs(&self) -> Result<()> {
-        if self.inputs.len() != self.inputs_len as usize {
+        check_length(&self.inputs)?;
+        let len = self.inputs.len();
+        if len != self.inputs_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
-        for i in 0..self.inputs_len as usize {
+        check_unique_inputs(&self.inputs)?;
+        for i in 0..len as usize {
             self.inputs[i].check()?;
         }
         Ok(())
@@ -185,10 +193,13 @@ impl Tx {
     }
 
     fn check_outputs(&self) -> Result<()> {
-        if self.outputs.len() != self.outputs_len as usize {
+        check_length(&self.outputs)?;
+        let len = self.outputs.len();
+        if len != self.outputs_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
-        for i in 0..self.outputs_len as usize {
+        check_unique_outputs(&self.outputs)?;
+        for i in 0..len as usize {
             self.outputs[i].check()?;
         }
         Ok(())
@@ -282,6 +293,8 @@ impl Tx {
     }
 
     pub fn check_signatures(&self) -> Result<()> {
+        check_length(&self.signatures)?;
+        check_unique_signatures(&self.signatures)?;
         let cksm = self.get_checksum()?;
         self.signers.check_signatures(&cksm, &self.signatures)
     }
@@ -412,13 +425,111 @@ impl Tx {
         Ok(())
     }
 
-    pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, wallet: &Wallet) -> Result<Self> {
-        for i in 0..outpoints.len() {
-            outpoints[i].check()?;
+    pub fn from_outpoints(_outpoints: &Vec<OutPoint>, _outputs: &Vec<Output>, signers: &Signers) -> Result<Self> {
+        let outpoints = OutPoints::new(_outpoints)?;
+        let outputs = Outputs::new(_outputs)?;
+        outpoints.check_unique()?;
+        outputs.check_unique()?;
+        for outpoint in outpoints.to_owned() {
+            outpoint.check()?;
+            let output = outpoint.get_output();
+            if output.get_to() != signers.get_address() {
+                return Err(ErrorKind::InvalidAddress.into());
+            }
         }
-        // TODO
+        for output in outputs.to_owned() {
+            output.check()?;
+        }
+        let outpoints_amount = outpoints.tot_amount();
+        let outputs_amount = outputs.tot_amount();
+        if outpoints_amount != outputs_amount {
+            return Err(ErrorKind::InvalidAmount.into());
+        }
         let mut tx = Tx::new()?;
-        // TODO
+        for input in outpoints.to_inputs()? {
+            tx.add_input(&input)?;
+        }
+        for output in outputs.to_owned() {
+            tx.add_output(&output)?;
+        }
+        tx.set_signers(signers)?;
         Ok(tx)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Txs {
+    length: u32,
+    idx: u32,
+    items: Vec<Tx>,
+}
+
+impl Txs {
+    pub fn new(items: &Vec<Tx>) -> Result<Txs> {
+        check_length(items)?;
+        let len = items.len();
+        Ok(Txs {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Tx) {
+        self.items.push(item)
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Tx> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Txs {
+    type Output = Tx;
+
+    fn index(&self, idx: usize) -> &Tx {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Txs {
+    type Item = Tx;
+
+    fn next(&mut self) -> Option<Tx> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_txs(txs: &Vec<Tx>) -> Result<()> {
+    let uniques: Vec<Tx> = Txs::new(txs)?.unique().collect();
+    if uniques.len() != txs.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

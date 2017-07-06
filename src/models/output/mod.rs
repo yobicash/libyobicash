@@ -1,11 +1,16 @@
 use errors::*;
+use num_traits::Zero;
+use itertools::Itertools;
+use length::check_length;
 use models::amount::Amount;
 use models::address::Address;
 use models::address::check_address;
 use models::content::Content;
 use std::io::Write;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Output {
     to: Address,
     amount: Amount,
@@ -74,4 +79,92 @@ impl Output {
         bin.write_all(self.content.to_vec()?.as_slice())?;
         Ok(bin)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Outputs {
+    length: u32,
+    idx: u32,
+    items: Vec<Output>,
+}
+
+impl Outputs {
+    pub fn new(items: &Vec<Output>) -> Result<Outputs> {
+        check_length(items)?;
+        let len = items.len();
+        for i in 0..items.len() {
+            items[i].check()?;
+        }
+        Ok(Outputs {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Output) {
+        self.items.push(item)
+    }
+
+    pub fn tot_amount(&self) -> Amount {
+        let mut tot_amount = Amount::zero();
+        for output in self.to_owned() {
+            tot_amount = tot_amount + output.get_amount();
+        }
+        tot_amount
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Output> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Outputs {
+    type Output = Output;
+
+    fn index(&self, idx: usize) -> &Output {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Outputs {
+    type Item = Output;
+
+    fn next(&mut self) -> Option<Output> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_outputs(outputs: &Vec<Output>) -> Result<()> {
+    let uniques: Vec<Output> = Outputs::new(outputs)?.unique().collect();
+    if uniques.len() != outputs.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

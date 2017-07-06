@@ -1,4 +1,6 @@
 use byteorder::{BigEndian, WriteBytesExt};
+use itertools::Itertools;
+use length::check_length;
 use errors::*;
 use size::MAX_SIZE;
 use size::check_size;
@@ -6,8 +8,10 @@ use crypto::sign::*;
 use crypto::hash::*;
 use models::wallet::Wallet;
 use std::io::Write;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Content {
     author: PublicKey,
     checksum: Hash,
@@ -83,4 +87,81 @@ impl Content {
         // NB: wo\ data: it will/could be dropped later
         Ok(bin)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Contents {
+    length: u32,
+    idx: u32,
+    items: Vec<Content>,
+}
+
+impl Contents {
+    pub fn new(items: &Vec<Content>) -> Result<Contents> {
+        check_length(items)?;
+        let len = items.len();
+        Ok(Contents {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Content) {
+        self.items.push(item)
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Content> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Contents {
+    type Output = Content;
+
+    fn index(&self, idx: usize) -> &Content {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Contents {
+    type Item = Content;
+
+    fn next(&mut self) -> Option<Content> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_contents(contents: &Vec<Content>) -> Result<()> {
+    let uniques: Vec<Content> = Contents::new(contents)?.unique().collect();
+    if uniques.len() != contents.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

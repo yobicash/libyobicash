@@ -8,6 +8,7 @@ extern crate sodiumoxide;
 extern crate byteorder;
 extern crate num_bigint;
 extern crate num_traits;
+extern crate itertools;
 extern crate semver;
 extern crate chrono;
 

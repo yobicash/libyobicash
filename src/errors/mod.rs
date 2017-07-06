@@ -28,6 +28,14 @@ error_chain! {
             description("Invalid length")
         }
 
+        DuplicatedElements {
+            description("Duplicated elements")
+        }
+
+        IndexOutOfRange {
+            description("Index out of range")
+        }
+
         InvalidSum {
             description("Invalid sum")
         }

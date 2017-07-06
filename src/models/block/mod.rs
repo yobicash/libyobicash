@@ -1,11 +1,13 @@
 use byteorder::{BigEndian, WriteBytesExt};
 use num_traits::Zero;
+use itertools::Itertools;
 use semver::Version;
 use chrono::{DateTime, Utc};
 use VERSION;
 use errors::*;
 use size::check_size;
 use length::MAX_LEN;
+use length::check_length;
 use crypto::hash::*;
 use mining::targetting::*;
 use mining::por::*;
@@ -17,8 +19,10 @@ use models::tx::Tx;
 use std::io::Write;
 use std::cmp;
 use std::iter::repeat;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
 pub struct Block {
     pub id: Hash,
     pub time: DateTime<Utc>,
@@ -286,10 +290,13 @@ impl Block {
     }
 
     fn check_tx_ids(&self) -> Result<()> {
-        if self.tx_ids.len() != self.tx_ids_len as usize {
+        check_length(&self.tx_ids)?;
+        let len = self.tx_ids.len();
+        if len != self.tx_ids_len as usize {
             return Err(ErrorKind::InvalidLength.into());
         }
-        for i in 0..self.tx_ids_len as usize {
+        check_unique_hashes(&self.tx_ids)?;
+        for i in 0..len as usize {
             check_hash_size(&self.tx_ids[i])?;
         }
         Ok(())
@@ -592,4 +599,81 @@ impl Block {
             Ok(old.to_owned())
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Blocks {
+    length: u32,
+    idx: u32,
+    items: Vec<Block>,
+}
+
+impl Blocks {
+    pub fn new(items: &Vec<Block>) -> Result<Blocks> {
+        check_length(items)?;
+        let len = items.len();
+        Ok(Blocks {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Block) {
+        self.items.push(item)
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Block> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Blocks {
+    type Output = Block;
+
+    fn index(&self, idx: usize) -> &Block {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Blocks {
+    type Item = Block;
+
+    fn next(&mut self) -> Option<Block> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_blocks(blocks: &Vec<Block>) -> Result<()> {
+    let uniques: Vec<Block> = Blocks::new(blocks)?.unique().collect();
+    if uniques.len() != blocks.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

@@ -6,7 +6,7 @@ use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use std::str::FromStr;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash)]
 pub struct Amount(pub BigUint);
 
 impl Amount {

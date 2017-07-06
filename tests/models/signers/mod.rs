@@ -1,9 +1,11 @@
 use libyobicash::models::signers::*;
+use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::sign::sign;
 use libyobicash::crypto::utils::randombytes;
+use std::iter::repeat;
 
 #[test]
 fn new_signers_succ() {
@@ -203,5 +205,32 @@ fn check_signatures_fail() {
     let sigs = vec![sig];
     msg[0] = msg[0] % 2 + 1;
     let res = signers.check_signatures(&msg, &sigs);
+    assert!(res.is_err())
+}
+
+#[test]
+fn unique_signers_succ() {
+    let len = 10;
+    let mut signerses: Vec<Signers> = Vec::new();
+    for i in 0..len {
+        let seed = balloon_nonce_from_u32(i).unwrap();
+        let wallet = Wallet::from_seed(&seed).unwrap();
+        let weight = 10;
+        let signers = Signers::new().unwrap()
+            .add_signer(&wallet.public_key, weight).unwrap()
+            .set_threshold(weight-1).unwrap()
+            .finalize().unwrap();
+        signerses.push(signers);
+    }
+    let res = check_unique_signerses(&signerses);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn unique_signers_fail() {
+    let signers = Signers::new().unwrap();
+    let len = 10;
+    let signerses: Vec<Signers> = repeat(signers).take(len).collect();
+    let res = check_unique_signerses(&signerses);
     assert!(res.is_err())
 }

@@ -1,10 +1,14 @@
 use byteorder::{BigEndian, WriteBytesExt};
+use itertools::Itertools;
 use errors::*;
+use length::check_length;
 use crypto::hash::Hash;
 use crypto::hash::check_hash_size;
 use std::io::Write;
+use std::ops::Index;
+use std::iter::Iterator;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Input {
     tx_id: Hash,
     idx: u32,
@@ -49,4 +53,81 @@ impl Input {
         bin.write_u32::<BigEndian>(self.idx)?;
         Ok(bin)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct Inputs {
+    length: u32,
+    idx: u32,
+    items: Vec<Input>,
+}
+
+impl Inputs {
+    pub fn new(items: &Vec<Input>) -> Result<Inputs> {
+        check_length(items)?;
+        let len = items.len();
+        Ok(Inputs {
+            length: len as u32,
+            idx: 0,
+            items: items.to_owned(),
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn push(&mut self, item: Input) {
+        self.items.push(item)
+    }
+
+    pub fn check_unique(&self) -> Result<()> {
+        let uniques: Vec<Input> = self.to_owned().unique().collect();
+        if uniques.len() != self.len() {
+            return Err(ErrorKind::DuplicatedElements.into());
+        }
+        Ok(())
+    }
+
+    pub fn check(&self) -> Result<()> {
+        let len = self.length;
+        if self.idx >= len {
+            return Err(ErrorKind::IndexOutOfRange.into());
+        }
+        if len != self.items.len() as u32 {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+        Ok(())
+    }
+}
+
+impl Index<usize> for Inputs {
+    type Output = Input;
+
+    fn index(&self, idx: usize) -> &Input {
+        self.items.index(idx)
+    }
+}
+
+impl Iterator for Inputs {
+    type Item = Input;
+
+    fn next(&mut self) -> Option<Input> {
+        match self.check() {
+            Ok(_) => {
+                let item = self.items[self.idx as usize].to_owned();
+                self.idx += 1;
+                Some(item)
+            },
+            Err(_) => { None },
+        }
+    }
+}
+
+pub fn check_unique_inputs(inputs: &Vec<Input>) -> Result<()> {
+    let uniques: Vec<Input> = Inputs::new(inputs)?.unique().collect();
+    if uniques.len() != inputs.len() {
+        return Err(ErrorKind::DuplicatedElements.into());
+    }
+    Ok(())
 }

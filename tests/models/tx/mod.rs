@@ -11,6 +11,7 @@ use libyobicash::mining::por::*;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
+use std::iter::repeat;
 
 #[test]
 fn new_tx_succ() {
@@ -388,5 +389,28 @@ fn new_coinbase_fail() {
     to.check().unwrap();
     let c_amount = Amount::new(10);
     let res = Tx::coinbase(&wallet, &to, &c_amount, &vec![1]);
+    assert!(res.is_err())
+}
+
+#[test]
+fn unique_txs_succ() {
+    let len = 10;
+    let mut txs: Vec<Tx> = Vec::new();
+    for i in 0..len {
+        let mut tx = Tx::new().unwrap();
+        let time = tx.get_time() - Duration::hours(i);
+        tx.set_time(&time).unwrap();
+        txs.push(tx);
+    }
+    let res = check_unique_txs(&txs);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn unique_txs_fail() {
+    let tx = Tx::new().unwrap();
+    let len = 10;
+    let txs: Vec<Tx> = repeat(tx).take(len).collect();
+    let res = check_unique_txs(&txs);
     assert!(res.is_err())
 }
