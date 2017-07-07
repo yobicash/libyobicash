@@ -286,8 +286,12 @@ impl Signerses {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Signers> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Signers> = self.to_owned().unique().collect();
+        let uniques: Vec<Signers> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -329,8 +333,12 @@ impl Iterator for Signerses {
     }
 }
 
+pub fn unique_signerses(sigs: &Vec<Signers>) -> Result<Vec<Signers>> {
+    Ok(Signerses::new(sigs)?.unique().collect())
+}
+
 pub fn check_unique_signerses(sigs: &Vec<Signers>) -> Result<()> {
-    let uniques: Vec<Signers> = Signerses::new(sigs)?.unique().collect();
+    let uniques: Vec<Signers> = unique_signerses(sigs)?;
     if uniques.len() != sigs.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

@@ -113,8 +113,12 @@ impl OutPoints {
         outputs
     }
 
+    pub fn unique(&self) -> Vec<OutPoint> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<OutPoint> = self.to_owned().unique().collect();
+        let uniques: Vec<OutPoint> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -156,8 +160,12 @@ impl Iterator for OutPoints {
     }
 }
 
+pub fn unique_outpoints(outpoints: &Vec<OutPoint>) -> Result<Vec<OutPoint>> {
+    Ok(OutPoints::new(outpoints)?.unique().collect())
+}
+
 pub fn check_unique_outpoints(outpoints: &Vec<OutPoint>) -> Result<()> {
-    let uniques: Vec<OutPoint> = OutPoints::new(outpoints)?.unique().collect();
+    let uniques: Vec<OutPoint> = unique_outpoints(outpoints)?;
     if uniques.len() != outpoints.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

@@ -483,8 +483,12 @@ impl Txs {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Tx> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Tx> = self.to_owned().unique().collect();
+        let uniques: Vec<Tx> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -526,8 +530,12 @@ impl Iterator for Txs {
     }
 }
 
+pub fn unique_txs(txs: &Vec<Tx>) -> Result<Vec<Tx>> {
+    Ok(Txs::new(txs)?.unique().collect())
+}
+
 pub fn check_unique_txs(txs: &Vec<Tx>) -> Result<()> {
-    let uniques: Vec<Tx> = Txs::new(txs)?.unique().collect();
+    let uniques: Vec<Tx> = unique_txs(txs)?;
     if uniques.len() != txs.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

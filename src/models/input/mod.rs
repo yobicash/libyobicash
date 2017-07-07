@@ -81,8 +81,12 @@ impl Inputs {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Input> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Input> = self.to_owned().unique().collect();
+        let uniques: Vec<Input> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -124,8 +128,12 @@ impl Iterator for Inputs {
     }
 }
 
+pub fn unique_inputs(inputs: &Vec<Input>) -> Result<Vec<Input>> {
+    Ok(Inputs::new(inputs)?.unique().collect())
+}
+
 pub fn check_unique_inputs(inputs: &Vec<Input>) -> Result<()> {
-    let uniques: Vec<Input> = Inputs::new(inputs)?.unique().collect();
+    let uniques: Vec<Input> = unique_inputs(inputs)?;
     if uniques.len() != inputs.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

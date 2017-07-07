@@ -118,8 +118,12 @@ impl Outputs {
         tot_amount
     }
 
+    pub fn unique(&self) -> Vec<Output> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Output> = self.to_owned().unique().collect();
+        let uniques: Vec<Output> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -161,8 +165,12 @@ impl Iterator for Outputs {
     }
 }
 
+pub fn unique_outputs(outputs: &Vec<Output>) -> Result<Vec<Output>> {
+    Ok(Outputs::new(outputs)?.unique().collect())
+}
+
 pub fn check_unique_outputs(outputs: &Vec<Output>) -> Result<()> {
-    let uniques: Vec<Output> = Outputs::new(outputs)?.unique().collect();
+    let uniques: Vec<Output> = unique_outputs(outputs)?;
     if uniques.len() != outputs.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

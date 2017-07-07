@@ -59,8 +59,12 @@ impl Wallets {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Wallet> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Wallet> = self.to_owned().unique().collect();
+        let uniques: Vec<Wallet> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -102,8 +106,12 @@ impl Iterator for Wallets {
     }
 }
 
+pub fn unique_wallets(wallets: &Vec<Wallet>) -> Result<Vec<Wallet>> {
+    Ok(Wallets::new(wallets)?.unique().collect())
+}
+
 pub fn check_unique_wallets(wallets: &Vec<Wallet>) -> Result<()> {
-    let uniques: Vec<Wallet> = Wallets::new(wallets)?.unique().collect();
+    let uniques: Vec<Wallet> = unique_wallets(wallets)?;
     if uniques.len() != wallets.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

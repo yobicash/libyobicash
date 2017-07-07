@@ -627,8 +627,12 @@ impl Blocks {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Block> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Block> = self.to_owned().unique().collect();
+        let uniques: Vec<Block> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -670,8 +674,12 @@ impl Iterator for Blocks {
     }
 }
 
+pub fn unique_blocks(blocks: &Vec<Block>) -> Result<Vec<Block>> {
+    Ok(Blocks::new(blocks)?.unique().collect())
+}
+
 pub fn check_unique_blocks(blocks: &Vec<Block>) -> Result<()> {
-    let uniques: Vec<Block> = Blocks::new(blocks)?.unique().collect();
+    let uniques: Vec<Block> = unique_blocks(blocks)?;
     if uniques.len() != blocks.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }

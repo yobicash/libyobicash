@@ -115,8 +115,12 @@ impl Contents {
         self.items.push(item)
     }
 
+    pub fn unique(&self) -> Vec<Content> {
+        self.to_owned().unique().collect()
+    }
+
     pub fn check_unique(&self) -> Result<()> {
-        let uniques: Vec<Content> = self.to_owned().unique().collect();
+        let uniques: Vec<Content> = self.unique();
         if uniques.len() != self.len() {
             return Err(ErrorKind::DuplicatedElements.into());
         }
@@ -158,8 +162,12 @@ impl Iterator for Contents {
     }
 }
 
+pub fn unique_contents(contents: &Vec<Content>) -> Result<Vec<Content>> {
+    Ok(Contents::new(contents)?.unique().collect())
+}
+
 pub fn check_unique_contents(contents: &Vec<Content>) -> Result<()> {
-    let uniques: Vec<Content> = Contents::new(contents)?.unique().collect();
+    let uniques: Vec<Content> = unique_contents(contents)?;
     if uniques.len() != contents.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }
