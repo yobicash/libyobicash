@@ -13,26 +13,49 @@ use std::iter::Iterator;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Content {
+    id: Hash,
     author: PublicKey,
     checksum: Hash,
-    signature: Signature,
     size: u32,
+    signature: Signature,
     data: Vec<u8>,
 }
 
 impl Content {
     pub fn new(wallet: &Wallet, data: &Vec<u8>) -> Result<Self> {
         check_size(data)?;
+        let author = wallet.public_key.to_owned();
         let size = data.len() as u32;
         let checksum = hash(data.to_owned().as_slice())?;
-        let signature = sign(&checksum, &wallet.secret_key)?;
+        let mut bin = Vec::new();
+        bin.write_all(author.as_slice())?;
+        bin.write_all(checksum.as_slice())?;
+        bin.write_u32::<BigEndian>(size)?;
+        let sig_checksum = hash(bin.as_slice())?;
+        let signature = sign(&sig_checksum, &wallet.secret_key)?;
+        bin.write_all(signature.as_slice())?;
+        let id = hash(bin.as_slice())?;
         Ok(Content {
-            author: wallet.public_key.to_owned(),
+            id: id,
+            author: author,
             checksum: checksum,
-            signature: signature,
             size: size,
+            signature: signature,
             data: data.to_owned(),
         })
+    }
+
+    pub fn get_id(&self) -> Hash {
+        self.id.to_owned()
+    }
+
+    fn calc_id(&self) -> Result<Hash> {
+        let mut bin = Vec::new();
+        bin.write_all(self.author.as_slice())?;
+        bin.write_all(self.checksum.as_slice())?;
+        bin.write_u32::<BigEndian>(self.size)?;
+        bin.write_all(self.signature.as_slice())?;
+        hash(bin.as_slice())
     }
 
     pub fn get_author(&self) -> PublicKey {
@@ -41,6 +64,14 @@ impl Content {
 
     pub fn get_checksum(&self) -> Hash {
         self.checksum.to_owned()
+    }
+
+    fn calc_signature_checksum(&self) -> Result<Hash> {
+        let mut bin = Vec::new();
+        bin.write_all(self.author.as_slice())?;
+        bin.write_all(self.checksum.as_slice())?;
+        bin.write_u32::<BigEndian>(self.size)?;
+        hash(bin.as_slice())
     }
 
     pub fn get_signature(&self) -> Signature {
@@ -56,6 +87,7 @@ impl Content {
     }
 
     pub fn check(&self) -> Result<()> {
+        check_hash_size(&self.id)?;
         check_public_key_size(&self.author)?;
         check_hash_size(&self.checksum)?;
         check_signature_size(&self.signature)?;
@@ -71,8 +103,13 @@ impl Content {
         if self.checksum != checksum {
             return Err(ErrorKind::InvalidChecksum.into());
         }
-        if !verify_signature(&self.signature, &self.checksum, &self.author)? {
+        let sig_checksum = self.calc_signature_checksum()?;
+        if !verify_signature(&self.signature, &sig_checksum, &self.author)? {
             return Err(ErrorKind::InvalidSignature.into());
+        }
+        let id = self.calc_id()?;
+        if id != self.id {
+            return Err(ErrorKind::InvalidId.into());
         }
         Ok(())
     }
@@ -80,10 +117,11 @@ impl Content {
     pub fn to_vec(&self) -> Result<Vec<u8>> {
         self.check()?;
         let mut bin = Vec::new();
+        bin.write_all(self.id.as_slice())?;
         bin.write_all(self.author.as_slice())?;
         bin.write_all(self.checksum.as_slice())?;
-        bin.write_all(self.signature.as_slice())?;
         bin.write_u32::<BigEndian>(self.size)?;
+        bin.write_all(self.signature.as_slice())?;
         // NB: wo\ data: it will/could be dropped later
         Ok(bin)
     }
