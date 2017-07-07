@@ -441,31 +441,104 @@ impl Tx {
         Ok(())
     }
 
-    pub fn from_outpoints(_outpoints: &Vec<OutPoint>, _outputs: &Vec<Output>, signers: &Signers) -> Result<Self> {
-        let outpoints = OutPoints::new(_outpoints)?;
-        let outputs = Outputs::new(_outputs)?;
-        outpoints.check_unique()?;
-        outputs.check_unique()?;
-        for outpoint in outpoints.to_owned() {
+    pub fn check_doublespending(&self, outpoints: &Vec<OutPoint>) -> Result<()> {
+        let _outpoints = OutPoints::new(outpoints)?;
+        _outpoints.check_unique()?;
+        let mut _inputs = _outpoints.to_inputs()?;
+        _inputs.sort();
+        let mut inputs = self.inputs.to_owned();
+        check_unique_inputs(&inputs)?;
+        inputs.sort();
+        if _inputs != inputs {
+            return Err(ErrorKind::InvalidOutPoints.into());
+        }
+        let _outputs = Outputs::new(&self.outputs)?;
+        _outputs.check_unique()?;
+        for outpoint in _outpoints.to_owned() {
+            outpoint.check()?;
+            let output = outpoint.get_output();
+            if output.get_to() != self.signers.get_address() {
+                return Err(ErrorKind::InvalidAddress.into());
+            }
+        }
+        for output in _outputs.to_owned() {
+            output.check()?;
+        }
+        let outpoints_amount = _outpoints.tot_amount();
+        let outputs_amount = _outputs.tot_amount();
+        if outpoints_amount != outputs_amount {
+            return Err(ErrorKind::InvalidAmount.into());
+        }
+        // 1) a = unique oupoints content ids
+        // 2) b = all non own outputs content ids
+        // 3) if len(a) < len(b), doublespending
+        let mut outpoints_ids: Vec<Hash> = Vec::new();
+        for outpoint in _outpoints.to_owned() {
+            let content_id = outpoint.get_output().get_content().get_id();
+            outpoints_ids.push(content_id);
+        }
+        outpoints_ids = unique_hashes(&outpoints_ids)?;
+        let mut outputs_ids: Vec<Hash> = Vec::new();
+        for output in _outputs.to_owned() {
+            let content = output.get_content();
+            if content.get_creators() != self.signers {
+                let content_id = content.get_id();
+                outputs_ids.push(content_id);
+            }
+        }
+        outputs_ids = unique_hashes(&outputs_ids)?;
+        if outpoints_ids.len() < outputs_ids.len() {
+            return Err(ErrorKind::InvalidAmount.into());
+        }
+        Ok(())
+    }
+
+    pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, signers: &Signers) -> Result<Self> {
+        let _outpoints = OutPoints::new(outpoints)?;
+        let _outputs = Outputs::new(outputs)?;
+        _outpoints.check_unique()?;
+        _outputs.check_unique()?;
+        for outpoint in _outpoints.to_owned() {
             outpoint.check()?;
             let output = outpoint.get_output();
             if output.get_to() != signers.get_address() {
                 return Err(ErrorKind::InvalidAddress.into());
             }
         }
-        for output in outputs.to_owned() {
+        for output in _outputs.to_owned() {
             output.check()?;
         }
-        let outpoints_amount = outpoints.tot_amount();
-        let outputs_amount = outputs.tot_amount();
+        let outpoints_amount = _outpoints.tot_amount();
+        let outputs_amount = _outputs.tot_amount();
         if outpoints_amount != outputs_amount {
             return Err(ErrorKind::InvalidAmount.into());
         }
+        // 1) a = unique oupoints content ids
+        // 2) b = all non own outputs content ids
+        // 3) if len(a) < len(b), doublespending
+        let mut outpoints_ids: Vec<Hash> = Vec::new();
+        for outpoint in _outpoints.to_owned() {
+            let content_id = outpoint.get_output().get_content().get_id();
+            outpoints_ids.push(content_id);
+        }
+        outpoints_ids = unique_hashes(&outpoints_ids)?;
+        let mut outputs_ids: Vec<Hash> = Vec::new();
+        for output in _outputs.to_owned() {
+            let content = output.get_content();
+            if content.get_creators() != *signers {
+                let content_id = content.get_id();
+                outputs_ids.push(content_id);
+            }
+        }
+        outputs_ids = unique_hashes(&outputs_ids)?;
+        if outpoints_ids.len() < outputs_ids.len() {
+            return Err(ErrorKind::InvalidAmount.into());
+        }
         let mut tx = Tx::new()?;
-        for input in outpoints.to_inputs()? {
+        for input in _outpoints.to_inputs()? {
             tx.add_input(&input)?;
         }
-        for output in outputs.to_owned() {
+        for output in _outputs.to_owned() {
             tx.add_output(&output)?;
         }
         tx.set_signers(signers)?;

@@ -84,6 +84,10 @@ impl Iterator for SecretKeys {
     }
 }
 
+pub fn unique_secret_keys(sks: &Vec<SecretKey>) -> Result<Vec<SecretKey>> {
+    Ok(SecretKeys::new(sks)?.unique().collect())
+}
+
 pub fn check_unique_secret_keys(sks: &Vec<SecretKey>) -> Result<()> {
     let uniques: Vec<SecretKey> = SecretKeys::new(sks)?.unique().collect();
     if uniques.len() != sks.len() {
@@ -159,6 +163,10 @@ impl Iterator for PublicKeys {
             Err(_) => { None },
         }
     }
+}
+
+pub fn unique_public_keys(pks: &Vec<PublicKey>) -> Result<Vec<PublicKey>> {
+    Ok(PublicKeys::new(pks)?.unique().collect())
 }
 
 pub fn check_unique_public_keys(pks: &Vec<PublicKey>) -> Result<()> {
@@ -244,6 +252,10 @@ impl Iterator for Signatures {
             Err(_) => { None },
         }
     }
+}
+
+pub fn unique_signatures(sigs: &Vec<Signature>) -> Result<Vec<Signature>> {
+    Ok(Signatures::new(sigs)?.unique().collect())
 }
 
 pub fn check_unique_signatures(sigs: &Vec<Signature>) -> Result<()> {

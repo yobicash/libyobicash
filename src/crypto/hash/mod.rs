@@ -83,6 +83,10 @@ impl Iterator for Hashes {
     }
 }
 
+pub fn unique_hashes(hashes: &Vec<Hash>) -> Result<Vec<Hash>> {
+    Ok(Hashes::new(hashes)?.unique().collect())
+}
+
 pub fn check_unique_hashes(hashes: &Vec<Hash>) -> Result<()> {
     let uniques: Vec<Hash> = Hashes::new(hashes)?.unique().collect();
     if uniques.len() != hashes.len() {

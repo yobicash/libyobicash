@@ -100,6 +100,10 @@ error_chain! {
             description("Invalid id")
         }
 
+        InvalidOutPoints {
+            description("Invalid outpoints")
+        }
+
         InvalidPrevBlock {
             description("Invalid prev block")
         }
