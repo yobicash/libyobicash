@@ -1,6 +1,7 @@
 use libyobicash::models::outpoint::*;
 use libyobicash::models::output::Output;
 use libyobicash::models::content::Content;
+use libyobicash::models::signers::Signers;
 use libyobicash::models::amount::Amount;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::wallet::Wallet;
@@ -14,7 +15,12 @@ fn new_outpoint_succ() {
     let wallet = Wallet::new().unwrap();
     let amount = 10;
     let data = randombytes(amount).unwrap();
-    let content = Content::new(&wallet, &data).unwrap();
+    let creators = Signers::new().unwrap()
+        .add_signer(&wallet.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let content = Content::new(&creators, &data).unwrap()
+        .sign(&wallet).unwrap()
+        .finalize().unwrap();
     let h = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
@@ -29,7 +35,12 @@ fn new_outpoint_fail() {
     let wallet = Wallet::new().unwrap();
     let amount = 10;
     let data = randombytes(amount).unwrap();
-    let content = Content::new(&wallet, &data).unwrap();
+    let creators = Signers::new().unwrap()
+        .add_signer(&wallet.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let content = Content::new(&creators, &data).unwrap()
+        .sign(&wallet).unwrap()
+        .finalize().unwrap();
     let h = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
@@ -44,7 +55,12 @@ fn unique_outpoints_succ() {
     let wallet = Wallet::new().unwrap();
     let amount = 10;
     let data = randombytes(amount).unwrap();
-    let content = Content::new(&wallet, &data).unwrap();
+    let creators = Signers::new().unwrap()
+        .add_signer(&wallet.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let content = Content::new(&creators, &data).unwrap()
+        .sign(&wallet).unwrap()
+        .finalize().unwrap();
     let h = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
@@ -65,7 +81,12 @@ fn unique_outpoints_fail() {
     let wallet = Wallet::new().unwrap();
     let amount = 10;
     let data = randombytes(amount).unwrap();
-    let content = Content::new(&wallet, &data).unwrap();
+    let creators = Signers::new().unwrap()
+        .add_signer(&wallet.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let content = Content::new(&creators, &data).unwrap()
+        .sign(&wallet).unwrap()
+        .finalize().unwrap();
     let h = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();

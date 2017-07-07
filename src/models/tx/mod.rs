@@ -11,6 +11,7 @@ use length::check_length;
 use crypto::hash::*;
 use crypto::sign::Signature;
 use crypto::sign::sign;
+use crypto::sign::check_signature_size;
 use crypto::sign::check_unique_signatures;
 use mining::por::Segment;
 use mining::por::read_segment;
@@ -235,7 +236,7 @@ impl Tx {
         self.check_outputs()
     }
 
-    pub fn get_checksum(&self) -> Result<Hash> {
+    pub fn calc_checksum(&self) -> Result<Hash> {
         self.check_pre_checksum()?;
         let mut bin = Vec::new();
         bin.write_all(self.time.to_rfc3339().into_bytes().as_slice())?;
@@ -271,8 +272,18 @@ impl Tx {
         self.signatures.to_owned()
     }
 
+    fn check_pre_sign(&self) -> Result<()> {
+        self.check_pre_checksum()?;
+        self.check_signatures_len()?;
+        for i in 0..self.signatures_len as usize {
+            check_signature_size(&self.signatures[i])?;
+        }
+        Ok(())
+    }
+
     pub fn sign(&mut self, w: &Wallet) -> Result<Self> {
-        let checksum = self.get_checksum()?;
+        self.check_pre_sign()?;
+        let checksum = self.calc_checksum()?;
         if !self.signers.lookup_signer(&w.public_key)? {
             return Err(ErrorKind::NotFound.into());
         }
@@ -288,14 +299,17 @@ impl Tx {
     }
 
     pub fn verify_signatures(&self) -> Result<bool> {
-        let cksm = self.get_checksum()?;
+        let cksm = self.calc_checksum()?;
         self.signers.verify_signatures(&cksm, &self.signatures)
     }
 
     pub fn check_signatures(&self) -> Result<()> {
         check_length(&self.signatures)?;
         check_unique_signatures(&self.signatures)?;
-        let cksm = self.get_checksum()?;
+        for i in 0..self.signatures_len as usize {
+            check_signature_size(&self.signatures[i])?;
+        }
+        let cksm = self.calc_checksum()?;
         self.signers.check_signatures(&cksm, &self.signatures)
     }
 
@@ -393,11 +407,13 @@ impl Tx {
         if size > 0 && Amount::new(size) != amount.to_owned() {
             return Err(ErrorKind::InvalidSize.into());
         }
-        let content = Content::new(wallet, data)?;
-        let outp = Output::new(amount, &to.get_address(), &content)?;
         let signers = Signers::new()?
             .add_signer(&wallet.public_key, 1)?
             .finalize()?;
+        let content = Content::new(&signers, data)?
+            .sign(&wallet)?
+            .finalize()?;
+        let outp = Output::new(amount, &to.get_address(), &content)?;
         signers.check()?;
         let tx = Tx::new()?
             .add_output(&outp)?
