@@ -465,8 +465,8 @@ impl Tx {
             output.check()?;
         }
         let outpoints_amount = _outpoints.tot_amount();
-        let outputs_amount = _outputs.tot_amount();
-        if outpoints_amount != outputs_amount {
+        let tot_amount = self.get_tot_amount() + self.get_fee();
+        if outpoints_amount != tot_amount {
             return Err(ErrorKind::InvalidAmount.into());
         }
         // 1) a = unique oupoints content ids
@@ -474,16 +474,19 @@ impl Tx {
         // 3) if len(a) < len(b), doublespending
         let mut outpoints_ids: Vec<Hash> = Vec::new();
         for outpoint in _outpoints.to_owned() {
-            let content_id = outpoint.get_output().get_content().get_id();
-            outpoints_ids.push(content_id);
+            if let Some(content) = outpoint.get_output().get_content() {
+                let content_id = content.get_id();
+                outpoints_ids.push(content_id);
+            }
         }
         outpoints_ids = unique_hashes(&outpoints_ids)?;
         let mut outputs_ids: Vec<Hash> = Vec::new();
         for output in _outputs.to_owned() {
-            let content = output.get_content();
-            if content.get_creators() != self.signers {
-                let content_id = content.get_id();
-                outputs_ids.push(content_id);
+            if let Some(content) = output.get_content() {
+                if content.get_creators() != self.signers {
+                    let content_id = content.get_id();
+                    outputs_ids.push(content_id);
+                }
             }
         }
         outputs_ids = unique_hashes(&outputs_ids)?;
@@ -493,7 +496,7 @@ impl Tx {
         Ok(())
     }
 
-    pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, signers: &Signers) -> Result<Self> {
+    pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, fee: &Amount, signers: &Signers) -> Result<Self> {
         let _outpoints = OutPoints::new(outpoints)?;
         let _outputs = Outputs::new(outputs)?;
         _outpoints.check_unique()?;
@@ -509,8 +512,8 @@ impl Tx {
             output.check()?;
         }
         let outpoints_amount = _outpoints.tot_amount();
-        let outputs_amount = _outputs.tot_amount();
-        if outpoints_amount != outputs_amount {
+        let tot_amount = _outputs.tot_amount() + fee.to_owned();
+        if outpoints_amount != tot_amount {
             return Err(ErrorKind::InvalidAmount.into());
         }
         // 1) a = unique oupoints content ids
@@ -518,16 +521,19 @@ impl Tx {
         // 3) if len(a) < len(b), doublespending
         let mut outpoints_ids: Vec<Hash> = Vec::new();
         for outpoint in _outpoints.to_owned() {
-            let content_id = outpoint.get_output().get_content().get_id();
-            outpoints_ids.push(content_id);
+            if let Some(content) = outpoint.get_output().get_content() {
+                let content_id = content.get_id();
+                outpoints_ids.push(content_id);
+            }
         }
         outpoints_ids = unique_hashes(&outpoints_ids)?;
         let mut outputs_ids: Vec<Hash> = Vec::new();
         for output in _outputs.to_owned() {
-            let content = output.get_content();
-            if content.get_creators() != *signers {
-                let content_id = content.get_id();
-                outputs_ids.push(content_id);
+            if let Some(content) = output.get_content() {
+                if content.get_creators() != *signers {
+                    let content_id = content.get_id();
+                    outputs_ids.push(content_id);
+                }
             }
         }
         outputs_ids = unique_hashes(&outputs_ids)?;

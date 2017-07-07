@@ -1,6 +1,7 @@
 use libyobicash::models::output::*;
 use libyobicash::models::content::Content;
 use libyobicash::models::amount::Amount;
+use libyobicash::models::address::ADDRESS_SIZE;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::models::signers::Signers;
@@ -24,6 +25,26 @@ fn new_output_succ() {
     let to = hash_to_address(&h).unwrap();
     let res = Output::new(&Amount::new(amount as u32), &to, &content);
     assert!(res.is_ok())
+}
+
+#[test]
+fn new_no_content_output_succ() {
+    let wallet = Wallet::new().unwrap();
+    let signers = Signers::new().unwrap()
+        .add_signer(&wallet.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let to = signers.get_address();
+    let amount = 10;
+    let res = Output::no_content(&Amount::new(amount as u32), &to);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn new_no_content_output_fail() {
+    let to = randombytes(ADDRESS_SIZE+1).unwrap();
+    let amount = 10;
+    let res = Output::no_content(&Amount::new(amount as u32), &to);
+    assert!(res.is_err())
 }
 
 #[test]

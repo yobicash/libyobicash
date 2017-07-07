@@ -14,7 +14,7 @@ use std::iter::Iterator;
 pub struct Output {
     to: Address,
     amount: Amount,
-    content: Content,
+    content: Option<Content>,
 }
 
 impl Output {
@@ -28,7 +28,16 @@ impl Output {
         Ok(Output {
             to: to.to_owned(),
             amount: amount.to_owned(),
-            content: content.to_owned(),
+            content: Some(content.to_owned()),
+        })
+    }
+
+    pub fn no_content(amount: &Amount, to: &Address) -> Result<Self> {
+        check_address(to)?;
+        Ok(Output {
+            to: to.to_owned(),
+            amount: amount.to_owned(),
+            content: None,
         })
     }
 
@@ -51,22 +60,24 @@ impl Output {
         Ok(self.to_owned())
     }
 
-    pub fn get_content(&self) -> Content {
+    pub fn get_content(&self) -> Option<Content> {
         self.content.to_owned()
     }
 
     pub fn set_content(&mut self, content: &Content) -> Result<Self> {
         content.check()?;
-        self.content = content.to_owned();
+        self.content = Some(content.to_owned());
         Ok(self.to_owned())
     }
 
     pub fn check(&self) -> Result<()> {
         check_address(&self.to)?;
-        self.content.check()?;
-        let size = self.content.get_size();
-        if size > 0 && Amount::new(size) != self.amount.to_owned() {
-            return Err(ErrorKind::InvalidAmount.into());
+        if let Some(content) = self.content.to_owned() {
+            content.check()?;
+            let size = content.get_size();
+            if size > 0 && Amount::new(size) != self.amount.to_owned() {
+                return Err(ErrorKind::InvalidAmount.into());
+            }
         }
         Ok(())
     }
@@ -76,7 +87,9 @@ impl Output {
         let mut bin = Vec::new();
         bin.write_all(self.to.as_slice())?;
         bin.write_all(self.amount.to_vec().as_slice())?;
-        bin.write_all(self.content.to_vec()?.as_slice())?;
+        if let Some(content) = self.content.to_owned() {
+            bin.write_all(content.to_vec()?.as_slice())?;
+        }
         Ok(bin)
     }
 }
