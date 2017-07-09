@@ -86,6 +86,10 @@ impl OutPoints {
         self.items.push(item)
     }
 
+    pub fn to_raw(&self) -> Vec<OutPoint> {
+        self.items.to_owned()
+    }
+
     pub fn tot_amount(&self) -> Amount {
         let mut tot_amount = Amount::zero();
         for outpoint in self.to_owned() {
@@ -102,6 +106,7 @@ impl OutPoints {
             let input = Input::new(&tx_id, idx)?;
             inputs.push(input);
         }
+        // println!("to_inputs inputs: {:?}", inputs);
         Ok(inputs)
     }
 

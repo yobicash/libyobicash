@@ -9,6 +9,7 @@ use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
 use libyobicash::models::outpoint::*;
 use libyobicash::mining::por::*;
+use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::utils::randombytes;
@@ -438,32 +439,55 @@ fn unique_txs_fail() {
 
 #[test]
 fn check_doublespending_succ() {
-    /*
-    let wallet = Wallet::new().unwrap();
-    let amount = 10;
-    let data = randombytes(amount).unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
+    /* WEIRD THINGS HAPPENING
+    let seed = randombytes(HASH_SIZE).unwrap();
+    let wallet = Wallet::from_seed(&seed).unwrap();
+    let weight = 10;
+    let threshold = 5;
+    let mut to = Signers::new().unwrap();
+    to = to
+        .add_signer(&wallet.public_key, weight).unwrap()
+        .set_threshold(threshold).unwrap()
         .finalize().unwrap();
-    let content = Content::new(&creators, &data).unwrap()
-        .sign(&wallet).unwrap()
-        .finalize().unwrap();
-    let to = hash_to_address(&h).unwrap();
-    let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
+    to.check().unwrap();
+    let to_address = to.get_address();
+    let mut outpoints = OutPoints::new(&Vec::new()).unwrap();
     let len = 10;
-    let mut outpoints: Vec<OutPoint> = Vec::new();
     for i in 0..len {
+        let wallet = Wallet::new().unwrap();
+        let amount = 10;
+        let data = randombytes(amount).unwrap();
+        let creators = Signers::new().unwrap()
+            .add_signer(&wallet.public_key, 1).unwrap()
+            .finalize().unwrap();
+        let content = Content::new(&creators, &data).unwrap()
+            .sign(&wallet).unwrap()
+            .finalize().unwrap();
         let tx_id = balloon_nonce_from_u32(i).unwrap();
-        let idx = 10;
+        let idx = 0;
+        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
-    check_unique_outpoints(&outpoints).unwrap();
-    let _outpoints = OutPoints::new(&outpoints).unwrap();
-    let inputs = _outpoints.to_inputs();
-    let tot_amount = _oupoints.tot_amount();
+    println!("outpoints: {:?}", outpoints);
+    println!("oupoints.to_inputs(): {:?}", outpoints.to_inputs());
+    let inputs = outpoints.to_inputs().unwrap();
+    println!("inputs: {:?}", inputs);
+    let mut tx = Tx::new().unwrap();
+    for i in 0..inputs.len() {
+        tx.add_input(&inputs[i]).unwrap();
+    }
+    let tot_amount = outpoints.tot_amount();
+    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    tx.add_output(&output).unwrap();
     let fee = Amount::new(0);
-    let 
+    tx.set_fee(&fee);
+    tx.set_signers(&to).unwrap()
+        .sign(&wallet).unwrap()
+        .finalize().unwrap()
+        .check().unwrap();
+    let res = tx.check_doublespending(&outpoints.to_raw());
+    println!("res: {:?}", res);
     assert!(res.is_ok())
     */
 }

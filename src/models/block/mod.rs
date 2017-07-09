@@ -52,9 +52,9 @@ impl cmp::Ord for Block {
     fn cmp(&self, other: &Block) -> cmp::Ordering {
         match self.height.cmp(&other.height) {
             cmp::Ordering::Equal => {
-                let self_c_amount = self.get_chain_amount();
-                let other_c_amount = other.get_chain_amount();
-                self_c_amount.cmp(&other_c_amount)
+                let self_amount = self.get_chain_amount() * Amount::new(self.tx_ids_len);
+                let other_amount = other.get_chain_amount() * Amount::new(self.tx_ids_len);
+                self_amount.cmp(&other_amount)
             },
             other => other,
         }
