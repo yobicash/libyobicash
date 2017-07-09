@@ -1,3 +1,4 @@
+use byteorder::{ByteOrder, BigEndian};
 use sodiumoxide::crypto::hash as _hash;
 use itertools::Itertools;
 use errors::*;
@@ -20,6 +21,12 @@ pub fn hash(msg: &[u8]) -> Result<Hash> {
     init()?;
     check_size(msg)?;
     Ok(_hash::sha256::hash(msg).as_ref().to_vec())
+}
+
+pub fn nonce_from_u32(n: u32) -> Result<Hash> {
+    let mut buf = [0; 4];
+    BigEndian::write_u32(&mut buf, n);
+    hash(&buf[..])
 }
 
 #[derive(Clone, Debug)]

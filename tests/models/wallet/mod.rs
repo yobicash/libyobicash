@@ -1,6 +1,6 @@
 use libyobicash::models::wallet::Wallet;
 use libyobicash::models::wallet::check_unique_wallets;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::sign::SEED_SIZE;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
@@ -30,7 +30,7 @@ fn unique_wallets_succ() {
     let len = 10;
     let mut wallets: Vec<Wallet> = Vec::new();
     for i in 0..len {
-        let seed = balloon_nonce_from_u32(i).unwrap();
+        let seed = nonce_from_u32(i).unwrap();
         let wallet = Wallet::from_seed(&seed).unwrap();
         wallets.push(wallet);
     }

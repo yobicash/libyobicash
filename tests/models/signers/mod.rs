@@ -1,7 +1,7 @@
 use libyobicash::models::signers::*;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::crypto::hash::HASH_SIZE;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::sign::sign;
 use libyobicash::crypto::utils::randombytes;
@@ -213,7 +213,7 @@ fn unique_signers_succ() {
     let len = 10;
     let mut signerses: Vec<Signers> = Vec::new();
     for i in 0..len {
-        let seed = balloon_nonce_from_u32(i).unwrap();
+        let seed = nonce_from_u32(i).unwrap();
         let wallet = Wallet::from_seed(&seed).unwrap();
         let weight = 10;
         let signers = Signers::new().unwrap()

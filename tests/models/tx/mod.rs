@@ -9,9 +9,9 @@ use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
 use libyobicash::models::outpoint::*;
 use libyobicash::mining::por::*;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::sign::PUBLICKEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
@@ -462,7 +462,7 @@ fn check_doublespending_succ() {
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
         let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
@@ -511,7 +511,7 @@ fn check_doublespending_fail() {
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
         let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
@@ -560,7 +560,7 @@ fn tx_from_outpoints_succ() {
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
         let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
@@ -599,7 +599,7 @@ fn tx_from_outpoints_fail() {
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
         let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();

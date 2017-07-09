@@ -1,4 +1,3 @@
-use byteorder::{ByteOrder, BigEndian};
 use errors::*;
 use crypto::hash::*;
 use mining::utils::*;
@@ -28,12 +27,6 @@ pub fn check_delta(delta: u32) -> Result<()> {
         return Err(ErrorKind::InvalidDelta.into());
     }
     Ok(())
-}
-
-pub fn balloon_nonce_from_u32(n: u32) -> Result<Hash> {
-    let mut buf = [0; 4];
-    BigEndian::write_u32(&mut buf, n);
-    hash(&buf[..])
 }
 
 pub fn balloon_hash(seed: &Hash, nonce: &Hash, _s_cost: u32, _t_cost: u32, _delta: u32) -> Result<Hash> {
@@ -100,7 +93,7 @@ pub fn balloon_mine(target_bits: u32, seed: &Hash, s_cost: u32, t_cost: u32, del
     let target = target_from_bits(target_bits)?;
 
     loop {
-        let _nonce = balloon_nonce_from_u32(i)?;
+        let _nonce = nonce_from_u32(i)?;
         let digest = balloon_hash(seed, &_nonce, s_cost, t_cost, delta)?;
         if digest.to_owned() <= target.to_owned() {
             nonce = Some(i);
@@ -121,7 +114,7 @@ pub fn balloon_verify(target_bits: u32, seed: &Hash, nonce: u32, s_cost: u32, t_
     check_s_cost(s_cost)?;
     check_t_cost(t_cost)?;
     check_delta(delta)?;
-    let _nonce = balloon_nonce_from_u32(nonce)?;
+    let _nonce = nonce_from_u32(nonce)?;
     let res = balloon_hash(seed, &_nonce, s_cost, t_cost, delta)?;
     let target = target_from_bits(target_bits)?;
     let ok = res <= target.to_owned();

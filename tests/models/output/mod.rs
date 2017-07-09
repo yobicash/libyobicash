@@ -5,8 +5,8 @@ use libyobicash::models::address::ADDRESS_SIZE;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::models::signers::Signers;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::hash::HASH_SIZE;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
@@ -96,7 +96,7 @@ fn unique_outputs_succ() {
     let len = 10;
     let mut outputs: Vec<Output> = Vec::new();
     for i in 0..len {
-        let h = balloon_nonce_from_u32(i).unwrap();
+        let h = nonce_from_u32(i).unwrap();
         let to = hash_to_address(&h).unwrap();
         let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
         outputs.push(output);

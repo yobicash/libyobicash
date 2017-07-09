@@ -5,8 +5,8 @@ use libyobicash::models::signers::Signers;
 use libyobicash::models::amount::Amount;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::wallet::Wallet;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::hash::HASH_SIZE;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
@@ -67,7 +67,7 @@ fn unique_outpoints_succ() {
     let len = 10;
     let mut outpoints: Vec<OutPoint> = Vec::new();
     for i in 0..len {
-        let tx_id = balloon_nonce_from_u32(i).unwrap();
+        let tx_id = nonce_from_u32(i).unwrap();
         let idx = 10;
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
         outpoints.push(outpoint);

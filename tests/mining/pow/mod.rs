@@ -3,6 +3,7 @@ use libyobicash::mining::targetting::MIN_BITS;
 use libyobicash::mining::targetting::MAX_BITS;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::hash::check_hash_size;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
 
 #[test]
@@ -47,20 +48,13 @@ fn check_delta_fail() {
     assert!(res.is_err())
 }
 
-#[test]
-fn balloon_nonce_from_u32_succ() {
-    let n = 10;
-    let res = balloon_nonce_from_u32(n);
-    assert!(res.is_ok())
-}
-
 // NB: failure conditions for hash are a little difficult to test...
 
 #[test]
 fn balloon_hash_succ() {
     let seed = randombytes(HASH_SIZE).unwrap();
     let n = 10;
-    let nonce = balloon_nonce_from_u32(n).unwrap();
+    let nonce = nonce_from_u32(n).unwrap();
     let s_cost = MIN_S_COST;
     let t_cost = MIN_T_COST;
     let delta = MIN_DELTA;

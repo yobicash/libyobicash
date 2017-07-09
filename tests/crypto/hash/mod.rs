@@ -17,3 +17,10 @@ fn hash_fail() {
     let res = check_hash_size(&h);
     assert!(res.is_err()) 
 }
+
+#[test]
+fn nonce_from_u32_succ() {
+    let n = 10;
+    let nonce = nonce_from_u32(n).unwrap();
+    assert_eq!(nonce.len(), HASH_SIZE)
+}

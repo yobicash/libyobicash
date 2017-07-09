@@ -1,8 +1,8 @@
 use libyobicash::models::content::*;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::wallet::Wallet;
-use libyobicash::mining::pow::balloon_nonce_from_u32;
 use libyobicash::crypto::hash::HASH_SIZE;
+use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
@@ -43,7 +43,7 @@ fn unique_contents_succ() {
         .finalize().unwrap();
     let mut contents: Vec<Content> = Vec::new();
     for i in 0..len {
-        let data = balloon_nonce_from_u32(i).unwrap();
+        let data = nonce_from_u32(i).unwrap();
         let content = Content::new(&creators, &data).unwrap();
         contents.push(content);
     }
