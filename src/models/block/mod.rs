@@ -44,7 +44,19 @@ pub struct Block {
 
 impl cmp::PartialOrd for Block {
     fn partial_cmp(&self, other: &Block) -> Option<cmp::Ordering> {
-        self.coinbase_amount.partial_cmp(&other.coinbase_amount)
+        match self.height.partial_cmp(&other.height) {
+            Some(ord) => {
+                match ord {
+                    cmp::Ordering::Equal => {
+                        let self_amount = self.get_chain_amount() * Amount::new(self.get_tx_ids_len());
+                        let other_amount = other.get_chain_amount() * Amount::new(other.get_tx_ids_len());
+                        self_amount.partial_cmp(&other_amount)
+                    },
+                    other => Some(other),
+                }
+            },
+            None => None,
+        }
     }
 }
 
@@ -52,8 +64,8 @@ impl cmp::Ord for Block {
     fn cmp(&self, other: &Block) -> cmp::Ordering {
         match self.height.cmp(&other.height) {
             cmp::Ordering::Equal => {
-                let self_amount = self.get_chain_amount() * Amount::new(self.tx_ids_len);
-                let other_amount = other.get_chain_amount() * Amount::new(self.tx_ids_len);
+                let self_amount = self.get_chain_amount() * Amount::new(self.get_tx_ids_len());
+                let other_amount = other.get_chain_amount() * Amount::new(other.get_tx_ids_len());
                 self_amount.cmp(&other_amount)
             },
             other => other,
@@ -159,6 +171,14 @@ impl Block {
 
     pub fn get_prev_chain_amount(&self) -> Amount {
         self.prev_chain_amount.to_owned()
+    }
+
+    pub fn set_prev_chain_amount(&mut self, prev_c_a: &Amount) -> Result<Self> {
+        if *prev_c_a == Amount::zero() && self.height != 0 {
+            return Err(ErrorKind::InvalidAmount.into())
+        }
+        self.prev_chain_amount = prev_c_a.to_owned();
+        Ok(self.to_owned())
     }
 
     fn check_prev_chain_amount(&self) -> Result<()> {

@@ -1,5 +1,6 @@
 use chrono::Duration;
 use libyobicash::models::block::*;
+use libyobicash::models::amount::Amount;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::mining::targetting::*;
@@ -469,4 +470,21 @@ fn unique_blocks_fail() {
     let blocks: Vec<Block> = repeat(block).take(len).collect();
     let res = check_unique_blocks(&blocks);
     assert!(res.is_err())
+}
+
+#[test]
+fn block_selection_succ() {
+    let height = 1;
+    let tx_id = randombytes(HASH_SIZE).unwrap();
+    let mut lower = Block::new().unwrap();
+    lower.set_height(height).unwrap();
+    let lower_amount = Amount::new(10);
+    lower.set_prev_chain_amount(&lower_amount).unwrap();
+    lower.add_tx_id(&tx_id).unwrap();
+    let mut higher = Block::new().unwrap();
+    higher.set_height(height).unwrap();
+    let higher_amount = lower_amount * Amount::new(2);
+    higher.set_prev_chain_amount(&higher_amount).unwrap();
+    higher.add_tx_id(&tx_id).unwrap();
+    assert!(higher > lower)
 }
