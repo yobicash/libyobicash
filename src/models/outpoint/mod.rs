@@ -65,7 +65,15 @@ pub struct OutPoints {
 }
 
 impl OutPoints {
-    pub fn new(items: &Vec<OutPoint>) -> Result<OutPoints> {
+    pub fn new() -> OutPoints {
+        OutPoints {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<OutPoint>) -> Result<OutPoints> {
         check_length(items)?;
         let len = items.len();
         for i in 0..items.len() {
@@ -87,7 +95,7 @@ impl OutPoints {
         self.length += 1;
     }
 
-    pub fn to_raw(&self) -> Vec<OutPoint> {
+    pub fn to_vec(&self) -> Vec<OutPoint> {
         self.items.to_owned()
     }
 
@@ -166,7 +174,7 @@ impl Iterator for OutPoints {
 }
 
 pub fn unique_outpoints(outpoints: &Vec<OutPoint>) -> Result<Vec<OutPoint>> {
-    Ok(OutPoints::new(outpoints)?.unique().collect())
+    Ok(OutPoints::from_vec(outpoints)?.unique().collect())
 }
 
 pub fn check_unique_outpoints(outpoints: &Vec<OutPoint>) -> Result<()> {

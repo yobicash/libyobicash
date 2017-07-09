@@ -265,7 +265,15 @@ pub struct Signerses {
 }
 
 impl Signerses {
-    pub fn new(items: &Vec<Signers>) -> Result<Signerses> {
+    pub fn new() -> Signerses {
+        Signerses {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Signers>) -> Result<Signerses> {
         check_length(items)?;
         let len = items.len();
         for i in 0..items.len() {
@@ -335,7 +343,7 @@ impl Iterator for Signerses {
 }
 
 pub fn unique_signerses(sigs: &Vec<Signers>) -> Result<Vec<Signers>> {
-    Ok(Signerses::new(sigs)?.unique().collect())
+    Ok(Signerses::from_vec(sigs)?.unique().collect())
 }
 
 pub fn check_unique_signerses(sigs: &Vec<Signers>) -> Result<()> {

@@ -63,7 +63,15 @@ pub struct Inputs {
 }
 
 impl Inputs {
-    pub fn new(items: &Vec<Input>) -> Result<Inputs> {
+    pub fn new() -> Inputs {
+        Inputs {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Input>) -> Result<Inputs> {
         check_length(items)?;
         let len = items.len();
         Ok(Inputs {
@@ -130,7 +138,7 @@ impl Iterator for Inputs {
 }
 
 pub fn unique_inputs(inputs: &Vec<Input>) -> Result<Vec<Input>> {
-    Ok(Inputs::new(inputs)?.unique().collect())
+    Ok(Inputs::from_vec(inputs)?.unique().collect())
 }
 
 pub fn check_unique_inputs(inputs: &Vec<Input>) -> Result<()> {

@@ -442,7 +442,7 @@ impl Tx {
     }
 
     pub fn check_doublespending(&self, outpoints: &Vec<OutPoint>) -> Result<()> {
-        let _outpoints = OutPoints::new(outpoints)?;
+        let _outpoints = OutPoints::from_vec(outpoints)?;
         _outpoints.check_unique()?;
         let mut _inputs = _outpoints.to_inputs()?;
         _inputs.sort();
@@ -452,7 +452,7 @@ impl Tx {
         if _inputs != inputs {
             return Err(ErrorKind::InvalidOutPoints.into());
         }
-        let _outputs = Outputs::new(&self.outputs)?;
+        let _outputs = Outputs::from_vec(&self.outputs)?;
         _outputs.check_unique()?;
         for outpoint in _outpoints.to_owned() {
             outpoint.check()?;
@@ -497,8 +497,8 @@ impl Tx {
     }
 
     pub fn from_outpoints(outpoints: &Vec<OutPoint>, outputs: &Vec<Output>, fee: &Amount, signers: &Signers) -> Result<Self> {
-        let _outpoints = OutPoints::new(outpoints)?;
-        let _outputs = Outputs::new(outputs)?;
+        let _outpoints = OutPoints::from_vec(outpoints)?;
+        let _outputs = Outputs::from_vec(outputs)?;
         _outpoints.check_unique()?;
         _outputs.check_unique()?;
         for outpoint in _outpoints.to_owned() {
@@ -560,7 +560,15 @@ pub struct Txs {
 }
 
 impl Txs {
-    pub fn new(items: &Vec<Tx>) -> Result<Txs> {
+    pub fn new() -> Txs {
+        Txs {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Tx>) -> Result<Txs> {
         check_length(items)?;
         let len = items.len();
         Ok(Txs {
@@ -627,7 +635,7 @@ impl Iterator for Txs {
 }
 
 pub fn unique_txs(txs: &Vec<Tx>) -> Result<Vec<Tx>> {
-    Ok(Txs::new(txs)?.unique().collect())
+    Ok(Txs::from_vec(txs)?.unique().collect())
 }
 
 pub fn check_unique_txs(txs: &Vec<Tx>) -> Result<()> {

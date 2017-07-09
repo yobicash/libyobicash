@@ -218,7 +218,15 @@ pub struct Contents {
 }
 
 impl Contents {
-    pub fn new(items: &Vec<Content>) -> Result<Contents> {
+    pub fn new() -> Contents {
+        Contents {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Content>) -> Result<Contents> {
         check_length(items)?;
         let len = items.len();
         Ok(Contents {
@@ -285,7 +293,7 @@ impl Iterator for Contents {
 }
 
 pub fn unique_contents(contents: &Vec<Content>) -> Result<Vec<Content>> {
-    Ok(Contents::new(contents)?.unique().collect())
+    Ok(Contents::from_vec(contents)?.unique().collect())
 }
 
 pub fn check_unique_contents(contents: &Vec<Content>) -> Result<()> {

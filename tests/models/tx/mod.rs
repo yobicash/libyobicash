@@ -450,7 +450,7 @@ fn check_doublespending_succ() {
         .finalize().unwrap();
     to.check().unwrap();
     let to_address = to.get_address();
-    let mut outpoints = OutPoints::new(&Vec::new()).unwrap();
+    let mut outpoints = OutPoints::from_vec(&Vec::new()).unwrap();
     let len = 10;
     for i in 0..len {
         let wallet = Wallet::new().unwrap();
@@ -482,7 +482,7 @@ fn check_doublespending_succ() {
         .sign(&wallet).unwrap()
         .finalize().unwrap()
         .check().unwrap();
-    let res = tx.check_doublespending(&outpoints.to_raw());
+    let res = tx.check_doublespending(&outpoints.to_vec());
     assert!(res.is_ok())
 }
 
@@ -499,7 +499,7 @@ fn check_doublespending_fail() {
         .finalize().unwrap();
     to.check().unwrap();
     let to_address = to.get_address();
-    let mut outpoints = OutPoints::new(&Vec::new()).unwrap();
+    let mut outpoints = OutPoints::from_vec(&Vec::new()).unwrap();
     let len = 10;
     for i in 0..len {
         let wallet = Wallet::new().unwrap();
@@ -531,7 +531,7 @@ fn check_doublespending_fail() {
         .sign(&wallet).unwrap()
         .finalize().unwrap()
         .check().unwrap();
-    let res = tx.check_doublespending(&outpoints.to_raw());
+    let res = tx.check_doublespending(&outpoints.to_vec());
     assert!(res.is_err())
 }
 
@@ -548,7 +548,7 @@ fn tx_from_outpoints_succ() {
         .finalize().unwrap();
     to.check().unwrap();
     let to_address = to.get_address();
-    let mut outpoints = OutPoints::new(&Vec::new()).unwrap();
+    let mut outpoints = OutPoints::from_vec(&Vec::new()).unwrap();
     let len = 10;
     for i in 0..len {
         let wallet = Wallet::new().unwrap();
@@ -570,7 +570,7 @@ fn tx_from_outpoints_succ() {
     let output = Output::no_content(&tot_amount, &to_address).unwrap();
     let outputs = vec![output];
     let fee = Amount::new(0);
-    let res = Tx::from_outpoints(&outpoints.to_raw(), &outputs, &fee, &to);
+    let res = Tx::from_outpoints(&outpoints.to_vec(), &outputs, &fee, &to);
     assert!(res.is_ok())
 }
 
@@ -587,7 +587,7 @@ fn tx_from_outpoints_fail() {
         .finalize().unwrap();
     to.check().unwrap();
     let to_address = to.get_address();
-    let mut outpoints = OutPoints::new(&Vec::new()).unwrap();
+    let mut outpoints = OutPoints::from_vec(&Vec::new()).unwrap();
     let len = 10;
     for i in 0..len {
         let wallet = Wallet::new().unwrap();
@@ -609,6 +609,6 @@ fn tx_from_outpoints_fail() {
     let output = Output::no_content(&tot_amount, &to_address).unwrap();
     let outputs = vec![output];
     let fee = tot_amount + Amount::new(10);
-    let res = Tx::from_outpoints(&outpoints.to_raw(), &outputs, &fee, &to);
+    let res = Tx::from_outpoints(&outpoints.to_vec(), &outputs, &fee, &to);
     assert!(res.is_err())
 }

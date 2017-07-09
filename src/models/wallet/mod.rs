@@ -41,7 +41,15 @@ pub struct Wallets {
 }
 
 impl Wallets {
-    pub fn new(items: &Vec<Wallet>) -> Result<Wallets> {
+    pub fn new() -> Wallets {
+        Wallets {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Wallet>) -> Result<Wallets> {
         check_length(items)?;
         let len = items.len();
         Ok(Wallets {
@@ -108,7 +116,7 @@ impl Iterator for Wallets {
 }
 
 pub fn unique_wallets(wallets: &Vec<Wallet>) -> Result<Vec<Wallet>> {
-    Ok(Wallets::new(wallets)?.unique().collect())
+    Ok(Wallets::from_vec(wallets)?.unique().collect())
 }
 
 pub fn check_unique_wallets(wallets: &Vec<Wallet>) -> Result<()> {

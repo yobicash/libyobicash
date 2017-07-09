@@ -37,7 +37,15 @@ pub struct Hashes {
 }
 
 impl Hashes {
-    pub fn new(items: &Vec<Hash>) -> Result<Hashes> {
+    pub fn new() -> Hashes {
+        Hashes {
+            length: 0,
+            idx: 0,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn from_vec(items: &Vec<Hash>) -> Result<Hashes> {
         check_length(items)?;
         let len = items.len();
         Ok(Hashes {
@@ -47,12 +55,17 @@ impl Hashes {
         })
     }
 
+    pub fn to_vec(&self) -> Vec<Hash> {
+        self.items.to_owned()
+    }
+
     pub fn len(&self) -> usize {
         self.length as usize
     }
 
     pub fn push(&mut self, item: Hash) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn check(&self) -> Result<()> {
@@ -91,11 +104,11 @@ impl Iterator for Hashes {
 }
 
 pub fn unique_hashes(hashes: &Vec<Hash>) -> Result<Vec<Hash>> {
-    Ok(Hashes::new(hashes)?.unique().collect())
+    Ok(Hashes::from_vec(hashes)?.unique().collect())
 }
 
 pub fn check_unique_hashes(hashes: &Vec<Hash>) -> Result<()> {
-    let uniques: Vec<Hash> = Hashes::new(hashes)?.unique().collect();
+    let uniques: Vec<Hash> = Hashes::from_vec(hashes)?.unique().collect();
     if uniques.len() != hashes.len() {
         return Err(ErrorKind::DuplicatedElements.into());
     }
