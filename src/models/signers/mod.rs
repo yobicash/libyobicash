@@ -283,7 +283,8 @@ impl Signerses {
     }
 
     pub fn push(&mut self, item: Signers) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn unique(&self) -> Vec<Signers> {

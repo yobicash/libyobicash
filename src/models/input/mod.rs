@@ -78,7 +78,8 @@ impl Inputs {
     }
 
     pub fn push(&mut self, item: Input) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn unique(&self) -> Vec<Input> {

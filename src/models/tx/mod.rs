@@ -575,7 +575,8 @@ impl Txs {
     }
 
     pub fn push(&mut self, item: Tx) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn unique(&self) -> Vec<Tx> {

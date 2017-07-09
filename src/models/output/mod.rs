@@ -120,7 +120,8 @@ impl Outputs {
     }
 
     pub fn push(&mut self, item: Output) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn tot_amount(&self) -> Amount {

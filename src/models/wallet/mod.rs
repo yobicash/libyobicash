@@ -56,7 +56,8 @@ impl Wallets {
     }
 
     pub fn push(&mut self, item: Wallet) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn unique(&self) -> Vec<Wallet> {

@@ -468,11 +468,7 @@ fn check_doublespending_succ() {
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
-    // NB: WEIRD THINGS HAPPENING HERE
-    println!("outpoints: {:?}", outpoints);
-    println!("oupoints.to_inputs(): {:?}", outpoints.to_inputs());
     let inputs = outpoints.to_inputs().unwrap();
-    println!("inputs: {:?}", inputs);
     let mut tx = Tx::new().unwrap();
     for i in 0..inputs.len() {
         tx.add_input(&inputs[i]).unwrap();
@@ -487,7 +483,6 @@ fn check_doublespending_succ() {
         .finalize().unwrap()
         .check().unwrap();
     let res = tx.check_doublespending(&outpoints.to_raw());
-    println!("res: {:?}", res);
     assert!(res.is_ok())
 }
 

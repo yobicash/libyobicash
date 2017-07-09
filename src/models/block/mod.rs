@@ -624,7 +624,8 @@ impl Blocks {
     }
 
     pub fn push(&mut self, item: Block) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn unique(&self) -> Vec<Block> {

@@ -83,7 +83,8 @@ impl OutPoints {
     }
 
     pub fn push(&mut self, item: OutPoint) {
-        self.items.push(item)
+        self.items.push(item);
+        self.length += 1;
     }
 
     pub fn to_raw(&self) -> Vec<OutPoint> {
@@ -106,8 +107,6 @@ impl OutPoints {
             let input = Input::new(&tx_id, idx)?;
             inputs.push(input);
         }
-        // NB: for check_doublespending_succ in tx tests
-        println!("to_inputs inputs: {:?}", inputs);
         Ok(inputs)
     }
 
