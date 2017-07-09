@@ -439,7 +439,6 @@ fn unique_txs_fail() {
 
 #[test]
 fn check_doublespending_succ() {
-    /* WEIRD THINGS HAPPENING
     let seed = randombytes(HASH_SIZE).unwrap();
     let wallet = Wallet::from_seed(&seed).unwrap();
     let weight = 10;
@@ -469,6 +468,7 @@ fn check_doublespending_succ() {
         let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
+    // NB: WEIRD THINGS HAPPENING HERE
     println!("outpoints: {:?}", outpoints);
     println!("oupoints.to_inputs(): {:?}", outpoints.to_inputs());
     let inputs = outpoints.to_inputs().unwrap();
@@ -489,7 +489,6 @@ fn check_doublespending_succ() {
     let res = tx.check_doublespending(&outpoints.to_raw());
     println!("res: {:?}", res);
     assert!(res.is_ok())
-    */
 }
 
 #[test]

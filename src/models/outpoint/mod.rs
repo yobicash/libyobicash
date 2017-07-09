@@ -106,7 +106,8 @@ impl OutPoints {
             let input = Input::new(&tx_id, idx)?;
             inputs.push(input);
         }
-        // println!("to_inputs inputs: {:?}", inputs);
+        // NB: for check_doublespending_succ in tx tests
+        println!("to_inputs inputs: {:?}", inputs);
         Ok(inputs)
     }
 
