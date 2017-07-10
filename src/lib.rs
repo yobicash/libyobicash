@@ -23,4 +23,4 @@ pub const NAME: &str = "Yobicash";
 
 pub const CODE: &str = "YBC";
 
-pub const VERSION: &str = "0.1.0";
+pub const VERSION: &str = "0.5.0";
