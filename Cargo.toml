@@ -1,6 +1,6 @@
 [package]
 name = "libyobicash"
-version = "0.1.0"
+version = "0.5.0"
 authors = ["Christian Nyumbayire <chritchens@gmail.com>"]
 license = "MIT"
 description = "Library of the Yobicash blockchain, a blockchain for data"
