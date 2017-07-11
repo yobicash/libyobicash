@@ -9,7 +9,7 @@ use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
 use libyobicash::models::outpoint::*;
 use libyobicash::mining::por::*;
-use libyobicash::crypto::sign::PUBLICKEY_SIZE;
+use libyobicash::crypto::sign::PUBLIC_KEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::hash::nonce_from_u32;
 use libyobicash::crypto::utils::randombytes;
@@ -70,7 +70,7 @@ fn set_version_fail() {
 #[test]
 fn set_signers_succ() {
     let mut tx = Tx::new().unwrap();
-    let pk1 = randombytes(PUBLICKEY_SIZE).unwrap();
+    let pk1 = randombytes(PUBLIC_KEY_SIZE).unwrap();
     let weight1 = 10;
     let mut pk2 = pk1.to_owned();
     pk2[0] = pk2[0] % 2 + 1;
@@ -90,7 +90,7 @@ fn set_signers_succ() {
 #[test]
 fn set_signers_fail() {
     let mut tx = Tx::new().unwrap();
-    let pk1 = randombytes(PUBLICKEY_SIZE).unwrap();
+    let pk1 = randombytes(PUBLIC_KEY_SIZE).unwrap();
     let weight1 = 10;
     let mut pk2 = pk1.to_owned();
     pk2[0] = pk2[0] % 2 + 1;

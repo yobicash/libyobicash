@@ -3,6 +3,38 @@ use libyobicash::crypto::hash::hash;
 use libyobicash::crypto::utils::randombytes;
 
 #[test]
+fn test_crypto_sign_ed25519_bytes() {
+    let signature_bytes = unsafe {
+        crypto_sign_ed25519_bytes() as usize
+    };
+    assert_eq!(signature_bytes, SIGNATURE_SIZE)
+}
+
+#[test]
+fn test_crypto_sign_ed25519_seedbytes() {
+    let seed_bytes = unsafe {
+        crypto_sign_ed25519_seedbytes() as usize
+    };
+    assert_eq!(seed_bytes, SEED_SIZE)
+}
+
+#[test]
+fn test_crypto_sign_ed25519_publickeybytes() {
+    let publickey_bytes = unsafe {
+        crypto_sign_ed25519_publickeybytes() as usize
+    };
+    assert_eq!(publickey_bytes, PUBLIC_KEY_SIZE)
+}
+
+#[test]
+fn test_crypto_sign_ed25519_secretkeybytes() {
+    let secretkey_bytes = unsafe {
+        crypto_sign_ed25519_secretkeybytes() as usize
+    };
+    assert_eq!(secretkey_bytes, SECRET_KEY_SIZE)
+}
+
+#[test]
 fn seed_size_succ() {
     let seed = randombytes(SEED_SIZE).unwrap();
     let res = check_seed_size(&seed);
@@ -18,28 +50,28 @@ fn seed_size_fail() {
 
 #[test]
 fn sk_size_succ() {
-    let sk = randombytes(SECRETKEY_SIZE).unwrap();
+    let sk = randombytes(SECRET_KEY_SIZE).unwrap();
     let res = check_secret_key_size(&sk);
     assert!(res.is_ok())
 }
 
 #[test]
 fn sk_size_fail() {
-    let sk = randombytes(SECRETKEY_SIZE-1).unwrap();
+    let sk = randombytes(SECRET_KEY_SIZE-1).unwrap();
     let res = check_secret_key_size(&sk);
     assert!(res.is_err())
 }
 
 #[test]
 fn pk_size_succ() {
-    let pk = randombytes(PUBLICKEY_SIZE).unwrap();
+    let pk = randombytes(PUBLIC_KEY_SIZE).unwrap();
     let res = check_public_key_size(&pk);
     assert!(res.is_ok())
 }
 
 #[test]
 fn pk_size_fail() {
-    let pk = randombytes(PUBLICKEY_SIZE+1).unwrap();
+    let pk = randombytes(PUBLIC_KEY_SIZE+1).unwrap();
     let res = check_public_key_size(&pk);
     assert!(res.is_err())
 }
@@ -98,7 +130,7 @@ fn sign_faulty_sk_fail() {
     let len = 1000000; 
     let data = randombytes(len).unwrap();
     let msg = hash(&data).unwrap();
-    let sk = randombytes(SECRETKEY_SIZE-1).unwrap();
+    let sk = randombytes(SECRET_KEY_SIZE-1).unwrap();
     let res = sign(&msg, &sk);
     assert!(res.is_err())
 }
@@ -187,7 +219,7 @@ fn sign_verify_faulty_pk_fail() {
     let seed = randombytes(SEED_SIZE).unwrap();
     let (_, sk) = generate_keypair_from_seed(&seed).unwrap();
     let sig = sign(&msg, &sk).unwrap();
-    let pk = randombytes(PUBLICKEY_SIZE+1).unwrap();
+    let pk = randombytes(PUBLIC_KEY_SIZE+1).unwrap();
     let res = verify_signature(&sig, &msg, &pk);
     assert!(res.is_err())
 }

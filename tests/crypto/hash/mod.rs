@@ -3,6 +3,14 @@ use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
 #[test]
+fn test_crypto_hash_sha256_bytes_succ() {
+    let sha256_bytes = unsafe {
+        crypto_hash_sha256_bytes() as usize
+    };
+    assert_eq!(sha256_bytes, HASH_SIZE)
+}
+
+#[test]
 fn hash_succ() {
     let len = 1000000;
     let msg = randombytes(len).unwrap();

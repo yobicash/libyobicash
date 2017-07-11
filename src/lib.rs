@@ -1,10 +1,10 @@
 #![recursion_limit = "1024"] // for error_chain
+extern crate libc;
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
-extern crate sodiumoxide;
 extern crate byteorder;
 extern crate num_bigint;
 extern crate num_traits;

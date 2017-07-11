@@ -1,5 +1,5 @@
+use libc::{size_t, c_int, c_ulonglong};
 use byteorder::{ByteOrder, BigEndian};
-use sodiumoxide::crypto::hash as _hash;
 use itertools::Itertools;
 use errors::*;
 use length::check_length;
@@ -9,18 +9,38 @@ use crypto::utils::check_binary_size;
 use std::ops::Index;
 use std::iter::Iterator;
 
-pub const HASH_SIZE: usize = 32;
-
-pub type Hash = Vec<u8>;
+pub const HASH_SIZE: usize =  32;
 
 pub fn check_hash_size(h: &Hash) -> Result<()> {
    check_binary_size(h.as_slice(), HASH_SIZE as u32) 
 }
 
+pub type Hash = Vec<u8>;
+
+#[link(name = "sodium")]
+extern {
+    pub fn crypto_hash_sha256_bytes() -> size_t;
+
+    pub fn crypto_hash_sha256(h: *mut [u8; HASH_SIZE],
+                              m: *const u8,
+                              mlen: c_ulonglong) -> c_int;
+}
+
+pub fn _hash(msg: &[u8]) -> Hash {
+    unsafe {
+        let mut h = [0; HASH_SIZE];
+        crypto_hash_sha256(&mut h, msg.as_ptr(), msg.len() as c_ulonglong);
+        let mut v = Vec::new();
+        v.extend_from_slice(&h[..]);
+        v
+    }
+}
+
 pub fn hash(msg: &[u8]) -> Result<Hash> {
     init()?;
     check_size(msg)?;
-    Ok(_hash::sha256::hash(msg).as_ref().to_vec())
+    let h = _hash(msg);
+    Ok(h)
 }
 
 pub fn nonce_from_u32(n: u32) -> Result<Hash> {

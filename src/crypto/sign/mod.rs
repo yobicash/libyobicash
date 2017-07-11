@@ -1,4 +1,4 @@
-use sodiumoxide::crypto::sign as _sign;
+use libc::{size_t, c_int, c_ulonglong};
 use itertools::Itertools;
 use errors::*;
 use length::check_length;
@@ -15,12 +15,177 @@ pub fn check_seed_size(sig: &Seed) -> Result<()> {
    check_binary_size(sig.as_slice(), SEED_SIZE as u32) 
 }
 
-pub const SECRETKEY_SIZE: usize = 64;
+pub const SECRET_KEY_SIZE: usize = 64;
 
 pub type SecretKey = Vec<u8>;
 
 pub fn check_secret_key_size(sk: &SecretKey) -> Result<()> {
-   check_binary_size(sk.as_slice(), SECRETKEY_SIZE as u32) 
+   check_binary_size(sk.as_slice(), SECRET_KEY_SIZE as u32) 
+}
+
+pub const PUBLIC_KEY_SIZE: usize = 32;
+
+pub type PublicKey = Vec<u8>;
+
+pub fn check_public_key_size(pk: &PublicKey) -> Result<()> {
+   check_binary_size(pk.as_slice(), PUBLIC_KEY_SIZE as u32) 
+}
+
+pub const MESSAGE_SIZE: usize = 32;
+
+pub type Message = Vec<u8>;
+
+pub fn check_message_size(sig: &Message) -> Result<()> {
+   check_binary_size(sig.as_slice(), MESSAGE_SIZE as u32) 
+}
+
+pub const SIGNATURE_SIZE: usize = 64;
+
+pub type Signature = Vec<u8>;
+
+pub fn check_signature_size(sig: &Signature) -> Result<()> {
+   check_binary_size(sig.as_slice(), SIGNATURE_SIZE as u32) 
+}
+
+#[link(name = "sodium")]
+extern {
+    pub fn crypto_sign_ed25519_bytes() -> size_t;
+    
+    pub fn crypto_sign_ed25519_seedbytes() -> size_t;
+    
+    pub fn crypto_sign_ed25519_publickeybytes() -> size_t;
+    
+    pub fn crypto_sign_ed25519_secretkeybytes() -> size_t;
+    
+    pub fn crypto_sign_ed25519_keypair(
+        pk: *mut [u8; PUBLIC_KEY_SIZE],
+        sk: *mut [u8; SECRET_KEY_SIZE]) -> c_int;
+    
+    pub fn crypto_sign_ed25519_seed_keypair(
+        pk: *mut [u8; PUBLIC_KEY_SIZE],
+        sk: *mut [u8; SECRET_KEY_SIZE],
+        seed: *const [u8; SEED_SIZE]) -> c_int;
+    
+    pub fn crypto_sign_ed25519_detached(
+        sig: *mut [u8; SIGNATURE_SIZE],
+        siglen: *mut c_ulonglong,
+        m: *const u8,
+        mlen: c_ulonglong,
+        sk: *const [u8; SECRET_KEY_SIZE]) -> c_int;
+
+    pub fn crypto_sign_ed25519_verify_detached(
+        sig: *const [u8; SIGNATURE_SIZE],
+        m: *const u8,
+        mlen: c_ulonglong,
+        pk: *const [u8; PUBLIC_KEY_SIZE]) -> c_int;
+}
+
+pub fn _gen_keypair() -> (PublicKey, SecretKey) {
+    unsafe {
+        let mut _pk = [0u8; PUBLIC_KEY_SIZE];
+        let mut _sk = [0u8; SECRET_KEY_SIZE];
+        crypto_sign_ed25519_keypair(&mut _pk, &mut _sk);
+        let mut pk = Vec::new();
+        let mut sk = Vec::new();
+        pk.extend_from_slice(&_pk[..]);
+        sk.extend_from_slice(&_sk[..]);
+        (pk, sk)
+    }
+}
+
+pub fn _keypair_from_seed(seed: &[u8; SEED_SIZE]) -> (PublicKey, SecretKey) {
+    unsafe {
+        let mut _pk = [0u8; PUBLIC_KEY_SIZE];
+        let mut _sk = [0u8; SECRET_KEY_SIZE];
+        crypto_sign_ed25519_seed_keypair(&mut _pk,
+                                         &mut _sk,
+                                         seed);
+        let mut pk = Vec::new();
+        let mut sk = Vec::new();
+        pk.extend_from_slice(&_pk[..]);
+        sk.extend_from_slice(&_sk[..]);
+        (pk, sk)
+    }
+}
+
+pub fn _sign_detached(msg: &[u8; MESSAGE_SIZE], sk: &[u8; SECRET_KEY_SIZE]) -> Signature {
+    unsafe {
+        let mut sig = [0u8; SIGNATURE_SIZE];
+        let mut siglen: c_ulonglong = 0;
+        crypto_sign_ed25519_detached(&mut sig,
+                                     &mut siglen,
+                                     msg.as_ptr(),
+                                     msg.len() as c_ulonglong,
+                                     sk);
+        assert_eq!(siglen, SIGNATURE_SIZE as c_ulonglong);
+        let mut v = Vec::new();
+        v.extend_from_slice(&sig[..]);
+        v
+    }
+}
+
+pub fn _verify_detached(sig: &[u8; SIGNATURE_SIZE],
+                        msg: &[u8; MESSAGE_SIZE],
+                        pk: &[u8; PUBLIC_KEY_SIZE]) -> bool {
+    unsafe {
+        0 == crypto_sign_ed25519_verify_detached(sig,
+                                                 msg.as_ptr(),
+                                                 msg.len() as c_ulonglong,
+                                                 pk)
+    }
+}
+
+pub fn generate_keypair() -> Result<(PublicKey, SecretKey)> {
+    init()?;
+    let keys = _gen_keypair();
+    Ok(keys)
+}
+
+pub fn generate_keypair_from_seed(seed: &Seed) -> Result<(PublicKey, SecretKey)> {
+    check_seed_size(seed)?;
+    let mut _seed = [0u8; SEED_SIZE];
+    for i in 0..SEED_SIZE {
+        _seed[i] = seed[i]
+    }
+    let keys = _keypair_from_seed(&_seed);
+    Ok(keys)
+}
+
+pub fn sign(msg: &Message, sk: &SecretKey) -> Result<Signature> {
+    init()?;
+    check_message_size(msg)?;
+    check_secret_key_size(sk)?;
+    let mut _msg = [0u8; MESSAGE_SIZE];
+    for i in 0..MESSAGE_SIZE {
+        _msg[i] = msg[i]
+    }
+    let mut _sk = [0u8; SECRET_KEY_SIZE];
+    for i in 0..SECRET_KEY_SIZE {
+        _sk[i] = sk[i]
+    }
+    let signature = _sign_detached(&_msg, &_sk);
+    Ok(signature)
+}
+
+pub fn verify_signature(sig: &Signature, msg: &Message, pk: &PublicKey) -> Result<bool> {
+    init()?;
+    check_signature_size(sig)?;
+    check_message_size(msg)?;
+    check_public_key_size(pk)?;
+    let mut _sig = [0u8; SIGNATURE_SIZE];
+    for i in 0..SIGNATURE_SIZE {
+        _sig[i] = sig[i]
+    }
+    let mut _msg = [0u8; MESSAGE_SIZE];
+    for i in 0..MESSAGE_SIZE {
+        _msg[i] = msg[i]
+    }
+    let mut _pk = [0u8; PUBLIC_KEY_SIZE];
+    for i in 0..PUBLIC_KEY_SIZE {
+        _pk[i] = pk[i]
+    }
+    let verified = _verify_detached(&_sig, &_msg, &_pk);
+    Ok(verified)
 }
 
 #[derive(Clone, Debug)]
@@ -96,14 +261,6 @@ pub fn check_unique_secret_keys(sks: &Vec<SecretKey>) -> Result<()> {
     Ok(())
 }
 
-pub const PUBLICKEY_SIZE: usize = 32;
-
-pub type PublicKey = Vec<u8>;
-
-pub fn check_public_key_size(pk: &PublicKey) -> Result<()> {
-   check_binary_size(pk.as_slice(), PUBLICKEY_SIZE as u32) 
-}
-
 #[derive(Clone, Debug)]
 pub struct PublicKeys {
     length: u32,
@@ -177,22 +334,6 @@ pub fn check_unique_public_keys(pks: &Vec<PublicKey>) -> Result<()> {
     Ok(())
 }
 
-pub const MESSAGE_SIZE: usize = 32;
-
-pub type Message = Vec<u8>;
-
-pub fn check_message_size(sig: &Message) -> Result<()> {
-   check_binary_size(sig.as_slice(), MESSAGE_SIZE as u32) 
-}
-
-pub const SIGNATURE_SIZE: usize = 64;
-
-pub type Signature = Vec<u8>;
-
-pub fn check_signature_size(sig: &Signature) -> Result<()> {
-   check_binary_size(sig.as_slice(), SIGNATURE_SIZE as u32) 
-}
-
 #[derive(Clone, Debug)]
 pub struct Signatures {
     length: u32,
@@ -264,35 +405,4 @@ pub fn check_unique_signatures(sigs: &Vec<Signature>) -> Result<()> {
         return Err(ErrorKind::DuplicatedElements.into());
     }
     Ok(())
-}
-
-pub fn generate_keypair() -> Result<(PublicKey, SecretKey)> {
-    init()?;
-    let (_pk, _sk) = _sign::gen_keypair();
-    Ok((_pk.as_ref().to_vec(), _sk.0[..].to_vec()))
-}
-
-pub fn generate_keypair_from_seed(seed: &Message) -> Result<(PublicKey, SecretKey)> {
-    check_seed_size(seed)?;
-    let _s = _sign::Seed::from_slice(seed.as_slice()).unwrap();
-    let (_pk, _sk) = _sign::keypair_from_seed(&_s);
-    Ok((_pk.as_ref().to_vec(), _sk.0[..].to_vec()))
-}
-
-pub fn sign(msg: &Message, sk: &SecretKey) -> Result<Signature> {
-    init()?;
-    check_message_size(msg)?;
-    check_secret_key_size(sk)?;
-    let _sk = _sign::SecretKey::from_slice(sk.as_slice()).unwrap();
-    Ok(_sign::sign_detached(msg.as_slice(), &_sk).as_ref().to_vec())
-}
-
-pub fn verify_signature(sig: &Signature, msg: &Message, pk: &PublicKey) -> Result<bool> {
-    init()?;
-    check_signature_size(sig)?;
-    check_message_size(msg)?;
-    check_public_key_size(pk)?;
-    let _pk = _sign::PublicKey::from_slice(pk.as_slice()).unwrap();
-    let _sig = _sign::Signature::from_slice(sig.as_slice()).unwrap();
-    Ok(_sign::verify_detached(&_sig, msg.as_slice(), &_pk))
 }
