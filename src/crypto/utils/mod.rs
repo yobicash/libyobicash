@@ -3,7 +3,6 @@ use size::check_size;
 use errors::*;
 use std::iter::repeat;
 
-#[link(name = "sodium")]
 extern {
     pub fn sodium_init() -> c_int;
     pub fn randombytes_buf(buf: *mut u8, size: size_t);

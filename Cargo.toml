@@ -8,6 +8,8 @@ repository = "https://github.com/yobicash/libyobicash"
 readme = "README.md"
 keywords = ["blockchain", "p2p", "storage", "cryptography", "network"]
 categories = ["cryptography", "database", "network-programming"]
+build = "build.rs"
+links = "sodium"
 
 [dependencies]
 libc = "*"
@@ -20,3 +22,6 @@ itertools = "^0.6.0"
 byteorder = "^1"
 semver = { version = "^0.7", features = ["serde"] }
 chrono = { version = "^0.4", features = ["serde"] }
+
+[build-dependencies]
+pkg-config = "*"

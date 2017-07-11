@@ -47,7 +47,6 @@ pub fn check_signature_size(sig: &Signature) -> Result<()> {
    check_binary_size(sig.as_slice(), SIGNATURE_SIZE as u32) 
 }
 
-#[link(name = "sodium")]
 extern {
     pub fn crypto_sign_ed25519_bytes() -> size_t;
     

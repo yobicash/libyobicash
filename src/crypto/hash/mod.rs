@@ -17,7 +17,6 @@ pub fn check_hash_size(h: &Hash) -> Result<()> {
 
 pub type Hash = Vec<u8>;
 
-#[link(name = "sodium")]
 extern {
     pub fn crypto_hash_sha256_bytes() -> size_t;
 
