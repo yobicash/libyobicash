@@ -6,7 +6,7 @@ rust:
 install:
 - wget https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz
 - tar xvfz libsodium-1.0.12.tar.gz
-- cd libsodium-1.0.12 && ./configure && make && make install
+- cd libsodium-1.0.12 && ./configure && sudo make && sudo make install
 - sudo ldconfig /usr/local/lib
 script:
 - cargo build --verbose
