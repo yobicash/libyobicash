@@ -15,16 +15,18 @@ use std::iter::Iterator;
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct OutPoint {
     tx_id: Hash,
+    height: u32,
     idx: u32,
     output: Output,
 }
 
 impl OutPoint {
-    pub fn new(tx_id: &Hash, idx: u32, output: &Output) -> Result<Self> {
+    pub fn new(tx_id: &Hash, height: u32, idx: u32, output: &Output) -> Result<Self> {
         check_hash_size(tx_id)?;
         output.check()?;
         Ok(OutPoint{
             tx_id: tx_id.to_owned(),
+            height: height,
             idx: idx,
             output: output.to_owned(),
         })
@@ -32,6 +34,10 @@ impl OutPoint {
 
     pub fn get_tx_id(&self) -> Hash {
         self.tx_id.to_owned()
+    }
+    
+    pub fn get_height(&self) -> u32 {
+        self.height
     }
 
     pub fn get_idx(&self) -> u32 {
@@ -51,6 +57,7 @@ impl OutPoint {
         self.check()?;
         let mut bin = Vec::new();
         bin.write_all(self.tx_id.as_slice())?;
+        bin.write_u32::<BigEndian>(self.height)?;
         bin.write_u32::<BigEndian>(self.idx)?;
         bin.write_all(self.output.to_vec()?.as_slice())?;
         Ok(bin)

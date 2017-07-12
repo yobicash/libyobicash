@@ -64,6 +64,10 @@ impl Output {
         self.content.to_owned()
     }
 
+    pub fn has_content(&self) -> bool {
+        self.content.is_some()
+    }
+
     pub fn set_content(&mut self, content: &Content) -> Result<Self> {
         content.check()?;
         self.content = Some(content.to_owned());

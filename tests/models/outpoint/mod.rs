@@ -2,6 +2,7 @@ use libyobicash::models::outpoint::*;
 use libyobicash::models::output::Output;
 use libyobicash::models::content::Content;
 use libyobicash::models::signers::Signers;
+use libyobicash::models::height::*;
 use libyobicash::models::amount::Amount;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::wallet::Wallet;
@@ -25,8 +26,9 @@ fn new_outpoint_succ() {
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
     let tx_id = randombytes(HASH_SIZE).unwrap();
+    let height = MIN_REGULAR_HEIGHT;
     let idx = 10;
-    let res = OutPoint::new(&tx_id, idx, &output);
+    let res = OutPoint::new(&tx_id, height, idx, &output);
     assert!(res.is_ok())
 }
 
@@ -45,8 +47,9 @@ fn new_outpoint_fail() {
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
     let tx_id = randombytes(HASH_SIZE+1).unwrap();
+    let height = MIN_REGULAR_HEIGHT;
     let idx = 10;
-    let res = OutPoint::new(&tx_id, idx, &output);
+    let res = OutPoint::new(&tx_id, height, idx, &output);
     assert!(res.is_err())
 }
 
@@ -66,10 +69,11 @@ fn unique_outpoints_succ() {
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
     let len = 10;
     let mut outpoints: Vec<OutPoint> = Vec::new();
+    let height = MIN_REGULAR_HEIGHT;
     for i in 0..len {
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 10;
-        let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
+        let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
     let res = check_unique_outpoints(&outpoints);
@@ -91,8 +95,9 @@ fn unique_outpoints_fail() {
     let to = hash_to_address(&h).unwrap();
     let output = Output::new(&Amount::new(amount as u32), &to, &content).unwrap();
     let tx_id = randombytes(HASH_SIZE).unwrap();
+    let height = MIN_REGULAR_HEIGHT;
     let idx = 10;
-    let outpoint = OutPoint::new(&tx_id, idx, &output).unwrap();
+    let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
     let len = 10;
     let outpoints: Vec<OutPoint> = repeat(outpoint).take(len).collect();
     let res = check_unique_outpoints(&outpoints);

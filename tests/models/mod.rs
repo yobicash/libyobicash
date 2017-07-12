@@ -6,4 +6,3 @@ mod input;
 mod output;
 mod outpoint;
 mod tx;
-mod block;

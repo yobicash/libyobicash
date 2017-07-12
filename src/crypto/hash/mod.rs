@@ -1,11 +1,12 @@
 use libc::{size_t, c_int, c_ulonglong};
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, BigEndian, ReadBytesExt};
 use itertools::Itertools;
 use errors::*;
 use length::check_length;
 use size::check_size;
 use crypto::utils::init;
 use crypto::utils::check_binary_size;
+use std::io::Cursor;
 use std::ops::Index;
 use std::iter::Iterator;
 
@@ -46,6 +47,13 @@ pub fn nonce_from_u32(n: u32) -> Result<Hash> {
     let mut buf = [0; 4];
     BigEndian::write_u32(&mut buf, n);
     hash(&buf[..])
+}
+
+pub fn random_u32_from_seed(seed: &Hash, max: u32) -> Result<u32> {
+    check_hash_size(seed)?;
+    let mut c = Cursor::new(seed.to_owned());
+    let n = c.read_u32::<BigEndian>()? % max;
+    Ok(n)
 }
 
 #[derive(Clone, Debug)]

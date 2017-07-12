@@ -100,8 +100,20 @@ error_chain! {
             description("Invalid id")
         }
 
+        InvalidHeight {
+            description("Invalid height")
+        }
+
         InvalidOutPoints {
             description("Invalid outpoints")
+        }
+
+        InvalidRegularTx {
+            description("Invalid regular tx")
+        }
+
+        InvalidCoins {
+            description("Invalid coins")
         }
 
         InvalidPrevBlock {
