@@ -245,8 +245,6 @@ impl CoinbaseTx {
     pub fn add_output(&mut self, outp: &Output) -> Result<Self> {
         outp.check()?;
         self.check_outputs()?;
-        // TODO: check that the content creators are also
-        // the signers
         for i in 0..self.outputs_len as usize {
             if self.outputs[i] == *outp {
                 return Err(ErrorKind::AlreadyFound.into());
@@ -278,8 +276,20 @@ impl CoinbaseTx {
         if self.get_outputs_amount() > self.get_amount() {
             return Err(ErrorKind::InvalidAmount.into());
         }
-        // TODO: check that the content creators are also
-        // the signers
+        Ok(())
+    }
+
+    pub fn check_outputs_content(&self) -> Result<()> {
+        self.check_outputs()?;
+        let signers = self.get_signers();
+        for i in 0..self.outputs_len as usize {
+            let output = self.outputs[i].to_owned();
+            if let Some(content) = output.get_content() {
+                if content.get_creators() != signers {
+                    return Err(ErrorKind::InvalidContent.into());
+                }
+            }
+        }
         Ok(())
     }
 
@@ -300,7 +310,8 @@ impl CoinbaseTx {
         self.check_delta()?;
         self.check_amount()?;
         self.check_outputs_len()?;
-        self.check_outputs()
+        self.check_outputs()?;
+        self.check_outputs_content()
     }
 
     pub fn calc_checksum(&self) -> Result<Hash> {
@@ -459,6 +470,7 @@ impl CoinbaseTx {
         self.check_amount()?;
         self.check_outputs_len()?;
         self.check_outputs()?;
+        self.check_outputs_content()?;
         self.check_coins()?;
         self.check_signatures_len()?;
         self.check_signatures()?;

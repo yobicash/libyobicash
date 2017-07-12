@@ -5,8 +5,10 @@ use libyobicash::models::address::hash_to_address;
 use libyobicash::models::height::*;
 use libyobicash::models::amount::Amount;
 use libyobicash::models::signers::Signers;
+use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
 use libyobicash::models::outpoint::*;
+use libyobicash::mining::pow::balloon_memory;
 use libyobicash::crypto::sign::PUBLIC_KEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
 use libyobicash::crypto::hash::nonce_from_u32;
@@ -116,6 +118,18 @@ fn set_signers_fail() {
         .set_threshold(threshold).unwrap();
     let res = tx.set_signers(&signers);
     assert!(res.is_err())
+}
+
+#[test]
+fn amount_succ() {
+    let tx = CoinbaseTx::new().unwrap();
+    let amount = tx.get_amount();
+    let s_cost = tx.get_s_cost();
+    let t_cost = tx.get_t_cost();
+    let delta = tx.get_delta();
+    let _right_amount = balloon_memory(s_cost, t_cost, delta).unwrap();
+    let right_amount = Amount::new(_right_amount);
+    assert_eq!(amount, right_amount)
 }
 
 #[test]
@@ -275,6 +289,82 @@ fn sign_fail() {
         .sign(&wallet1).unwrap()
         .sign(&wallet2).unwrap();
     let res = tx.check_signatures();
+    assert!(res.is_err())
+}
+
+#[test]
+fn no_outputs_fail() {
+    let seed1 = randombytes(HASH_SIZE).unwrap();
+    let wallet1 = Wallet::from_seed(&seed1).unwrap();
+    let weight1 = 10;
+    let seed2 = randombytes(HASH_SIZE).unwrap();
+    let wallet2 = Wallet::from_seed(&seed2).unwrap();
+    let weight2 = 50;
+    let seed3 = randombytes(HASH_SIZE).unwrap();
+    let wallet3 = Wallet::from_seed(&seed3).unwrap();
+    let weight3 = 100;
+    let threshold = weight1 + weight3;
+    let mut signers = Signers::new().unwrap();
+    signers = signers
+        .add_signer(&wallet1.public_key, weight1).unwrap()
+        .add_signer(&wallet2.public_key, weight2).unwrap()
+        .add_signer(&wallet3.public_key, weight3).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    signers.check().unwrap();
+    let mut tx = CoinbaseTx::new().unwrap();
+    let amount = tx.get_amount();
+    let res = tx
+        .set_signers(&signers).unwrap()
+        .set_amount().unwrap()
+        .set_coins();
+    assert!(res.is_err())
+}
+
+#[test]
+fn not_own_content_fail() {
+    let seed1 = randombytes(HASH_SIZE).unwrap();
+    let wallet1 = Wallet::from_seed(&seed1).unwrap();
+    let weight1 = 10;
+    let seed2 = randombytes(HASH_SIZE).unwrap();
+    let wallet2 = Wallet::from_seed(&seed2).unwrap();
+    let weight2 = 50;
+    let seed3 = randombytes(HASH_SIZE).unwrap();
+    let wallet3 = Wallet::from_seed(&seed3).unwrap();
+    let weight3 = 100;
+    let threshold = weight1 + weight3;
+    let mut signers = Signers::new().unwrap();
+    signers = signers
+        .add_signer(&wallet1.public_key, weight1).unwrap()
+        .add_signer(&wallet2.public_key, weight2).unwrap()
+        .add_signer(&wallet3.public_key, weight3).unwrap()
+        .set_threshold(threshold).unwrap()
+        .finalize().unwrap();
+    signers.check().unwrap();
+    let mut tx = CoinbaseTx::new().unwrap();
+    let amount = tx.get_amount();
+    let seed = randombytes(HASH_SIZE).unwrap();
+    let to = hash_to_address(&seed).unwrap();
+    let seed4 = randombytes(HASH_SIZE).unwrap();
+    let wallet4 = Wallet::from_seed(&seed).unwrap();
+    let creators = Signers::new().unwrap()
+        .add_signer(&wallet4.public_key, 1).unwrap()
+        .finalize().unwrap();
+    let s_cost = tx.get_s_cost();
+    let t_cost = tx.get_t_cost();
+    let delta = tx.get_delta();
+    let size = balloon_memory(s_cost, t_cost, delta).unwrap();
+    let data = randombytes(size as usize).unwrap();
+    let content = Content::new(&creators, &data).unwrap()
+        .sign(&wallet4).unwrap()
+        .finalize().unwrap();
+    let output = Output::new(&amount, &to, &content).unwrap();
+    output.check().unwrap();
+    let res = tx
+        .set_signers(&signers).unwrap()
+        .set_amount().unwrap()
+        .add_output(&output).unwrap()
+        .set_coins();
     assert!(res.is_err())
 }
 

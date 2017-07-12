@@ -14,6 +14,10 @@ impl Amount {
         Amount(BigUint::from(m))
     }
 
+    pub fn to_u32(&self) -> Result<u32> {
+        unreachable!() // TODO
+    }
+
     pub fn from_slice(sl: &[u8]) -> Self {
         Amount(BigUint::from_bytes_be(sl))
     }

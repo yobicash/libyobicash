@@ -104,6 +104,10 @@ error_chain! {
             description("Invalid height")
         }
 
+        InvalidContent {
+            description("Invalid content")
+        }
+
         InvalidOutPoints {
             description("Invalid outpoints")
         }
