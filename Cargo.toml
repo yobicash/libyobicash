@@ -13,7 +13,7 @@ links = "sodium"
 
 [badges]
 travis-ci = { repository = "yobicash/libyobicash", branch = "master" }
-codecov = { repository = "yobicash/libyobicash", branch = "master", service = "github" }
+coveralls = { repository = "yobicash/libyobicash", branch = "master", service = "github" }
 
 [dependencies]
 libc = "*"

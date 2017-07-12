@@ -1,10 +1,13 @@
 language: rust
+
 rust:
-- stable
-- beta
-- nightly
+    - stable
+    - beta
+    - nightly
+
 before_install:
     - sudo apt-get update
+
 addons:
     apt:
         packages:
@@ -14,25 +17,22 @@ addons:
             - cmake
             - gcc
             - binutils-dev
+        sources:
+            - kalakris-cmake
 install:
-- wget https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz
-- tar xvfz libsodium-1.0.12.tar.gz
-- cd libsodium-1.0.12 && ./configure && sudo make && sudo make install
-- sudo ldconfig /usr/local/lib
-after_success: |
-  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-  tar xzf master.tar.gz &&
-  cd kcov-master &&
-  mkdir build &&
-  cd build &&
-  cmake .. &&
-  make &&
-  sudo make install &&
-  cd ../.. &&
-  rm -rf kcov-master &&
-  for file in target/debug/<PROJECT-NAME>-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
-  bash <(curl -s https://codecov.io/bash) &&
-  echo "Uploaded code coverage"
+    - wget https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz
+    - tar xvfz libsodium-1.0.12.tar.gz
+    - cd libsodium-1.0.12 && ./configure && sudo make && sudo make install
+    - sudo ldconfig /usr/local/lib
+
+before_script:
+    - cargo install cargo-travis && export PATH=$HOME/.cargo/bin:$PATH
+
 script:
-- cargo build --verbose
-- cargo test --verbose
+    - cargo build --verbose
+    - cargo test --verbose
+    # - cargo bench --verbose
+    # - cargo doc --verbose
+
+after_success:
+    - cargo coveralls
