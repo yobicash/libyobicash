@@ -6,12 +6,9 @@ use libyobicash::models::height::*;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
-use libyobicash::models::outpoint::*;
 use libyobicash::mining::pow::balloon_memory;
 use libyobicash::crypto::sign::PUBLIC_KEY_SIZE;
 use libyobicash::crypto::hash::HASH_SIZE;
-use libyobicash::crypto::hash::nonce_from_u32;
-use libyobicash::crypto::hash::random_u32_from_seed;
 use libyobicash::crypto::utils::randombytes;
 use std::iter::repeat;
 
@@ -133,10 +130,6 @@ fn amount_succ() {
 #[test]
 fn add_output_succ() {
     let mut tx = CoinbaseTx::new().unwrap();
-    let wallet = Wallet::new().unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
-        .finalize().unwrap();
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
@@ -149,10 +142,6 @@ fn add_output_succ() {
 #[test]
 fn get_output_succ() {
     let mut tx = CoinbaseTx::new().unwrap();
-    let wallet = Wallet::new().unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
-        .finalize().unwrap();
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
@@ -166,10 +155,6 @@ fn get_output_succ() {
 #[test]
 fn get_output_fail() {
     let mut tx = CoinbaseTx::new().unwrap();
-    let wallet = Wallet::new().unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
-        .finalize().unwrap();
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
@@ -183,11 +168,6 @@ fn get_output_fail() {
 #[test]
 fn check_balance_succ() {
     let mut tx = CoinbaseTx::new().unwrap();
-    let wallet = Wallet::new().unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
-        .finalize().unwrap();
-    let len = 10;
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
@@ -201,11 +181,6 @@ fn check_balance_succ() {
 #[test]
 fn check_balance_fail() {
     let mut tx = CoinbaseTx::new().unwrap();
-    let wallet = Wallet::new().unwrap();
-    let creators = Signers::new().unwrap()
-        .add_signer(&wallet.public_key, 1).unwrap()
-        .finalize().unwrap();
-    let len = 10;
     let amount = tx.get_amount() + 1;
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
@@ -311,7 +286,6 @@ fn no_outputs_fail() {
         .finalize().unwrap();
     signers.check().unwrap();
     let mut tx = CoinbaseTx::new().unwrap();
-    let amount = tx.get_amount();
     let res = tx
         .set_signers(&signers).unwrap()
         .set_amount().unwrap()
@@ -344,7 +318,7 @@ fn not_own_content_fail() {
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
     let seed4 = randombytes(HASH_SIZE).unwrap();
-    let wallet4 = Wallet::from_seed(&seed).unwrap();
+    let wallet4 = Wallet::from_seed(&seed4).unwrap();
     let creators = Signers::new().unwrap()
         .add_signer(&wallet4.public_key, 1).unwrap()
         .finalize().unwrap();
@@ -476,7 +450,7 @@ fn get_outpoint_succ() {
     let to = hash_to_address(&seed).unwrap();
     let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
-    let mut tx = CoinbaseTx::new().unwrap()
+    tx = tx
         .set_signers(&creators).unwrap()
         .set_amount().unwrap()
         .add_output(&output).unwrap()
@@ -506,7 +480,7 @@ fn get_outpoints_succ() {
     let to = hash_to_address(&seed).unwrap();
     let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
-    let mut tx = CoinbaseTx::new().unwrap()
+    tx = tx
         .set_signers(&creators).unwrap()
         .set_amount().unwrap()
         .add_output(&output).unwrap()
