@@ -80,6 +80,10 @@ error_chain! {
             description("Invalid amount")
         }
 
+        ArithmeticOverflow {
+            description("Arithmetic overflow")
+        }
+
         InvalidTime {
             description("Invalid time")
         }

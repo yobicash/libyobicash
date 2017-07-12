@@ -4,7 +4,6 @@ use libyobicash::models::wallet::Wallet;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::input::Input;
 use libyobicash::models::height::*;
-use libyobicash::models::amount::Amount;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
@@ -145,21 +144,20 @@ fn add_output_succ() {
         .finalize().unwrap();
     let len = 10;
     let max_amount = 100;
-    let mut get_outputs_amount = Amount::new(0);
+    let mut get_outputs_amount = 0;
     for _ in 0..len {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = random_u32_from_seed(&seed, max_amount).unwrap();
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
-        get_outputs_amount = get_outputs_amount + _amount;
+        get_outputs_amount = get_outputs_amount + amount;
     }
     assert_eq!(len, tx.get_outputs_len());
     assert_eq!(get_outputs_amount, tx.get_outputs_amount())
@@ -174,21 +172,20 @@ fn get_output_succ() {
         .finalize().unwrap();
     let len = 10;
     let max_amount = 100;
-    let mut get_outputs_amount = Amount::new(0);
+    let mut get_outputs_amount = 0;
     for _ in 0..len {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = random_u32_from_seed(&seed, max_amount).unwrap();
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
-        get_outputs_amount = get_outputs_amount + _amount;
+        get_outputs_amount = get_outputs_amount + amount;
     }
     let res = tx.get_output(len-1);
     assert!(res.is_ok())
@@ -203,21 +200,20 @@ fn get_output_fail() {
         .finalize().unwrap();
     let len = 10;
     let max_amount = 100;
-    let mut get_outputs_amount = Amount::new(0);
+    let mut get_outputs_amount = 0;
     for _ in 0..len {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = random_u32_from_seed(&seed, max_amount).unwrap();
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
-        get_outputs_amount = get_outputs_amount + _amount;
+        get_outputs_amount = get_outputs_amount + amount;
     }
     let res = tx.get_output(len);
     assert!(res.is_err())
@@ -236,17 +232,16 @@ fn check_balance_succ() {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = 10;
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         let res = tx.add_output(&output);
         assert!(res.is_ok());
     }
-    let res = tx.check_balance(&Amount::new(inputs_amount));
+    let res = tx.check_balance(inputs_amount);
     assert!(res.is_ok())
 }
 
@@ -326,12 +321,11 @@ fn finalize_succ() {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = 10;
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }
@@ -381,12 +375,11 @@ fn check_succ() {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = 10;
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }
@@ -467,7 +460,7 @@ fn check_doublespending_succ() {
             .finalize().unwrap();
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
-        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
+        let output = Output::new(amount as u32, &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
@@ -477,7 +470,7 @@ fn check_doublespending_succ() {
         tx.add_input(&inputs[i]).unwrap();
     }
     let tot_amount = outpoints.tot_amount();
-    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    let output = Output::no_content(tot_amount, &to_address).unwrap();
     tx.add_output(&output).unwrap();
     tx.set_signers(&to).unwrap()
         .sign(&wallet).unwrap()
@@ -515,7 +508,7 @@ fn check_doublespending_fail() {
             .finalize().unwrap();
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
-        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
+        let output = Output::new(amount as u32, &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
@@ -524,8 +517,8 @@ fn check_doublespending_fail() {
     for i in 0..inputs.len() {
         tx.add_input(&inputs[i]).unwrap();
     }
-    let tot_amount = outpoints.tot_amount() + Amount::new(1);
-    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    let tot_amount = outpoints.tot_amount() + 1;
+    let output = Output::no_content(tot_amount, &to_address).unwrap();
     tx.add_output(&output).unwrap();
     tx.set_signers(&to).unwrap()
         .sign(&wallet).unwrap()
@@ -563,12 +556,12 @@ fn tx_from_outpoints_succ() {
             .finalize().unwrap();
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
-        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
+        let output = Output::new(amount as u32, &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
     let tot_amount = outpoints.tot_amount();
-    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    let output = Output::no_content(tot_amount, &to_address).unwrap();
     let outputs = vec![output];
     let res = RegularTx::from_outpoints(&outpoints.to_vec(), &outputs, &to);
     assert!(res.is_ok())
@@ -602,12 +595,12 @@ fn tx_from_outpoints_fail() {
             .finalize().unwrap();
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
-        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
+        let output = Output::new(amount as u32, &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
-    let tot_amount = outpoints.tot_amount() + Amount::new(1);
-    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    let tot_amount = outpoints.tot_amount() + 1;
+    let output = Output::no_content(tot_amount, &to_address).unwrap();
     let outputs = vec![output];
     let res = RegularTx::from_outpoints(&outpoints.to_vec(), &outputs, &to);
     assert!(res.is_err())
@@ -641,12 +634,12 @@ fn check_from_outpoints_succ() {
             .finalize().unwrap();
         let tx_id = nonce_from_u32(i).unwrap();
         let idx = 0;
-        let output = Output::new(&Amount::new(amount as u32), &to_address, &content).unwrap();
+        let output = Output::new(amount as u32, &to_address, &content).unwrap();
         let outpoint = OutPoint::new(&tx_id, height, idx, &output).unwrap();
         outpoints.push(outpoint);
     }
     let tot_amount = outpoints.tot_amount();
-    let output = Output::no_content(&tot_amount, &to_address).unwrap();
+    let output = Output::no_content(tot_amount, &to_address).unwrap();
     let outputs = vec![output];
     let tx = RegularTx::from_outpoints(&outpoints.to_vec(), &outputs, &to).unwrap();
     let res = tx.check_from_outpoints(&outpoints.to_vec());
@@ -673,12 +666,11 @@ fn get_outpoint_succ() {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = 10;
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }
@@ -737,12 +729,11 @@ fn get_outpoints_succ() {
         let seed = randombytes(HASH_SIZE).unwrap();
         let to = hash_to_address(&seed).unwrap();
         let amount = 10;
-        let _amount = Amount::new(amount);
         let data = randombytes(amount as usize).unwrap();
         let content = Content::new(&creators, &data).unwrap()
             .sign(&wallet).unwrap()
             .finalize().unwrap();
-        let output = Output::new(&_amount, &to, &content).unwrap();
+        let output = Output::new(amount, &to, &content).unwrap();
         output.check().unwrap();
         tx.add_output(&output).unwrap();
     }

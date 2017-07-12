@@ -1,7 +1,6 @@
 pub mod wallet;
 pub mod address;
 pub mod signers;
-pub mod amount;
 pub mod content;
 pub mod height;
 pub mod input;

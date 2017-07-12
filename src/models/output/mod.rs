@@ -1,8 +1,7 @@
+use byteorder::{BigEndian, WriteBytesExt};
 use errors::*;
-use num_traits::Zero;
 use itertools::Itertools;
 use length::check_length;
-use models::amount::Amount;
 use models::address::Address;
 use models::address::check_address;
 use models::content::Content;
@@ -13,30 +12,30 @@ use std::iter::Iterator;
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct Output {
     to: Address,
-    amount: Amount,
+    amount: u32,
     content: Option<Content>,
 }
 
 impl Output {
-    pub fn new(amount: &Amount, to: &Address, content: &Content) -> Result<Self> {
+    pub fn new(amount: u32, to: &Address, content: &Content) -> Result<Self> {
         check_address(to)?;
         content.check()?;
         let size = content.get_size();
-        if size > 0 && Amount::new(size) != amount.to_owned() {
+        if size > 0 && size != amount {
                 return Err(ErrorKind::InvalidAmount.into());
         }
         Ok(Output {
             to: to.to_owned(),
-            amount: amount.to_owned(),
+            amount: amount,
             content: Some(content.to_owned()),
         })
     }
 
-    pub fn no_content(amount: &Amount, to: &Address) -> Result<Self> {
+    pub fn no_content(amount: u32, to: &Address) -> Result<Self> {
         check_address(to)?;
         Ok(Output {
             to: to.to_owned(),
-            amount: amount.to_owned(),
+            amount: amount,
             content: None,
         })
     }
@@ -51,12 +50,12 @@ impl Output {
         Ok(self.to_owned())
     }
 
-    pub fn get_amount(&self) -> Amount {
-        self.amount.to_owned()
+    pub fn get_amount(&self) -> u32 {
+        self.amount
     }
 
-    pub fn set_amount(&mut self, amount: &Amount) -> Result<Self> {
-        self.amount = amount.to_owned();
+    pub fn set_amount(&mut self, amount: u32) -> Result<Self> {
+        self.amount = amount;
         Ok(self.to_owned())
     }
 
@@ -79,7 +78,7 @@ impl Output {
         if let Some(content) = self.content.to_owned() {
             content.check()?;
             let size = content.get_size();
-            if size > 0 && Amount::new(size) != self.amount.to_owned() {
+            if size > 0 && size != self.amount {
                 return Err(ErrorKind::InvalidAmount.into());
             }
         }
@@ -90,7 +89,7 @@ impl Output {
         self.check()?;
         let mut bin = Vec::new();
         bin.write_all(self.to.as_slice())?;
-        bin.write_all(self.amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.amount)?;
         if let Some(content) = self.content.to_owned() {
             bin.write_all(content.to_vec()?.as_slice())?;
         }
@@ -136,8 +135,8 @@ impl Outputs {
         self.length += 1;
     }
 
-    pub fn tot_amount(&self) -> Amount {
-        let mut tot_amount = Amount::zero();
+    pub fn tot_amount(&self) -> u32 {
+        let mut tot_amount = 0;
         for output in self.to_owned() {
             tot_amount = tot_amount + output.get_amount();
         }

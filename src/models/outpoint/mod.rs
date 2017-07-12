@@ -1,10 +1,8 @@
 use byteorder::{BigEndian, WriteBytesExt};
-use num_traits::Zero;
 use itertools::Itertools;
 use length::check_length;
 use crypto::hash::Hash;
 use crypto::hash::check_hash_size;
-use models::amount::Amount;
 use models::input::Input;
 use models::output::Output;
 use errors::*;
@@ -106,8 +104,8 @@ impl OutPoints {
         self.items.to_owned()
     }
 
-    pub fn tot_amount(&self) -> Amount {
-        let mut tot_amount = Amount::zero();
+    pub fn tot_amount(&self) -> u32 {
+        let mut tot_amount = 0;
         for outpoint in self.to_owned() {
             tot_amount = tot_amount + outpoint.output.get_amount();
         }

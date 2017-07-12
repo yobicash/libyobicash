@@ -1,5 +1,4 @@
 use byteorder::{BigEndian, WriteBytesExt};
-use num_traits::Zero;
 use itertools::Itertools;
 use semver::Version;
 use chrono::{DateTime, Utc};
@@ -13,7 +12,6 @@ use crypto::sign::sign;
 use crypto::sign::check_signature_size;
 use crypto::sign::check_unique_signatures;
 use mining::pow::*;
-use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
 use models::height::COINBASE_HEIGHT;
@@ -34,7 +32,7 @@ pub struct CoinbaseTx {
     s_cost: u32,
     t_cost: u32,
     delta: u32,
-    amount: Amount,
+    amount: u32,
     outputs_len: u32,
     outputs: Vec<Output>,
     coins: Hash,
@@ -49,7 +47,7 @@ impl CoinbaseTx {
         let s_cost = MIN_S_COST;
         let t_cost = MIN_T_COST;
         let delta = MIN_DELTA;
-        let amount = Amount::new(balloon_memory(s_cost, t_cost, delta)?);
+        let amount = balloon_memory(s_cost, t_cost, delta)?;
         let base_hash: Vec<u8> = repeat(0u8).take(HASH_SIZE).collect();
         let coins = base_hash.to_owned();
         let id = base_hash.to_owned();
@@ -192,13 +190,12 @@ impl CoinbaseTx {
         check_delta(self.delta)
     }
 
-    pub fn get_amount(&self) -> Amount {
-        self.amount.to_owned()
+    pub fn get_amount(&self) -> u32 {
+        self.amount
     }
 
-    pub fn calc_amount(&self) -> Result<Amount> {
-        let mem = balloon_memory(self.s_cost, self.t_cost, self.delta)?;
-        Ok(Amount::new(mem))
+    pub fn calc_amount(&self) -> Result<u32> {
+        balloon_memory(self.s_cost, self.t_cost, self.delta)
     }
 
     pub fn set_amount(&mut self) -> Result<Self> {
@@ -207,7 +204,7 @@ impl CoinbaseTx {
     }
 
     fn check_amount(&self) -> Result<()> {
-        if self.amount.to_owned() == Amount::zero() {
+        if self.amount == 0 {
             return Err(ErrorKind::InvalidAmount.into())
         }
         if self.amount != self.calc_amount()? {
@@ -255,8 +252,8 @@ impl CoinbaseTx {
         Ok(self.to_owned())
     }
 
-    pub fn get_outputs_amount(&self) -> Amount {
-        let mut amount = Amount::zero();
+    pub fn get_outputs_amount(&self) -> u32 {
+        let mut amount = 0;
         for i in 0..self.outputs_len as usize {
             amount = amount + self.outputs[i].get_amount();
         }
@@ -324,7 +321,7 @@ impl CoinbaseTx {
         bin.write_u32::<BigEndian>(self.s_cost)?;
         bin.write_u32::<BigEndian>(self.t_cost)?;
         bin.write_u32::<BigEndian>(self.delta)?;
-        bin.write_all(self.amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.amount)?;
         bin.write_u32::<BigEndian>(self.outputs_len)?;
         for i in 0..self.outputs_len as usize {
             bin.write_all(self.outputs[i].to_vec()?.as_slice())?;
@@ -433,7 +430,7 @@ impl CoinbaseTx {
         bin.write_u32::<BigEndian>(self.s_cost)?;
         bin.write_u32::<BigEndian>(self.t_cost)?;
         bin.write_u32::<BigEndian>(self.delta)?;
-        bin.write_all(self.amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.amount)?;
         bin.write_u32::<BigEndian>(self.outputs_len)?;
         for i in 0..self.outputs_len as usize {
             bin.write_all(self.outputs[i].to_vec()?.as_slice())?;
@@ -488,7 +485,7 @@ impl CoinbaseTx {
         bin.write_u32::<BigEndian>(self.s_cost)?;
         bin.write_u32::<BigEndian>(self.t_cost)?;
         bin.write_u32::<BigEndian>(self.delta)?;
-        bin.write_all(self.amount.to_vec().as_slice())?;
+        bin.write_u32::<BigEndian>(self.amount)?;
         bin.write_u32::<BigEndian>(self.outputs_len)?;
         for i in 0..self.outputs_len as usize {
             bin.write_all(self.outputs[i].to_vec()?.as_slice())?;

@@ -3,7 +3,6 @@ use libyobicash::models::tx::coinbase::*;
 use libyobicash::models::wallet::Wallet;
 use libyobicash::models::address::hash_to_address;
 use libyobicash::models::height::*;
-use libyobicash::models::amount::Amount;
 use libyobicash::models::signers::Signers;
 use libyobicash::models::content::Content;
 use libyobicash::models::output::Output;
@@ -127,8 +126,7 @@ fn amount_succ() {
     let s_cost = tx.get_s_cost();
     let t_cost = tx.get_t_cost();
     let delta = tx.get_delta();
-    let _right_amount = balloon_memory(s_cost, t_cost, delta).unwrap();
-    let right_amount = Amount::new(_right_amount);
+    let right_amount = balloon_memory(s_cost, t_cost, delta).unwrap();
     assert_eq!(amount, right_amount)
 }
 
@@ -142,7 +140,7 @@ fn add_output_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     let res = tx.add_output(&output);
     assert!(res.is_ok())
@@ -158,7 +156,7 @@ fn get_output_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     let tx = tx.add_output(&output).unwrap();
     let res = tx.get_output(0);
@@ -175,7 +173,7 @@ fn get_output_fail() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     let tx = tx.add_output(&output).unwrap();
     let res = tx.get_output(1);
@@ -193,7 +191,7 @@ fn check_balance_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx.add_output(&output).unwrap();
     let res = tx.check_balance();
@@ -208,10 +206,10 @@ fn check_balance_fail() {
         .add_signer(&wallet.public_key, 1).unwrap()
         .finalize().unwrap();
     let len = 10;
-    let amount = tx.get_amount() + Amount::new(1);
+    let amount = tx.get_amount() + 1;
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx.add_output(&output).unwrap();
     let res = tx.check_balance();
@@ -242,7 +240,7 @@ fn sign_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx = tx
         .set_signers(&signers).unwrap()
@@ -279,7 +277,7 @@ fn sign_fail() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx = tx
         .set_signers(&signers).unwrap()
@@ -358,7 +356,7 @@ fn not_own_content_fail() {
     let content = Content::new(&creators, &data).unwrap()
         .sign(&wallet4).unwrap()
         .finalize().unwrap();
-    let output = Output::new(&amount, &to, &content).unwrap();
+    let output = Output::new(amount, &to, &content).unwrap();
     output.check().unwrap();
     let res = tx
         .set_signers(&signers).unwrap()
@@ -392,7 +390,7 @@ fn finalize_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx = tx
         .set_signers(&signers).unwrap()
@@ -429,7 +427,7 @@ fn check_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     tx = tx
         .set_signers(&signers).unwrap()
@@ -476,7 +474,7 @@ fn get_outpoint_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     let mut tx = CoinbaseTx::new().unwrap()
         .set_signers(&creators).unwrap()
@@ -506,7 +504,7 @@ fn get_outpoints_succ() {
     let amount = tx.get_amount();
     let seed = randombytes(HASH_SIZE).unwrap();
     let to = hash_to_address(&seed).unwrap();
-    let output = Output::no_content(&amount, &to).unwrap();
+    let output = Output::no_content(amount, &to).unwrap();
     output.check().unwrap();
     let mut tx = CoinbaseTx::new().unwrap()
         .set_signers(&creators).unwrap()

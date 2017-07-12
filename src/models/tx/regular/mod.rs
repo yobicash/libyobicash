@@ -1,5 +1,4 @@
 use byteorder::{BigEndian, WriteBytesExt};
-use num_traits::Zero;
 use itertools::Itertools;
 use semver::Version;
 use chrono::{DateTime, Utc};
@@ -12,7 +11,6 @@ use crypto::sign::Signature;
 use crypto::sign::sign;
 use crypto::sign::check_signature_size;
 use crypto::sign::check_unique_signatures;
-use models::amount::Amount;
 use models::wallet::Wallet;
 use models::signers::Signers;
 use models::height::MIN_REGULAR_HEIGHT;
@@ -209,8 +207,8 @@ impl RegularTx {
         Ok(self.to_owned())
     }
 
-    pub fn get_outputs_amount(&self) -> Amount {
-        let mut amount = Amount::zero();
+    pub fn get_outputs_amount(&self) -> u32 {
+        let mut amount = 0;
         for i in 0..self.outputs_len as usize {
             amount = amount + self.outputs[i].get_amount();
         }
@@ -230,8 +228,8 @@ impl RegularTx {
         Ok(())
     }
 
-    pub fn check_balance(&self, inputs_amount: &Amount) -> Result<()> {
-        if self.get_outputs_amount() != inputs_amount.to_owned() {
+    pub fn check_balance(&self, inputs_amount: u32) -> Result<()> {
+        if self.get_outputs_amount() != inputs_amount {
             return Err(ErrorKind::InvalidAmount.into());
         }
         Ok(())
