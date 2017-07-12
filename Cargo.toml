@@ -11,6 +11,10 @@ categories = ["cryptography", "database", "network-programming"]
 build = "build.rs"
 links = "sodium"
 
+[badges]
+travis-ci = { repository = "yobicash/libyobicash", branch = "master" }
+codecov = { repository = "yobicash/libyobicash", branch = "master", service = "github" }
+
 [dependencies]
 libc = "*"
 error-chain = "^0.10.0"
