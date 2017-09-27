@@ -8,9 +8,13 @@ extern crate rand;
 extern crate bigint;
 extern crate subtle;
 extern crate crypto as rust_crypto;
+extern crate semver;
+extern crate chrono;
 
 pub mod utils;
 pub mod crypto;
+pub mod input;
+pub mod output;
 
 #[cfg(test)]
 mod tests {
