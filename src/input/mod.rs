@@ -40,6 +40,7 @@ impl YInput {
       }
   }
 
+  // TODO: verify g is H(tx') where tx' has id == id and output idx == out, and tx' = partial transaction with - schnorr protocol stuff, and no other outputs [NB: check this thing, ain't so binding]
   pub fn verify(&self, out: &YOutput) -> bool {
     let prot = SchnorrProtocolPublic {
       g: self.g,
