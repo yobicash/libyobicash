@@ -1,6 +1,7 @@
 use curve25519_dalek::edwards::{ExtendedPoint, CompressedEdwardsY};
 use curve25519_dalek::edwards::{Identity, IsIdentity};
 use curve25519_dalek::edwards::ValidityCheck;
+use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 use subtle::Equal;
 use rand::random;
 use std::ops::{Add, AddAssign};
@@ -11,6 +12,12 @@ use crypto::elliptic::scalar::YScalar;
 
 #[derive(Copy, Clone, Debug)]
 pub struct YPoint(pub ExtendedPoint);
+
+impl Default for YPoint {
+  fn default() -> YPoint {
+    YPoint(ED25519_BASEPOINT_POINT)
+  }
+}
 
 impl YPoint {
   pub fn random() -> YPoint {

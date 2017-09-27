@@ -5,10 +5,10 @@ use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 
 pub struct YOutput {
-  sender: YPoint,
-  receiver: YPoint,
-  amount: YBigUint,
-  data: Vec<u8>,
-  tag: YMACResult,
-  custom: [u8; 32],
+  pub sender: YPoint,
+  pub receiver: YPoint,
+  pub amount: YBigUint,
+  pub data: Vec<u8>,
+  pub tag: YMACResult,
+  pub custom: [u8; 32],
 }
