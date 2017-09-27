@@ -1,0 +1,28 @@
+[package]
+name = "libyobicash"
+version = "0.1.0"
+authors = ["user"]
+
+[dependencies]
+chrono = "^0.4"
+semver = "^0.8"
+bigint = "^4.2"
+rand = "^0.3"
+byteorder = "^1.1"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_bytes = "^0.10"
+serde_cbor = "^0.6"
+subtle = "^0.2"
+arrayref = "^0.3"
+typenum = "^1.9"
+generic-array = "^0.8"
+digest = "^0.6"
+sha2 = "^0.6"
+hmac = "^0.4"
+hkdf = "^0.2"
+curve25519-dalek = "^0.11"
+rust-crypto = "^0.2"
+futures = "^0.1"
+static_assertions = "^0.2"
+quickcheck = "^0.4"
