@@ -12,3 +12,16 @@ pub struct YOutput {
   pub tag: YMACResult,
   pub custom: [u8; 32],
 }
+
+impl YOutput {
+  pub fn new(
+    sk: &YScalar,
+    g: &YPoint,
+    receiver: &YPoint,
+    amount: YBigUint,
+    custom: Option<[u8; 32]>) -> YOutput {
+    unreachable!() 
+  }
+
+  pub fn verify(&self) -> bool { unreachable!() }
+}

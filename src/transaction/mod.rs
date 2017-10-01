@@ -18,3 +18,10 @@ pub struct YTransaction {
   outputs: Vec<YOutput>,
 }
 
+impl YTransaction {
+  pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> YTransaction {
+    unreachable!()
+  }
+
+  pub fn verify(&self) -> bool { unreachable!() }
+}
