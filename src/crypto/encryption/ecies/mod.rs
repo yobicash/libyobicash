@@ -1,4 +1,5 @@
 use curve25519_dalek::edwards::IsIdentity;
+use curve25519_dalek::edwards::ValidityCheck;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 use crypto::encryption::symmetric::YSymmetricEncryption;
@@ -10,6 +11,16 @@ pub struct YECIES {
 }
 
 impl YECIES {
+  pub fn new(g: &YPoint, sk: &YScalar) -> Option<YECIES> {
+    if !g.is_valid() {
+      return None;
+    }
+    Some(YECIES {
+      g: *g,
+      sk: *sk,
+    }) 
+  }
+
   pub fn random() -> YECIES {
     YECIES {
       g: YPoint::random(),
@@ -17,11 +28,14 @@ impl YECIES {
     }
   }
 
-  pub fn from_g(g: &YPoint) -> YECIES {
-    YECIES {
+  pub fn from_g(g: &YPoint) -> Option<YECIES> {
+    if !g.is_valid() {
+      return None;
+    }
+    Some(YECIES {
       g: *g,
       sk: YScalar::random(),
-    }
+    })
   }
 
   pub fn public_key(&self) -> YPoint {
@@ -98,4 +112,3 @@ impl YECIES {
     }
   }
 }
-

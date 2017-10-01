@@ -13,11 +13,15 @@ extern crate chrono;
 
 pub mod utils;
 pub mod crypto;
-pub mod input;
+pub mod amount;
+pub mod data;
 pub mod output;
-pub mod transaction;
+//pub mod input;
+//pub mod transaction;
 
 pub const VERSION: &str = "0.8.0";
+
+pub const MAX_AMOUNT: &str = "2048000000000000000000000";
 
 #[cfg(test)]
 mod tests {

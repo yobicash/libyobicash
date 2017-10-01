@@ -1,27 +1,62 @@
-use utils::biguint::YBigUint;
-use crypto::digest::YDigest;
-use crypto::mac::{YMAC, YMACResult};
+use curve25519_dalek::edwards::ValidityCheck;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
+use amount::YAmount;
+use data::YData;
 
 pub struct YOutput {
   pub sender: YPoint,
   pub receiver: YPoint,
-  pub amount: YBigUint,
-  pub data: Vec<u8>,
-  pub tag: YMACResult,
-  pub custom: [u8; 32],
+  pub amount: YAmount,
+  pub data: Option<YData>,
+  pub custom: Option<[u8; 32]>,
 }
 
 impl YOutput {
   pub fn new(
-    sk: &YScalar,
     g: &YPoint,
+    sk: &YScalar,
     receiver: &YPoint,
-    amount: YBigUint,
-    custom: Option<[u8; 32]>) -> YOutput {
-    unreachable!() 
+    amount: &YAmount,
+    custom: Option<[u8; 32]>) -> Option<YOutput> {
+    if !g.is_valid() || receiver.is_valid() {
+      return None;
+    }
+    let sender = g*sk;
+    let max_amount = YAmount::max_value();
+    if *amount > max_amount {
+      return None;
+    }
+    Some(YOutput {
+      sender: sender,
+      receiver: *receiver,
+      amount: amount.clone(),
+      data: None,
+      custom: custom,
+    })
   }
 
-  pub fn verify(&self) -> bool { unreachable!() }
+  pub fn with_data(
+    g: &YPoint,
+    sk: &YScalar,
+    receiver: &YPoint,
+    iv: &[u8],
+    plain: &[u8],
+    custom: Option<[u8; 32]>) -> Option<YOutput> {
+    if !g.is_valid() || receiver.is_valid() {
+      return None;
+    }
+    let sender = g*sk;
+    if let Some(data) = YData::new(g, sk, receiver, iv, plain) {
+      Some(YOutput {
+        sender: sender,
+        receiver: *receiver,
+        amount: data.amount(),
+        data: Some(data),
+        custom: custom,
+      })
+    } else {
+      None
+    }
+  }
 }

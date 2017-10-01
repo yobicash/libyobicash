@@ -33,6 +33,7 @@ impl SchnorrProtocolPublic {
   }
 }
 
+#[allow(dead_code)]
 pub struct SchnorrProtocol {
   g: YPoint,    // generator g
   x: YScalar,   // instance x
@@ -67,8 +68,11 @@ impl Default for SchnorrProtocolParams {
 
 impl SchnorrProtocol {
     pub fn from_params(p: &SchnorrProtocolParams) -> SchnorrProtocol {
+      #[allow(unused_assignments)]
       let mut g: YPoint = YPoint::default();
+      #[allow(unused_assignments)]
       let mut x: YScalar = YScalar::zero();
+      #[allow(unused_assignments)]
       let mut u: YScalar = YScalar::zero();
 
       if let Some(_g) = p.g {
