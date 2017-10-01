@@ -16,8 +16,8 @@ pub mod crypto;
 pub mod amount;
 pub mod data;
 pub mod output;
-//pub mod input;
-//pub mod transaction;
+pub mod input;
+pub mod transaction;
 
 pub const VERSION: &str = "0.8.0";
 

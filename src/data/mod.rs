@@ -12,13 +12,13 @@ pub struct YData {
 
 impl YData {
   pub fn new(
-    g: &YPoint,
-    sk: &YScalar,
-    other: &YPoint,
+    g: YPoint,
+    sk: YScalar,
+    other: YPoint,
     iv: &[u8],
     plain: &[u8]) -> Option<YData> {
-    if let Some(ecies) = YECIES::new(g, sk) {
-      if let Some((data, tag)) = ecies.encrypt_and_authenticate(other, iv, plain) {
+    if let Some(ecies) = YECIES::new(&g, &sk) {
+      if let Some((data, tag)) = ecies.encrypt_and_authenticate(&other, iv, plain) {
         let mut _iv = Vec::new();
         _iv.extend_from_slice(iv);
         Some(YData{
@@ -34,9 +34,9 @@ impl YData {
     }
   }
 
-  pub fn verify(&self, g: &YPoint, sk: &YScalar, other: &YPoint) -> Option<bool> {
-    if let Some(ecies) = YECIES::new(g, sk) {
-      if let Some(verified) = ecies.verify(other, self.data.as_slice(), &self.tag) {
+  pub fn verify(&self, g: YPoint, sk: YScalar, other: YPoint) -> Option<bool> {
+    if let Some(ecies) = YECIES::new(&g, &sk) {
+      if let Some(verified) = ecies.verify(&other, self.data.as_slice(), &self.tag) {
         Some(verified)
       } else {
         None
@@ -46,9 +46,9 @@ impl YData {
     }
   }
 
-  pub fn verify_and_decrypt(&self, g: &YPoint, sk: &YScalar, other: &YPoint) -> Option<Vec<u8>> {
-    if let Some(ecies) = YECIES::new(g, sk) {
-      if let Some(data) = ecies.verify_and_decrypt(other, self.iv.as_slice(), self.data.as_slice(), &self.tag) {
+  pub fn verify_and_decrypt(&self, g: YPoint, sk: YScalar, other: YPoint) -> Option<Vec<u8>> {
+    if let Some(ecies) = YECIES::new(&g, &sk) {
+      if let Some(data) = ecies.verify_and_decrypt(&other, self.iv.as_slice(), self.data.as_slice(), &self.tag) {
         Some(data)
       } else {
         None

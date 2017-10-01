@@ -6,9 +6,34 @@ use crypto::zkp::schnorr_protocol::SchnorrProtocolPublic;
 use output::YOutput;
 
 #[derive(Copy, Clone, Debug)]
+pub struct YPartialInput {
+  pub id: YDigest,
+  pub idx: u32,
+  pub height: u64,
+}
+
+impl YPartialInput {
+  pub fn new(id: YDigest, idx: u32, height: u64) -> Option<YPartialInput> {
+    if height == 0 {
+      None
+    } else {
+      Some(YPartialInput {
+        id: id,
+        idx: idx,
+        height: height,
+      })
+    }
+  }
+
+  pub fn complete(&mut self, g: YPoint, t: YPoint, c: YScalar, r: YScalar) -> Option<YInput> {
+    YInput::new(self.id, self.idx, self.height, g, t, c, r)
+  }  
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct YInput {
   pub id: YDigest,
-  pub idx: u64,
+  pub idx: u32,
   pub height: u64,
   pub g: YPoint,
   pub t: YPoint,
@@ -19,13 +44,13 @@ pub struct YInput {
 impl YInput {
   pub fn new(
       id: YDigest,
-      idx: u64,
+      idx: u32,
       height: u64,
       g: YPoint,
       t: YPoint,
       c: YScalar,
       r: YScalar) -> Option<YInput> {
-      if !g.is_valid() || !t.is_valid() {
+      if height == 0 || !g.is_valid() || !t.is_valid() {
         None
       } else {
           Some(YInput {
@@ -40,7 +65,6 @@ impl YInput {
       }
   }
 
-  // TODO: verify g is H(tx') where tx' has id == id and output idx == out, and tx' = partial transaction with - schnorr protocol stuff, and no other outputs [NB: check this thing, ain't so binding]
   pub fn verify(&self, out: &YOutput) -> bool {
     let prot = SchnorrProtocolPublic {
       g: self.g,

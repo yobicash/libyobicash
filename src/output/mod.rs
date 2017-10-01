@@ -14,22 +14,22 @@ pub struct YOutput {
 
 impl YOutput {
   pub fn new(
-    g: &YPoint,
-    sk: &YScalar,
-    receiver: &YPoint,
-    amount: &YAmount,
+    g: YPoint,
+    sk: YScalar,
+    receiver: YPoint,
+    amount: YAmount,
     custom: Option<[u8; 32]>) -> Option<YOutput> {
     if !g.is_valid() || receiver.is_valid() {
       return None;
     }
-    let sender = g*sk;
+    let sender = &g*&sk;
     let max_amount = YAmount::max_value();
-    if *amount > max_amount {
+    if amount > max_amount {
       return None;
     }
     Some(YOutput {
       sender: sender,
-      receiver: *receiver,
+      receiver: receiver,
       amount: amount.clone(),
       data: None,
       custom: custom,
@@ -37,20 +37,20 @@ impl YOutput {
   }
 
   pub fn with_data(
-    g: &YPoint,
-    sk: &YScalar,
-    receiver: &YPoint,
+    g: YPoint,
+    sk: YScalar,
+    receiver: YPoint,
     iv: &[u8],
     plain: &[u8],
     custom: Option<[u8; 32]>) -> Option<YOutput> {
     if !g.is_valid() || receiver.is_valid() {
       return None;
     }
-    let sender = g*sk;
+    let sender = &g*&sk;
     if let Some(data) = YData::new(g, sk, receiver, iv, plain) {
       Some(YOutput {
         sender: sender,
-        receiver: *receiver,
+        receiver: receiver,
         amount: data.amount(),
         data: Some(data),
         custom: custom,

@@ -8,7 +8,7 @@ impl YVersion {
     YVersion(Version::new(major, minor, patch))
   }
 
-  pub fn from_string(s: &str) -> Result<YVersion, SemVerError> {
+  pub fn parse(s: &str) -> Result<YVersion, SemVerError> {
     let version = Version::parse(s)?;
     Ok(YVersion(version))
   }
