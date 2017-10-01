@@ -5,9 +5,9 @@ use crypto::encryption::ecies::YECIES;
 use amount::YAmount;
 
 pub struct YData {
-  data: Vec<u8>,
-  iv: Vec<u8>,
-  tag: YMACResult,
+  pub data: Vec<u8>,
+  pub iv: Vec<u8>,
+  pub tag: YMACResult,
 }
 
 impl YData {

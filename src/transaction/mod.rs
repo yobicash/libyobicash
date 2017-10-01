@@ -9,13 +9,13 @@ use input::YInput;
 use output::YOutput;
 
 pub struct YTransaction {
-  id: YDigest,
-  version: YVersion,
-  time: YTime,
-  inputs_len: u32,
-  inputs: Vec<YInput>,
-  outputs_len: u32,
-  outputs: Vec<YOutput>,
+  pub id: YDigest,
+  pub version: YVersion,
+  pub time: YTime,
+  pub inputs_len: u32,
+  pub inputs: Vec<YInput>,
+  pub outputs_len: u32,
+  pub outputs: Vec<YOutput>,
 }
 
 impl YTransaction {

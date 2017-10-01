@@ -6,8 +6,8 @@ use crypto::encryption::symmetric::YSymmetricEncryption;
 use crypto::mac::{YMAC, YMACResult};
 
 pub struct YECIES {
-  g: YPoint,
-  sk: YScalar,
+  pub g: YPoint,
+  pub sk: YScalar,
 }
 
 impl YECIES {
