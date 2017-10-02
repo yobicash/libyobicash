@@ -5,6 +5,7 @@
 use input::YPartialInput;
 use output::YOutput;
 
+#[derive(Clone)]
 pub struct YPartialTransaction {
   pub inputs: Vec<YPartialInput>,
   pub outputs: Vec<YOutput>,

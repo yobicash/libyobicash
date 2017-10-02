@@ -5,7 +5,7 @@ use crypto::elliptic::point::YPoint;
 use crypto::zkp::schnorr_protocol::SchnorrProtocolPublic;
 use output::YOutput;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct YPartialInput {
   pub id: YDigest,
   pub idx: u32,
@@ -30,7 +30,7 @@ impl YPartialInput {
   }  
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct YInput {
   pub id: YDigest,
   pub idx: u32,

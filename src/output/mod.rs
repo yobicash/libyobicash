@@ -4,6 +4,7 @@ use crypto::elliptic::point::YPoint;
 use amount::YAmount;
 use data::YData;
 
+#[derive(Clone)]
 pub struct YOutput {
   pub sender: YPoint,
   pub receiver: YPoint,

@@ -3,6 +3,7 @@ use crypto::elliptic::point::YPoint;
 use crypto::encryption::ecies::YECIES;
 use amount::YAmount;
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 pub struct YData {
   pub data: Vec<u8>,
   pub iv: Vec<u8>,
