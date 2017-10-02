@@ -1,4 +1,3 @@
-use crypto::mac::YMACResult;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 use crypto::encryption::ecies::YECIES;
@@ -7,7 +6,7 @@ use amount::YAmount;
 pub struct YData {
   pub data: Vec<u8>,
   pub iv: Vec<u8>,
-  pub tag: YMACResult,
+  pub tag: Vec<u8>,
 }
 
 impl YData {
@@ -22,7 +21,7 @@ impl YData {
         let mut _iv = Vec::new();
         _iv.extend_from_slice(iv);
         Some(YData{
-          data: data.clone(),
+          data: data,
           iv: _iv,
           tag: tag,
         })

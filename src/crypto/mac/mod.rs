@@ -1,10 +1,7 @@
-use typenum::consts::U64;
 use sha2::Sha512;
-use hmac::{Mac, MacResult, Hmac};
+use hmac::{Mac, Hmac};
 
 pub struct YMAC(pub Hmac<Sha512>);
-
-pub type YMACResult = MacResult<U64>;
 
 impl YMAC {
   pub fn new(key: &[u8]) -> YMAC {
@@ -15,18 +12,19 @@ impl YMAC {
     self.0.input(msg)
   }
 
-  pub fn result(self) -> YMACResult {
-    self.0.result() 
+  pub fn result(self) -> Vec<u8> {
+    let mut code: Vec<u8> = Vec::new();
+    code.extend_from_slice(self.0.result().code());
+    code
   }
  
-  pub fn mac(key: &[u8], msg: &[u8]) -> YMACResult {
+  pub fn mac(key: &[u8], msg: &[u8]) -> Vec<u8> {
     let mut m = YMAC::new(key);
     m.update(msg);
     m.result()
   }
 
-  pub fn verify(self, mac: &YMACResult) -> bool {
-    let code = mac.code(); // &[u8]
+  pub fn verify(self, code: &[u8]) -> bool {
     self.0.verify(code)
   }
 }

@@ -3,7 +3,7 @@ use curve25519_dalek::edwards::ValidityCheck;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 use crypto::encryption::symmetric::YSymmetricEncryption;
-use crypto::mac::{YMAC, YMACResult};
+use crypto::mac::YMAC;
 
 pub struct YECIES {
   pub g: YPoint,
@@ -71,7 +71,7 @@ impl YECIES {
     }
   }
 
-  pub fn authenticate(&self, other: &YPoint, cyph: &[u8]) -> Option<YMACResult> {
+  pub fn authenticate(&self, other: &YPoint, cyph: &[u8]) -> Option<Vec<u8>> {
     if let Some(key) = self.derive_key(other) {
       let tag = YMAC::mac(key.as_slice(), cyph);
       Some(tag)
@@ -80,7 +80,7 @@ impl YECIES {
     }
   }
 
-  pub fn verify(&self, other: &YPoint, cyph: &[u8], tag: &YMACResult) -> Option<bool> {
+  pub fn verify(&self, other: &YPoint, cyph: &[u8], tag: &[u8]) -> Option<bool> {
     if let Some(key) = self.derive_key(other) {
         let mut mac = YMAC::new(key.as_slice());
         mac.update(cyph);
@@ -90,7 +90,7 @@ impl YECIES {
     }
   }
 
-  pub fn encrypt_and_authenticate(&self, other: &YPoint, iv: &[u8], plain: &[u8]) -> Option<(Vec<u8>, YMACResult)> {
+  pub fn encrypt_and_authenticate(&self, other: &YPoint, iv: &[u8], plain: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     let _cyph = self.encrypt(other, iv, plain);
     if _cyph.is_none() { return None }
     let cyph = _cyph.unwrap();
@@ -100,7 +100,7 @@ impl YECIES {
     Some((cyph, tag))
   }
 
-  pub fn verify_and_decrypt(&self, other: &YPoint, iv: &[u8], cyph: &[u8], tag: &YMACResult) -> Option<Vec<u8>> {
+  pub fn verify_and_decrypt(&self, other: &YPoint, iv: &[u8], cyph: &[u8], tag: &[u8]) -> Option<Vec<u8>> {
     if let Some(verified) = self.verify(other, cyph, tag) {
       if verified {
           self.decrypt(other, iv, cyph)
