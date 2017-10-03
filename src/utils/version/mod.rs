@@ -1,9 +1,16 @@
 use semver::{Version, SemVerError};
 use byteorder::{LittleEndian, BigEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
+use ::VERSION;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct YVersion(pub Version);
+
+impl Default for YVersion {
+  fn default() -> YVersion {
+    YVersion::parse(VERSION).unwrap()
+  }
+}
 
 impl YVersion {
   pub fn new(major: u64, minor: u64, patch: u64) -> YVersion {
@@ -61,6 +68,10 @@ impl YVersion {
     Some(res)
   }
 
+  pub fn to_bytes(&self) -> Option<[u8; 24]> {
+    self.to_big_endian()
+  }
+
   pub fn from_little_endian(b: &[u8]) -> Option<YVersion> {
     let mut major: u64 = 0;
     let mut minor: u64 = 0;
@@ -99,5 +110,9 @@ impl YVersion {
       Err(_) => { return None },
     }
     Some(YVersion::new(major, minor, patch))
+  }
+
+  pub fn from_bytes(b: &[u8]) -> Option<YVersion> {
+    YVersion::from_big_endian(b)
   }
 }

@@ -5,6 +5,12 @@ use byteorder::{ByteOrder, LittleEndian, BigEndian};
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct YTime(pub DateTime<Utc>);
 
+impl Default for YTime {
+  fn default() -> YTime {
+    YTime::now()
+  }
+}
+
 impl YTime {
   pub fn new(y: u64, mm: u64, d: u64, h: u64, m: u64, s: u64) -> YTime {
     let date_time = NaiveDate::from_ymd(y as i32, mm as u32, d as u32)
@@ -32,6 +38,10 @@ impl YTime {
     buf
   }
 
+  pub fn to_bytes(&self) -> [u8; 8] {
+    self.to_big_endian()
+  }
+
   pub fn from_timestamp(ts: u64) -> YTime {
     let ndt = NaiveDateTime::from_timestamp(ts as i64, 0);
     YTime(DateTime::<Utc>::from_utc(ndt, Utc))
@@ -43,6 +53,10 @@ impl YTime {
 
   pub fn from_big_endian(b: &[u8]) -> YTime {
     YTime::from_timestamp(BigEndian::read_u64(b))
+  }
+
+  pub fn from_bytes(b: &[u8]) -> YTime {
+    YTime::from_big_endian(b)
   }
 
   pub fn years(&self) -> u64 {
