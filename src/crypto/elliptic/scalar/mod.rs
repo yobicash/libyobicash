@@ -46,7 +46,7 @@ impl YScalar {
     YScalar(self.0.invert())
   }
 
-  pub fn as_bytes(&self) -> &[u8; 32] {
+  pub fn to_bytes(&self) -> &[u8; 32] {
     self.0.as_bytes()
   }
 

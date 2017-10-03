@@ -10,6 +10,7 @@ extern crate subtle;
 extern crate crypto as rust_crypto;
 extern crate semver;
 extern crate chrono;
+extern crate byteorder;
 
 pub mod utils;
 pub mod crypto;

@@ -1,5 +1,6 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use chrono::{Timelike, Datelike};
+use byteorder::{ByteOrder, LittleEndian, BigEndian};
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct YTime(pub DateTime<Utc>);
@@ -19,9 +20,29 @@ impl YTime {
     self.0.timestamp() as u64 // cause it will never be < 1/1/1970
   }
 
+  pub fn to_little_endian(&self) -> [u8; 8] {
+    let mut buf = [0; 8];
+    LittleEndian::write_u64(&mut buf, self.to_timestamp());
+    buf
+  }
+
+  pub fn to_big_endian(&self) -> [u8; 8] {
+    let mut buf = [0; 8];
+    BigEndian::write_u64(&mut buf, self.to_timestamp());
+    buf
+  }
+
   pub fn from_timestamp(ts: u64) -> YTime {
     let ndt = NaiveDateTime::from_timestamp(ts as i64, 0);
     YTime(DateTime::<Utc>::from_utc(ndt, Utc))
+  }
+
+  pub fn from_little_endian(b: &[u8]) -> YTime {
+    YTime::from_timestamp(LittleEndian::read_u64(b))
+  }
+
+  pub fn from_big_endian(b: &[u8]) -> YTime {
+    YTime::from_timestamp(BigEndian::read_u64(b))
   }
 
   pub fn years(&self) -> u64 {

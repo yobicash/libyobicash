@@ -14,10 +14,10 @@ impl YHash {
   }
 
   pub fn digest(self) -> YDigest {
-    self.0.result() 
+    YDigest(self.0.result())
   }
 
   pub fn hash(msg: &[u8]) -> YDigest {
-    Sha512::digest(msg)
+    YDigest(Sha512::digest(msg))
   }
 } 

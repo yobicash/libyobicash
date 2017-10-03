@@ -11,7 +11,7 @@ impl YKDF {
   }
 
   pub fn expand(&mut self, info: &[u8], len: usize) -> Vec<u8> {
-    // TODO: change it; cause it's bad
+    // TODO
     assert!(len <= 255*YKDF::LENGTH);
     self.0.derive(info, len)
   }

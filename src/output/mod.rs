@@ -60,4 +60,8 @@ impl YOutput {
       None
     }
   }
+
+  pub fn to_bytes(&self) -> Vec<u8> { unreachable!() }
+
+  pub fn from_bytes(b: &[u8]) -> Option<YOutput> { unreachable!() }
 }

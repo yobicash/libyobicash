@@ -25,7 +25,11 @@ impl YPartialInput {
     }
   }
 
-  pub fn complete(&mut self, g: YPoint, t: YPoint, c: YScalar, r: YScalar) -> Option<YInput> {
+  pub fn to_bytes(&self) -> Vec<u8> { unreachable!() }
+
+  pub fn from_bytes(b: &[u8]) -> Option<YPartialInput> { unreachable!() }
+
+  pub fn complete(self, g: YPoint, t: YPoint, c: YScalar, r: YScalar) -> Option<YInput> {
     YInput::new(self.id, self.idx, self.height, g, t, c, r)
   }  
 }
@@ -64,6 +68,19 @@ impl YInput {
           })
       }
   }
+
+  pub fn from_partial(
+    i: YPartialInput,
+    g: YPoint,
+    t: YPoint,
+    c: YScalar,
+    r: YScalar) -> Option<YInput> {
+    i.complete(g, t, c, r)
+  }
+
+  pub fn to_bytes(&self) -> Vec<u8> { unreachable!() }
+
+  pub fn from_bytes(b: &[u8]) -> Option<YInput> { unreachable!() }
 
   pub fn verify(&self, out: &YOutput) -> bool {
     let prot = SchnorrProtocolPublic {

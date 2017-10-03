@@ -12,13 +12,17 @@ impl YMAC {
     self.0.input(msg)
   }
 
-  pub fn result(self) -> Vec<u8> {
-    let mut code: Vec<u8> = Vec::new();
-    code.extend_from_slice(self.0.result().code());
+  pub fn result(self) -> [u8; 64] {
+    let mut code = [0u8; 64];
+    let res = self.0.result();
+    let c = res.code();
+    for i in 0..64 {
+      code[i] = c[i];
+    }
     code
   }
  
-  pub fn mac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+  pub fn mac(key: &[u8], msg: &[u8]) -> [u8; 64] {
     let mut m = YMAC::new(key);
     m.update(msg);
     m.result()

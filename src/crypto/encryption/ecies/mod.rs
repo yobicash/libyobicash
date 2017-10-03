@@ -71,7 +71,7 @@ impl YECIES {
     }
   }
 
-  pub fn authenticate(&self, other: &YPoint, cyph: &[u8]) -> Option<Vec<u8>> {
+  pub fn authenticate(&self, other: &YPoint, cyph: &[u8]) -> Option<[u8; 64]> {
     if let Some(key) = self.derive_key(other) {
       let tag = YMAC::mac(key.as_slice(), cyph);
       Some(tag)
@@ -90,7 +90,7 @@ impl YECIES {
     }
   }
 
-  pub fn encrypt_and_authenticate(&self, other: &YPoint, iv: &[u8], plain: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
+  pub fn encrypt_and_authenticate(&self, other: &YPoint, iv: &[u8], plain: &[u8]) -> Option<(Vec<u8>, [u8; 64])> {
     let _cyph = self.encrypt(other, iv, plain);
     if _cyph.is_none() { return None }
     let cyph = _cyph.unwrap();
