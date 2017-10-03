@@ -2,14 +2,14 @@ use typenum::consts::U64;
 use generic_array::GenericArray;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
-pub struct YDigest(pub GenericArray<u8, U64>);
+pub struct YKey(pub GenericArray<u8, U64>);
 
-impl YDigest {
-  pub fn from_bytes(b: &[u8]) -> Option<YDigest> {
+impl YKey {
+  pub fn from_bytes(b: &[u8]) -> Option<YKey> {
     if b.len() != 64 {
       return None;
     }
-    Some(YDigest(*GenericArray::from_slice(&b[..])))
+    Some(YKey(*GenericArray::from_slice(&b[..])))
   }
 
   pub fn to_bytes(&self) -> [u8; 64] {
@@ -20,4 +20,3 @@ impl YDigest {
     b
   }
 }
-

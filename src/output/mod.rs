@@ -1,4 +1,5 @@
 use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
+use crypto::encryption::symmetric::YIV;
 use amount::YAmount;
 use data::YData;
 
@@ -34,7 +35,7 @@ impl YOutput {
   pub fn with_data(
     sk: &YSecretKey,
     receiver: &YPublicKey,
-    iv: &[u8],
+    iv: YIV,
     plain: &[u8],
     custom: Option<[u8; 32]>) -> Option<YOutput> {
     let sender = sk.public_key();
