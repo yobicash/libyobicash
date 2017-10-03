@@ -2,6 +2,8 @@ use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
 use utils::version::YVersion;
 use utils::time::YTime;
 use crypto::digest::YDigest;
+use crypto::hash::YHash;
+use crypto::elliptic::scalar::YScalar;
 use input::{YPartialInput, YInput};
 use output::YOutput;
 use std::io::Write;
@@ -116,22 +118,108 @@ impl YTransaction {
     let now = YTime::now();
     let version = YVersion::default();
     let id = YDigest::default();
-    let tx = YTransaction {
+    let mut tx = YTransaction {
       id: id,
       version: version,
       time: now,
       inputs_len: inputs_len,
-      inputs: inputs,
+      inputs: inputs.clone(),
       outputs_len: outputs_len,
       outputs: outputs,
     };
-    // TODO: id
-    // TODO: check inputs `c`
+    for i in 0..inputs_len as usize {
+      if let Some(_c) = tx.calc_challenge(i as u32) {
+        if inputs[i].c != _c {
+          return None;
+        }  
+      } else {
+        return None;
+      }
+    }
+    if let Some(_id) = tx.calc_id() {
+      tx.id = _id;
+    } else {
+      return None;
+    }
     Some(tx)
   }
 
   pub fn from_partial(p: YPartialTransaction) -> Option<YTransaction> {
     p.complete()
+  }
+
+  pub fn calc_challenge(&self, idx: u32) -> Option<YScalar> {
+    let mut tx_copy = self.clone();
+    // NB: case where the tx is quite complete but
+    // a) the id is the default id
+    // b) the idx input is substituted by a default YInput
+    // c) all the non-idx inputs' challenges are the default challenge YScalar(0)
+    tx_copy.id = YDigest::default();
+    for i in 0..tx_copy.inputs.len() {
+      if i == idx as usize {
+        tx_copy.inputs[i] = YInput::default();
+      } else {
+        tx_copy.inputs[i].c = YScalar::default();
+      }
+    }
+    if let Some(buf) = tx_copy.to_bytes() {
+      Some(YScalar::hash_from_bytes(buf.as_slice()))
+    } else {
+      None
+    }
+  }
+
+  pub fn calc_id(&self) -> Option<YDigest> {
+    let mut buf = Vec::new();
+    if let Some(version_buf) = self.version.to_bytes() {
+      match buf.write(&version_buf[..]) {
+        Ok(_) => {},
+        Err(_) => { return None; },
+      }
+    } else {
+      return None;
+    }
+    match buf.write(&self.time.to_bytes()[..]) {
+      Ok(_) => {},
+      Err(_) => { return None; },
+    }
+    let inputs = self.inputs.clone();
+    let inputs_len = inputs.len();
+    match buf.write_u32::<BigEndian>(inputs_len as u32) {
+      Ok(_) => {},
+      Err(_) => { return None; },
+    }
+    for i in 0..inputs_len {
+      if let Some(input_buf) = inputs[i].to_bytes() {
+        match buf.write_u32::<BigEndian>(input_buf.len() as u32) {
+          Ok(_) => {},
+          Err(_) => { return None; },
+        }
+        match buf.write(input_buf.as_slice()) {
+          Ok(_) => {},
+          Err(_) => { return None; }
+        }
+      }
+    }
+    let outputs = self.outputs.clone();
+    let outputs_len = outputs.len();
+    match buf.write_u32::<BigEndian>(outputs_len as u32) {
+      Ok(_) => {},
+      Err(_) => { return None; },
+    }
+    for i in 0..outputs_len {
+      if let Some(output_buf) = outputs[i].to_bytes() {
+        match buf.write_u32::<BigEndian>(output_buf.len() as u32) {
+          Ok(_) => {},
+          Err(_) => { return None; },
+        }
+        match buf.write(output_buf.as_slice()) {
+          Ok(_) => {},
+          Err(_) => { return None; }
+        }
+      }
+    }
+    Some(YHash::hash(buf.as_slice())) 
   }
 
   pub fn to_bytes(&self) -> Option<Vec<u8>> {
@@ -228,6 +316,21 @@ impl YTransaction {
       if let Some(output) = YOutput::from_bytes(&b[i+8..i+8+output_len]) {
         tx.outputs.push(output);      
       }
+    }
+
+    for i in 0..inputs_len as usize {
+      if let Some(_c) = tx.calc_challenge(i as u32) {
+        if tx.inputs[i].c != _c {
+          return None;
+        }  
+      } else {
+        return None;
+      }
+    }
+    if let Some(_id) = tx.calc_id() {
+      tx.id = _id;
+    } else {
+      return None;
     }
 
     Some(tx)
