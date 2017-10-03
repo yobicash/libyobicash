@@ -4,99 +4,9 @@ use utils::time::YTime;
 use crypto::digest::YDigest;
 use crypto::hash::YHash;
 use crypto::elliptic::scalar::YScalar;
-use input::{YPartialInput, YInput};
+use input::YInput;
 use output::YOutput;
 use std::io::Write;
-
-#[derive(Clone, Eq, PartialEq, Default)]
-pub struct YPartialTransaction {
-  pub inputs: Vec<YPartialInput>,
-  pub outputs: Vec<YOutput>,
-}
-
-impl YPartialTransaction {
-  pub fn new(inputs: Vec<YPartialInput>, outputs: Vec<YOutput>) -> Option<YPartialTransaction> {
-    // TODO: check unique partial inputs
-    // TODO: check unique outputs
-    Some(YPartialTransaction {
-      inputs: inputs,
-      outputs: outputs,
-    })
-  }
-
-  pub fn to_bytes(&self) -> Option<Vec<u8>> {
-    let mut buf = Vec::new();
-    let inputs = self.inputs.clone();
-    let inputs_len = inputs.len();
-    match buf.write_u32::<BigEndian>(inputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    for i in 0..inputs_len {
-      if let Some(input_buf) = inputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(input_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(input_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
-      }
-    }
-    let outputs = self.outputs.clone();
-    let outputs_len = outputs.len();
-    match buf.write_u32::<BigEndian>(outputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    for i in 0..outputs_len {
-      if let Some(output_buf) = outputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(output_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(output_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
-      }
-    }
-    Some(buf)
-  }
-
-  pub fn from_bytes(b: &[u8]) -> Option<YPartialTransaction> {
-    if b.len() < 8 {
-      return None;
-    }
-    
-    let mut ptx = YPartialTransaction::default();
-
-    let inputs_len = BigEndian::read_u32(&b[0..4]) as usize;
-
-    for i in 0..inputs_len {
-      let input_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
-      if let Some(input) = YPartialInput::from_bytes(&b[i+8..i+8+input_len]) {
-        ptx.inputs.push(input);      
-      }
-    }
-
-    let outputs_len = BigEndian::read_u32(&b[0..4]) as usize;
-
-    for i in 0..outputs_len {
-      let output_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
-      if let Some(output) = YOutput::from_bytes(&b[i+8..i+8+output_len]) {
-        ptx.outputs.push(output);      
-      }
-    }
-
-    Some(ptx)
-  }
-
-  pub fn complete(self) -> Option<YTransaction> {
-    unreachable!()
-  }
-}
 
 #[derive(Clone, Eq, PartialEq, Default)]
 pub struct YTransaction {
@@ -142,10 +52,6 @@ impl YTransaction {
       return None;
     }
     Some(tx)
-  }
-
-  pub fn from_partial(p: YPartialTransaction) -> Option<YTransaction> {
-    p.complete()
   }
 
   pub fn calc_challenge(&self, idx: u32) -> Option<YScalar> {

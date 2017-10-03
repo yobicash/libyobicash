@@ -8,68 +8,6 @@ use output::YOutput;
 use std::io::Write;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
-pub struct YPartialInput {
-  pub id: YDigest,
-  pub idx: u32,
-  pub height: u64,
-}
-
-impl YPartialInput {
-  pub fn new(id: YDigest, idx: u32, height: u64) -> Option<YPartialInput> {
-    if height == 0 {
-      None
-    } else {
-      Some(YPartialInput {
-        id: id,
-        idx: idx,
-        height: height,
-      })
-    }
-  }
-
-  pub fn to_bytes(&self) -> Option<Vec<u8>> {
-    let mut buf = Vec::new();
-    match buf.write(&self.id.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write_u32::<BigEndian>(self.idx) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write_u64::<BigEndian>(self.height) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    Some(buf)
-  }
-
-  pub fn from_bytes(b: &[u8]) -> Option<YPartialInput> {
-    if b.len() != 76 {
-      return None;
-    }
-
-    let mut pi = YPartialInput::default();
-
-    if let Some(_id) = YDigest::from_bytes(&b[0..64]) {
-      pi.id = _id;
-    } else {
-      return None;
-    }
-
-    pi.idx = BigEndian::read_u32(&b[64..68]);
-
-    pi.height = BigEndian::read_u64(&b[68..76]);
-
-    Some(pi)
-  }
-
-  pub fn complete(self, g: YPoint, t: YPoint, c: YScalar, r: YScalar) -> Option<YInput> {
-    YInput::new(self.id, self.idx, self.height, g, t, c, r)
-  }  
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct YInput {
   pub id: YDigest,
   pub idx: u32,
@@ -102,15 +40,6 @@ impl YInput {
             r: r,
           })
       }
-  }
-
-  pub fn from_partial(
-    i: YPartialInput,
-    g: YPoint,
-    t: YPoint,
-    c: YScalar,
-    r: YScalar) -> Option<YInput> {
-    i.complete(g, t, c, r)
   }
 
   pub fn to_bytes(&self) -> Option<Vec<u8>> {
