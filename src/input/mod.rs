@@ -85,7 +85,7 @@ impl YInput {
   pub fn verify(&self, out: &YOutput) -> bool {
     let prot = SchnorrProtocolPublic {
       g: self.g,
-      w: out.receiver,
+      w: out.receiver.pk,
       t: self.t,
       c: self.c,
       r: self.r,

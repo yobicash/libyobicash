@@ -35,8 +35,15 @@ impl YPoint {
     point.unwrap()
   }
 
-  pub fn from_bytes(b: &[u8; 32]) -> Option<YPoint> {
-    let compressed = CompressedEdwardsY(*b);
+  pub fn from_bytes(b: &[u8]) -> Option<YPoint> {
+    if b.len() != 32 {
+      return None;
+    }
+    let mut _b = [0u8; 32];
+    for i in 0..32 {
+      _b[i] = b[i];
+    }
+    let compressed = CompressedEdwardsY(_b);
     if let Some(point) = compressed.decompress() {
       Some(YPoint(point))
     } else {
@@ -54,6 +61,8 @@ impl PartialEq for YPoint {
     self.0.ct_eq(&other.0) == 0u8
   }
 }
+
+impl Eq for YPoint {}
 
 impl<'a, 'b> Add<&'b YPoint> for &'a YPoint {
   type Output = YPoint;

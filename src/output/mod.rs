@@ -1,13 +1,11 @@
-use curve25519_dalek::edwards::ValidityCheck;
-use crypto::elliptic::scalar::YScalar;
-use crypto::elliptic::point::YPoint;
+use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
 use amount::YAmount;
 use data::YData;
 
 #[derive(Clone)]
 pub struct YOutput {
-  pub sender: YPoint,
-  pub receiver: YPoint,
+  pub sender: YPublicKey,
+  pub receiver: YPublicKey,
   pub amount: YAmount,
   pub data: Option<YData>,
   pub custom: Option<[u8; 32]>,
@@ -15,22 +13,18 @@ pub struct YOutput {
 
 impl YOutput {
   pub fn new(
-    g: YPoint,
-    sk: YScalar,
-    receiver: YPoint,
+    sk: &YSecretKey,
+    receiver: &YPublicKey,
     amount: YAmount,
     custom: Option<[u8; 32]>) -> Option<YOutput> {
-    if !g.is_valid() || receiver.is_valid() {
-      return None;
-    }
-    let sender = &g*&sk;
+    let sender = sk.public_key();
     let max_amount = YAmount::max_value();
     if amount > max_amount {
       return None;
     }
     Some(YOutput {
-      sender: sender,
-      receiver: receiver,
+      sender: sender.clone(),
+      receiver: receiver.clone(),
       amount: amount.clone(),
       data: None,
       custom: custom,
@@ -38,20 +32,16 @@ impl YOutput {
   }
 
   pub fn with_data(
-    g: YPoint,
-    sk: YScalar,
-    receiver: YPoint,
+    sk: &YSecretKey,
+    receiver: &YPublicKey,
     iv: &[u8],
     plain: &[u8],
     custom: Option<[u8; 32]>) -> Option<YOutput> {
-    if !g.is_valid() || receiver.is_valid() {
-      return None;
-    }
-    let sender = &g*&sk;
-    if let Some(data) = YData::new(g, sk, receiver, iv, plain) {
+    let sender = sk.public_key();
+    if let Some(data) = YData::new(sk, receiver, iv, plain) {
       Some(YOutput {
-        sender: sender,
-        receiver: receiver,
+        sender: sender.clone(),
+        receiver: receiver.clone(),
         amount: data.amount(),
         data: Some(data),
         custom: custom,

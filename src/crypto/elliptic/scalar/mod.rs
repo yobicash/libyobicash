@@ -12,6 +12,12 @@ use utils::biguint::YBigUint;
 #[derive(Copy, Clone, Debug)]
 pub struct YScalar(pub Scalar);
 
+impl Default for YScalar {
+  fn default() -> YScalar {
+    YScalar::zero()
+  }
+}
+
 impl YScalar {
   pub fn zero() -> YScalar {
     YScalar(Scalar::zero())
@@ -29,13 +35,20 @@ impl YScalar {
     YScalar(Scalar::hash_from_bytes::<Sha512>(b))
   }
 
-  pub fn from_biguint(n: &YBigUint) -> YScalar {
-    let mut internal = Scalar::zero();
-    let le = n.to_little_endian();
-    for i in 0..32 {
-        internal.0[i] = le[i];
+  // NB: scalars are 32 bytes bytearrays in little endian
+  pub fn from_bytes(b: &[u8]) -> Option<YScalar> {
+    if b.len() != 32 {
+      return None;
     }
-    YScalar(internal)
+    let mut scalar = Scalar::zero();
+    for i in 0..32 {
+      scalar.0[i] = b[i];
+    }
+    Some(YScalar(scalar))
+  }
+
+  pub fn from_biguint(n: &YBigUint) -> Option<YScalar> {
+    YScalar::from_bytes(n.to_little_endian().as_slice())
   }
 
   pub fn to_biguint(&self) -> YBigUint {
@@ -46,8 +59,8 @@ impl YScalar {
     YScalar(self.0.invert())
   }
 
-  pub fn to_bytes(&self) -> &[u8; 32] {
-    self.0.as_bytes()
+  pub fn to_bytes(&self) -> [u8; 32] {
+    *self.0.as_bytes()
   }
 
   pub fn reduce(b: &[u8; 64]) -> YScalar {
@@ -64,6 +77,8 @@ impl PartialEq for YScalar {
     self.0.ct_eq(&other.0) == 0u8    
   }
 }
+
+impl Eq for YScalar {}
 
 impl<'a, 'b> Add<&'b YScalar> for &'a YScalar {
   type Output = YScalar;
