@@ -8,7 +8,6 @@ use std::io::{Write, Read, Cursor};
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
 pub struct YData {
-  pub size: u32,
   pub data: Vec<u8>,
   pub iv: YIV,
   pub tag: YMACCode,
@@ -23,7 +22,6 @@ impl YData {
     let ecies = YECIES::new(sk.clone());
     if let Some((data, tag)) = ecies.encrypt_and_authenticate(other, iv, plain) {
       Some(YData{
-        size: data.len() as u32,
         data: data,
         iv: iv,
         tag: tag,
@@ -35,7 +33,8 @@ impl YData {
 
   pub fn to_bytes(&self) -> Option<Vec<u8>> {
     let mut buf = Vec::new();
-    match buf.write_u32::<BigEndian>(self.size) {
+    let size = self.data.len() as u32;
+    match buf.write_u32::<BigEndian>(size) {
       Ok(_) => {},
       Err(_) => { return None; },
     }
@@ -63,12 +62,13 @@ impl YData {
 
     let mut data = YData::default();
 
+    let mut size = 0u32;
     match reader.read_u32::<BigEndian>() {
-      Ok(_size) => { data.size = _size },
+      Ok(_size) => { size = _size },
       Err(_) => { return None },
     }
 
-    for i in 0..data.size as usize {
+    for i in 0..size as usize {
       data.data[i] = 0;
     }
     match reader.read_exact(data.data.as_mut_slice()) {

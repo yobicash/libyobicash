@@ -23,7 +23,7 @@ impl YPublicKey {
     }
     let pk_buf = self.pk.to_bytes();
     for i in 0..32 {
-      buf[i] = g_buf[i];
+      buf[i] = pk_buf[i];
     }
     buf
   }
@@ -93,7 +93,7 @@ impl YSecretKey {
     }
     let sk_buf = self.sk.to_bytes();
     for i in 0..32 {
-      buf[i] = g_buf[i];
+      buf[i] = sk_buf[i];
     }
     buf
   }

@@ -8,7 +8,7 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct YAmount(pub YBigUint);
 
 impl YAmount {
@@ -59,8 +59,16 @@ impl YAmount {
     self.0.to_big_endian()
   }
 
+  pub fn to_bytes(&self) -> Vec<u8> {
+    self.to_big_endian()
+  }
+
   pub fn from_big_endian(b: &[u8]) -> YAmount {
     YAmount(YBigUint::from_big_endian(b))
+  }
+
+  pub fn from_bytes(b: &[u8]) -> YAmount {
+    YAmount::from_big_endian(b)
   }
 
   pub fn to_little_endian(&self) -> Vec<u8> {

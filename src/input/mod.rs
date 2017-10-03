@@ -78,6 +78,10 @@ impl YInput {
     i.complete(g, t, c, r)
   }
 
+  pub fn from_output(out: &YOutput) -> YInput {
+    unreachable!()
+  }
+
   pub fn to_bytes(&self) -> Vec<u8> { unreachable!() }
 
   pub fn from_bytes(b: &[u8]) -> Option<YInput> { unreachable!() }
@@ -85,7 +89,7 @@ impl YInput {
   pub fn verify(&self, out: &YOutput) -> bool {
     let prot = SchnorrProtocolPublic {
       g: self.g,
-      w: out.receiver.pk,
+      w: out.recipient.pk,
       t: self.t,
       c: self.c,
       r: self.r,
