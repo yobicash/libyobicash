@@ -101,12 +101,9 @@ impl YTransaction {
     buf.write_u32::<BigEndian>(inputs_len as u32)?;
     
     for i in 0..inputs_len {
-      if let Some(input_buf) = inputs[i].to_bytes() {
-        buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
-        buf.write(input_buf.as_slice())?;
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let input_buf = inputs[i].to_bytes()?;
+      buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
+      buf.write(input_buf.as_slice())?;
     }
 
     let outputs = self.outputs.clone();
@@ -135,12 +132,9 @@ impl YTransaction {
     let inputs_len = inputs.len();
     buf.write_u32::<BigEndian>(inputs_len as u32)?;
     for i in 0..inputs_len {
-      if let Some(input_buf) = inputs[i].to_bytes() {
-        buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
-        buf.write(input_buf.as_slice())?;
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let input_buf = inputs[i].to_bytes()?;
+      buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
+      buf.write(input_buf.as_slice())?;
     }
     let outputs = self.outputs.clone();
     let outputs_len = outputs.len();
@@ -178,11 +172,8 @@ impl YTransaction {
 
     for i in 0..inputs_len {
       let input_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
-      if let Some(input) = YInput::from_bytes(&b[i+8..i+8+input_len]) {
-        tx.inputs.push(input);      
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let input = YInput::from_bytes(&b[i+8..i+8+input_len])?;
+      tx.inputs.push(input);
     }
 
     let outputs_len = BigEndian::read_u32(&b[0..4]) as usize;

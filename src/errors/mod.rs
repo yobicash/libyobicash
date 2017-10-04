@@ -22,6 +22,10 @@ error_chain! {
       display("Index {} out of bound in array of length {}", idx, length)
     }
 
+    InvalidHeight {
+      description("Invalid height")
+    }
+
     AmountOutOfBound {
       description("Amount out of bound")
     }
