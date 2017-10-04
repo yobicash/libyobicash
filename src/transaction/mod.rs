@@ -1,4 +1,5 @@
 use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use errors::*;
 use utils::version::YVersion;
 use utils::time::YTime;
 use crypto::digest::YDigest;
@@ -18,7 +19,7 @@ pub struct YTransaction {
 }
 
 impl YTransaction {
-  pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> Option<YTransaction> {
+  pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> YResult<YTransaction> {
     let inputs_len = inputs.len();
     let mut inputs_refs = Vec::new();
     for i in 0..inputs_len {
@@ -29,7 +30,7 @@ impl YTransaction {
     inputs_refs.sort();
     inputs_refs.dedup();
     if inputs_refs.len() != inputs_len {
-      return None;
+      return Err(YErrorKind::DuplicateItem.into());
     }
     let outputs_len = outputs.len();
     let mut outputs_refs = Vec::new();
@@ -41,7 +42,7 @@ impl YTransaction {
     outputs_refs.sort();
     outputs_refs.dedup();
     if outputs_refs.len() != outputs_len {
-      return None;
+      return Err(YErrorKind::DuplicateItem.into());
     }
     let now = YTime::now();
     let version = YVersion::default();
@@ -55,23 +56,18 @@ impl YTransaction {
     };
     let inputs_len = inputs.len();
     for i in 0..inputs_len {
-      if let Some(_c) = tx.calc_challenge(i as u32) {
-        if inputs[i].c != _c {
-          return None;
-        }  
-      } else {
-        return None;
-      }
+      let c = tx.calc_challenge(i as u32)?;
+      if inputs[i].c != c {
+        return Err(YErrorKind::InvalidInputChallenge(i).into());
+      }  
     }
-    if let Some(_id) = tx.calc_id() {
-      tx.id = _id;
-    } else {
-      return None;
-    }
-    Some(tx)
+    
+    tx.id = tx.calc_id()?;
+    
+    Ok(tx)
   }
 
-  pub fn calc_challenge(&self, idx: u32) -> Option<YScalar> {
+  pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {
     let mut tx_copy = self.clone();
     // NB: case where the tx is quite complete but
     // a) the id is the default id
@@ -85,126 +81,87 @@ impl YTransaction {
         tx_copy.inputs[i].c = YScalar::default();
       }
     }
-    if let Some(buf) = tx_copy.to_bytes() {
-      Some(YScalar::hash_from_bytes(buf.as_slice()))
-    } else {
-      None
-    }
+    let buf = tx_copy.to_bytes()?;
+    Ok(YScalar::hash_from_bytes(buf.as_slice()))
   }
 
-  pub fn calc_id(&self) -> Option<YDigest> {
+  pub fn calc_id(&self) -> YResult<YDigest> {
     let mut buf = Vec::new();
     if let Some(version_buf) = self.version.to_bytes() {
-      match buf.write(&version_buf[..]) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
+      buf.write(&version_buf[..])?;
     } else {
-      return None;
+      return Err(YErrorKind::Unknown.into());
     }
-    match buf.write(&self.time.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+    
+    buf.write(&self.time.to_bytes()[..])?;
+
     let inputs = self.inputs.clone();
     let inputs_len = inputs.len();
-    match buf.write_u32::<BigEndian>(inputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+
+    buf.write_u32::<BigEndian>(inputs_len as u32)?;
+    
     for i in 0..inputs_len {
       if let Some(input_buf) = inputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(input_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(input_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
+        buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
+        buf.write(input_buf.as_slice())?;
+      } else {
+        return Err(YErrorKind::Unknown.into());
+      }
+    }
+
+    let outputs = self.outputs.clone();
+    let outputs_len = outputs.len();
+
+    buf.write_u32::<BigEndian>(outputs_len as u32)?;
+    
+    for i in 0..outputs_len {
+      if let Some(output_buf) = outputs[i].to_bytes() {
+        buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
+        buf.write(output_buf.as_slice())?;
+      } else {
+        return Err(YErrorKind::Unknown.into());
+      }
+    }
+    Ok(YHash::hash(buf.as_slice())) 
+  }
+
+  pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+    let mut buf = Vec::new();
+    buf.write(&self.id.to_bytes()[..])?;
+    if let Some(version_buf) = self.version.to_bytes() {
+      buf.write(&version_buf[..])?;
+    } else {
+      return Err(YErrorKind::Unknown.into());
+    }
+    buf.write(&self.time.to_bytes()[..])?;
+    let inputs = self.inputs.clone();
+    let inputs_len = inputs.len();
+    buf.write_u32::<BigEndian>(inputs_len as u32)?;
+    for i in 0..inputs_len {
+      if let Some(input_buf) = inputs[i].to_bytes() {
+        buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
+        buf.write(input_buf.as_slice())?;
+      } else {
+        return Err(YErrorKind::Unknown.into());
       }
     }
     let outputs = self.outputs.clone();
     let outputs_len = outputs.len();
-    match buf.write_u32::<BigEndian>(outputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+    buf.write_u32::<BigEndian>(outputs_len as u32)?;
     for i in 0..outputs_len {
       if let Some(output_buf) = outputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(output_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(output_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
+        buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
+        buf.write(output_buf.as_slice())?;
+      } else {
+        return Err(YErrorKind::Unknown.into());
       }
     }
-    Some(YHash::hash(buf.as_slice())) 
+    Ok(buf)
   }
 
-  pub fn to_bytes(&self) -> Option<Vec<u8>> {
-    let mut buf = Vec::new();
-    match buf.write(&self.id.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    if let Some(version_buf) = self.version.to_bytes() {
-      match buf.write(&version_buf[..]) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
-    } else {
-      return None;
-    }
-    match buf.write(&self.time.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    let inputs = self.inputs.clone();
-    let inputs_len = inputs.len();
-    match buf.write_u32::<BigEndian>(inputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    for i in 0..inputs_len {
-      if let Some(input_buf) = inputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(input_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(input_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
-      }
-    }
-    let outputs = self.outputs.clone();
-    let outputs_len = outputs.len();
-    match buf.write_u32::<BigEndian>(outputs_len as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    for i in 0..outputs_len {
-      if let Some(output_buf) = outputs[i].to_bytes() {
-        match buf.write_u32::<BigEndian>(output_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(output_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; }
-        }
-      }
-    }
-    Some(buf)
-  }
-
-  pub fn from_bytes(b: &[u8]) -> Option<YTransaction> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
     if b.len() < 104 {
-      return None;
+      return Err(YErrorKind::Unknown.into());
     }
     
     let mut tx = YTransaction::default();
@@ -212,13 +169,13 @@ impl YTransaction {
     if let Some(_id) = YDigest::from_bytes(&b[0..64]) {
       tx.id = _id;
     } else {
-      return None;
+      return Err(YErrorKind::Unknown.into());
     }
 
     if let Some(_version) = YVersion::from_bytes(&b[64..88]) {
       tx.version = _version;
     } else {
-      return None;
+      return Err(YErrorKind::Unknown.into());
     }
 
     tx.time = YTime::from_bytes(&b[88..96]);
@@ -229,6 +186,8 @@ impl YTransaction {
       let input_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
       if let Some(input) = YInput::from_bytes(&b[i+8..i+8+input_len]) {
         tx.inputs.push(input);      
+      } else {
+        return Err(YErrorKind::Unknown.into());
       }
     }
 
@@ -238,58 +197,51 @@ impl YTransaction {
       let output_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
       if let Some(output) = YOutput::from_bytes(&b[i+8..i+8+output_len]) {
         tx.outputs.push(output);      
+      } else {
+        return Err(YErrorKind::Unknown.into());
       }
     }
 
     for i in 0..inputs_len as usize {
-      if let Some(_c) = tx.calc_challenge(i as u32) {
-        if tx.inputs[i].c != _c {
-          return None;
-        }  
-      } else {
-        return None;
-      }
+      let _c = tx.calc_challenge(i as u32)?;
+      if tx.inputs[i].c != _c {
+        return Err(YErrorKind::Unknown.into());
+      }  
     }
-    if let Some(_id) = tx.calc_id() {
-      tx.id = _id;
-    } else {
-      return None;
-    }
+    
+    tx.id = tx.calc_id()?;
 
-    Some(tx)
+    Ok(tx)
   }
 
-  pub fn verify_input(&self, idx: u32, output: &YOutput) -> Option<bool> {
+  pub fn verify_input(&self, idx: u32, output: &YOutput) -> YResult<bool> {
     if self.inputs.len() - 1 < idx as usize {
-      return None;
+      return Err(YErrorKind::Unknown.into());
     }
-    Some(self.inputs[idx as usize].verify(output))
+    Ok(self.inputs[idx as usize].verify(output))
   }
 
-  pub fn verify(&self, outputs: Vec<YOutput>) -> Option<bool> {
+  pub fn verify(&self, outputs: Vec<YOutput>) -> YResult<bool> {
     let len = self.inputs.len();
     if outputs.len() != len {
-      return None;
+      return Err(YErrorKind::InvalidLength(len, outputs.len()).into());
     }
     for idx in 0..len {
-      if let Some(verified) = self.verify_input(idx as u32, &outputs[idx as usize]) {
-        if !verified {
-          return Some(false)
-        }
-      } else {
-        return None;
+      let verified = self.verify_input(idx as u32, &outputs[idx as usize])?;
+      if !verified {
+        return Ok(false)
       }
     }
-    Some(true)
+    Ok(true)
   }
 
-  pub fn drop_output(mut self, idx: u32) -> Option<YTransaction> {
+  pub fn drop_output(mut self, idx: u32) -> YResult<YTransaction> {
     let i = idx as usize;
     if self.outputs.len() -1 < i {
-      return None;
+      return Err(YErrorKind::IndexOutOfBound(i as usize, self.outputs.len()).into());
     }
     self.outputs[i] = self.outputs[i].clone().drop();
-    Some(self)
+    Ok(self)
   }
 
   pub fn drop_all(mut self) -> YTransaction {

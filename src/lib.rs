@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 extern crate typenum;
 extern crate generic_array;
 extern crate sha2;
@@ -11,7 +13,10 @@ extern crate crypto as rust_crypto;
 extern crate semver;
 extern crate chrono;
 extern crate byteorder;
+#[macro_use]
+extern crate error_chain;
 
+pub mod errors;
 pub mod utils;
 pub mod crypto;
 pub mod amount;
