@@ -1,18 +1,21 @@
-use bigint::uint::{U512, FromDecStrErr};
+use bigint::uint::U512;
 use std::ops::Not;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
+use errors::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct YBigUint(pub U512);
 
 impl YBigUint {
-  pub fn parse(s: &str) -> Result<YBigUint, FromDecStrErr> {
-    let bu = U512::from_dec_str(s)?;
-    Ok(YBigUint(bu))
+  pub fn parse(s: &str) -> YResult<YBigUint> {
+    match U512::from_dec_str(s) {
+      Ok(bu) => Ok(YBigUint(bu)),
+      Err(_) => Err(YErrorKind::ParseBigInt(String::from(s)).into()),
+    }
   }
 
   // NB: panics
@@ -20,7 +23,7 @@ impl YBigUint {
     self.0.as_u64()
   }
 
-  pub fn from_u64(n: u64) -> Result<YBigUint, FromDecStrErr> {
+  pub fn from_u64(n: u64) -> YResult<YBigUint> {
     YBigUint::parse(format!("{}", n).as_str())
   }
 

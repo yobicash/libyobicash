@@ -1,4 +1,3 @@
-use bigint::FromDecStrErr;
 use utils::biguint::YBigUint;
 use ::MAX_AMOUNT;
 use std::ops::Not;
@@ -7,20 +6,21 @@ use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
+use errors::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct YAmount(pub YBigUint);
 
 impl YAmount {
-  pub fn new(amount: &YBigUint) -> Option<YAmount> {
+  pub fn new(amount: &YBigUint) -> YResult<YAmount> {
     let max_amount = YBigUint::parse(MAX_AMOUNT).unwrap();
     if *amount > max_amount {
-      return None;
+      return Err(YErrorKind::AmountOutOfBound.into());
     }
-    Some(YAmount(amount.clone())) 
+    Ok(YAmount(amount.clone())) 
   }
 
-  pub fn parse(s: &str) -> Result<YAmount, FromDecStrErr> {
+  pub fn parse(s: &str) -> YResult<YAmount> {
     let n = YBigUint::parse(s)?;
     Ok(YAmount(n))
   }
@@ -30,7 +30,7 @@ impl YAmount {
     self.0.as_u64()
   }
 
-  pub fn from_u64(n: u64) -> Result<YAmount, FromDecStrErr> {
+  pub fn from_u64(n: u64) -> YResult<YAmount> {
     YAmount::parse(format!("{}", n).as_str())
   }
 

@@ -22,6 +22,11 @@ error_chain! {
       display("Index {} out of bound in array of length {}", idx, length)
     }
 
+    ParseBigInt(s: String) {
+      description("Bigint string parsing error")
+      display("Unable to parse the bigint string {}", s)
+    }
+
     InvalidHeight {
       description("Invalid height")
     }
