@@ -162,7 +162,7 @@ impl YTransaction {
 
     tx.version = YVersion::from_bytes(&b[64..88])?;
 
-    tx.time = YTime::from_bytes(&b[88..96]);
+    tx.time = YTime::from_bytes(&b[88..96])?;
 
     let inputs_len = BigEndian::read_u32(&b[0..4]) as usize;
 

@@ -1,6 +1,7 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use chrono::{Timelike, Datelike};
 use byteorder::{ByteOrder, LittleEndian, BigEndian};
+use errors::*;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct YTime(pub DateTime<Utc>);
@@ -47,15 +48,23 @@ impl YTime {
     YTime(DateTime::<Utc>::from_utc(ndt, Utc))
   }
 
-  pub fn from_little_endian(b: &[u8]) -> YTime {
-    YTime::from_timestamp(LittleEndian::read_u64(b))
+  pub fn from_little_endian(b: &[u8]) -> YResult<YTime> {
+    if b.len() != 8 {
+      return Err(YErrorKind::InvalidLength(8, b.len()).into());
+    }
+    let t = YTime::from_timestamp(LittleEndian::read_u64(b));
+    Ok(t)
   }
 
-  pub fn from_big_endian(b: &[u8]) -> YTime {
-    YTime::from_timestamp(BigEndian::read_u64(b))
+  pub fn from_big_endian(b: &[u8]) -> YResult<YTime> {
+    if b.len() != 8 {
+      return Err(YErrorKind::InvalidLength(8, b.len()).into());
+    }
+    let t = YTime::from_timestamp(BigEndian::read_u64(b));
+    Ok(t)
   }
 
-  pub fn from_bytes(b: &[u8]) -> YTime {
+  pub fn from_bytes(b: &[u8]) -> YResult<YTime> {
     YTime::from_big_endian(b)
   }
 
