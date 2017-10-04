@@ -1,5 +1,6 @@
 use typenum::consts::U64;
 use generic_array::GenericArray;
+use errors::*;
 use sha2::Sha512;
 use hmac::{Mac, Hmac};
 use crypto::key::YKey;
@@ -8,11 +9,11 @@ use crypto::key::YKey;
 pub struct YMACCode(pub GenericArray<u8, U64>);
 
 impl YMACCode {
-  pub fn from_bytes(b: &[u8]) -> Option<YMACCode> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YMACCode> {
     if b.len() != 64 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
-    Some(YMACCode(*GenericArray::from_slice(&b[..])))
+    Ok(YMACCode(*GenericArray::from_slice(&b[..])))
   }
 
   pub fn to_bytes(&self) -> [u8; 64] {

@@ -1,5 +1,6 @@
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
+use errors::*;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub struct YPublicKey {
@@ -28,28 +29,20 @@ impl YPublicKey {
     buf
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YPublicKey> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YPublicKey> {
     if b.len() != 64 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
 
     let mut pk = YPublicKey::default();
     
     let g_buf = &b[0..32];
-    if let Some(g) = YPoint::from_bytes(g_buf) {
-      pk.g = g;
-    } else {
-      return None;
-    }
+    pk.g = YPoint::from_bytes(g_buf)?;
     
     let pk_buf = &b[0..32];
-    if let Some(_pk) = YPoint::from_bytes(pk_buf) {
-      pk.pk = _pk;
-    } else {
-      return None;
-    }
+    pk.pk = YPoint::from_bytes(pk_buf)?;
 
-    Some(pk)
+    Ok(pk)
   }
 }
 
@@ -67,11 +60,11 @@ impl YSecretKey {
     }
   }
 
-  pub fn random() -> YSecretKey {
-    YSecretKey {
-      g: YPoint::random(),
+  pub fn random() -> YResult<YSecretKey> {
+    Ok(YSecretKey {
+      g: YPoint::random()?,
       sk: YScalar::random(),
-    }
+    })
   }
 
   pub fn from_g(g: YPoint) -> YSecretKey {
@@ -98,27 +91,19 @@ impl YSecretKey {
     buf
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YSecretKey> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YSecretKey> {
     if b.len() != 64 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
 
     let mut sk = YSecretKey::default();
     
     let g_buf = &b[0..32];
-    if let Some(_g) = YPoint::from_bytes(g_buf) {
-      sk.g = _g;
-    } else {
-      return None;
-    }
+    sk.g = YPoint::from_bytes(g_buf)?;
     
     let sk_buf = &b[0..32];
-    if let Some(_sk) = YScalar::from_bytes(sk_buf) {
-      sk.sk = _sk;
-    } else {
-      return None;
-    }
+    sk.sk = YScalar::from_bytes(sk_buf)?;
 
-    Some(sk)
+    Ok(sk)
   }
 }

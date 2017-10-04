@@ -56,44 +56,24 @@ impl YInput {
 
   pub fn from_bytes(b: &[u8]) -> YResult<YInput> {
     if b.len() != 204 {
-      return Err(YErrorKind::InvalidLength(204, b.len()).into());
+      return Err(YErrorKind::InvalidLength.into());
     }
 
     let mut input = YInput::default();
 
-    if let Some(_id) = YDigest::from_bytes(&b[0..64]) {
-      input.id = _id;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    input.id = YDigest::from_bytes(&b[0..64])?;
 
     input.idx = BigEndian::read_u32(&b[64..68]);
 
     input.height = BigEndian::read_u64(&b[68..76]);
 
-    if let Some(_g) = YPoint::from_bytes(&b[76..108]) {
-      input.g = _g; 
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    input.g = YPoint::from_bytes(&b[76..108])?;
 
-    if let Some(_t) = YPoint::from_bytes(&b[108..140]) {
-      input.t = _t; 
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    input.t = YPoint::from_bytes(&b[108..140])?;
 
-    if let Some(_c) = YScalar::from_bytes(&b[140..172]) {
-      input.c = _c; 
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    input.c = YScalar::from_bytes(&b[140..172])?;
 
-    if let Some(_r) = YScalar::from_bytes(&b[172..204]) {
-      input.r = _r; 
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    input.r = YScalar::from_bytes(&b[172..204])?;
 
     Ok(input)
   }

@@ -14,9 +14,8 @@ error_chain! {
   }
 
   errors {
-    InvalidLength(exp: usize, act: usize) {
+    InvalidLength {
       description("Invalid length")
-      display("Expected length {}, found {}", exp, act)
     }
 
     IndexOutOfBound(idx: usize, length: usize) {
@@ -27,6 +26,15 @@ error_chain! {
     ParseBigInt(s: String) {
       description("Bigint string parsing error")
       display("Unable to parse the bigint string {}", s)
+    }
+
+    InvalidPoint(reason: String) {
+      description("Invalid point")
+      display("Invalid point: {}", reason)
+    }
+
+    InvalidCyph {
+      description("Invalid cyphertext")
     }
 
     InvalidHeight {

@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use errors::*;
 use crypto::digest::YDigest;
 use crypto::hash::YHash;
 use crypto::mac::YMACCode;
@@ -21,110 +22,65 @@ impl YData {
     sk: &YSecretKey,
     other: &YPublicKey,
     iv: YIV,
-    plain: &[u8]) -> Option<YData> {
+    plain: &[u8]) -> YResult<YData> {
     let ecies = YECIES::new(sk.clone());
-    if let Some((data, tag)) = ecies.encrypt_and_authenticate(other, iv, plain) {
-      let digest = YHash::hash(data.as_slice());
-      Some(YData{
-        data: data,
-        checksum: digest,
-        iv: iv,
-        tag: tag,
-      })
-    } else {
-      None
-    }   
+    let (data, tag) = ecies.encrypt_and_authenticate(other, iv, plain)?;
+    let digest = YHash::hash(data.as_slice());
+    Ok(YData{
+      data: data,
+      checksum: digest,
+      iv: iv,
+      tag: tag,
+    })
   }
 
-  pub fn to_bytes(&self) -> Option<Vec<u8>> {
+  pub fn to_bytes(&self) -> YResult<Vec<u8>> {
     let mut buf = Vec::new();
     let size = self.data.len() as u32;
-    match buf.write_u32::<BigEndian>(size) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write(self.data.as_slice()) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write(&self.checksum.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write(&self.iv.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write(&self.tag.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    Some(buf)
+    buf.write_u32::<BigEndian>(size)?;
+    buf.write(self.data.as_slice())?;
+    buf.write(&self.checksum.to_bytes()[..])?;
+    buf.write(&self.iv.to_bytes()[..])?;
+    buf.write(&self.tag.to_bytes()[..])?;
+    Ok(buf)
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YData> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YData> {
     if b.len() < 132 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
 
     let mut reader = Cursor::new(b);
 
     let mut data = YData::default();
 
-    match reader.read_u32::<BigEndian>() {
-      Ok(size) => {
-        for i in 0..size as usize {
-          data.data[i] = 0;
-        }
-      },
-      Err(_) => { return None },
-    }
+    let size = reader.read_u32::<BigEndian>()?;
 
-    match reader.read_exact(data.data.as_mut_slice()) {
-      Ok(_) => {},
-      Err(_) => { return None; }
+    for i in 0..size as usize {
+      data.data[i] = 0;
     }
+    reader.read_exact(data.data.as_mut_slice())?;
 
     let mut checksum_buf = [0u8; 64];
-    match reader.read_exact(&mut checksum_buf[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    if let Some(_checksum) = YDigest::from_bytes(&checksum_buf[..]) {
-      data.checksum = _checksum;
-    } else {
-      return None;
-    }
+    reader.read_exact(&mut checksum_buf[..])?;
 
-    match reader.read_exact(&mut data.iv.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; }
-    }
+    data.checksum = YDigest::from_bytes(&checksum_buf[..])?;
 
-    match reader.read_exact(&mut data.tag.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; }
-    }
+    reader.read_exact(&mut data.iv.to_bytes()[..])?;
 
-    Some(data)
+    reader.read_exact(&mut data.tag.to_bytes()[..])?;
+
+    Ok(data)
   }
 
-  pub fn verify(&self, sk: &YSecretKey, other: &YPublicKey) -> Option<bool> {
+  pub fn verify(&self, sk: &YSecretKey, other: &YPublicKey) -> YResult<bool> {
     let ecies = YECIES::new(sk.clone());
-    if let Some(verified) = ecies.verify(other, self.data.as_slice(), self.tag) {
-      Some(verified)
-    } else {
-      None
-    }   
+    ecies.verify(other, self.data.as_slice(), self.tag)
   }
 
-  pub fn verify_and_decrypt(&self, sk: &YSecretKey, other: &YPublicKey) -> Option<Vec<u8>> {
+  pub fn verify_and_decrypt(&self, sk: &YSecretKey, other: &YPublicKey) -> YResult<Vec<u8>> {
     let ecies = YECIES::new(sk.clone());
-    if let Some(data) = ecies.verify_and_decrypt(other, self.iv, self.data.as_slice(), self.tag) {
-      Some(data)
-    } else {
-      None
-    }
+    ecies.verify_and_decrypt(other, self.iv, self.data.as_slice(), self.tag)
   }
 
   pub fn amount(&self) -> YAmount {

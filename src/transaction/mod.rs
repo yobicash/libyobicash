@@ -154,11 +154,7 @@ impl YTransaction {
     
     let mut tx = YTransaction::default();
 
-    if let Some(_id) = YDigest::from_bytes(&b[0..64]) {
-      tx.id = _id;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    tx.id = YDigest::from_bytes(&b[0..64])?;
 
     tx.version = YVersion::from_bytes(&b[64..88])?;
 
@@ -202,7 +198,7 @@ impl YTransaction {
   pub fn verify(&self, outputs: Vec<YOutput>) -> YResult<bool> {
     let len = self.inputs.len();
     if outputs.len() != len {
-      return Err(YErrorKind::InvalidLength(len, outputs.len()).into());
+      return Err(YErrorKind::InvalidLength.into());
     }
     for idx in 0..len {
       let verified = self.verify_input(idx as u32, &outputs[idx as usize])?;

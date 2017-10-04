@@ -7,6 +7,7 @@ use std::ops::{Sub, SubAssign};
 use std::ops::Neg;
 use std::ops::{Mul, MulAssign};
 use std::ops::{Index, IndexMut};
+use errors::*;
 use utils::biguint::YBigUint;
 
 #[derive(Copy, Clone, Debug)]
@@ -36,18 +37,18 @@ impl YScalar {
   }
 
   // NB: scalars are 32 bytes bytearrays in little endian
-  pub fn from_bytes(b: &[u8]) -> Option<YScalar> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YScalar> {
     if b.len() != 32 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
     let mut scalar = Scalar::zero();
     for i in 0..32 {
       scalar.0[i] = b[i];
     }
-    Some(YScalar(scalar))
+    Ok(YScalar(scalar))
   }
 
-  pub fn from_biguint(n: &YBigUint) -> Option<YScalar> {
+  pub fn from_biguint(n: &YBigUint) -> YResult<YScalar> {
     YScalar::from_bytes(n.to_little_endian().as_slice())
   }
 

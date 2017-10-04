@@ -1,4 +1,5 @@
 use curve25519_dalek::edwards::IsIdentity;
+use errors::*;
 use crypto::elliptic::point::YPoint;
 use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
 use crypto::key::YKey;
@@ -12,10 +13,6 @@ impl YECIES {
     YECIES(sk)
   }
 
-  pub fn random() -> YECIES {
-    YECIES(YSecretKey::random())
-  }
-
   pub fn from_g(g: YPoint) -> YECIES {
     YECIES(YSecretKey::from_g(g))
   }
@@ -24,71 +21,53 @@ impl YECIES {
     self.0.public_key()
   }
 
-  pub fn derive_key(&self, other: &YPublicKey) -> Option<YKey> {
+  pub fn derive_key(&self, other: &YPublicKey) -> YResult<YKey> {
     let _key = &other.pk*&self.0.sk;
     if !_key.is_identity() {
       YKey::from_bytes(&_key.to_bytes()[..])
     } else {
-      None
+      let reason = String::from("point at infinity");
+      return Err(YErrorKind::InvalidPoint(reason).into()); 
     }
   }
 
-  pub fn encrypt(&self, other: &YPublicKey, iv: YIV, plain: &[u8]) -> Option<Vec<u8>> {
-    if let Some(key) = self.derive_key(other) {
-      let cyph = YSymmetricEncryption::encrypt(key, iv, plain);
-      Some(cyph)
-    } else {
-      None
-    }
+  pub fn encrypt(&self, other: &YPublicKey, iv: YIV, plain: &[u8]) -> YResult<Vec<u8>> {
+    let key = self.derive_key(other)?;
+    let cyph = YSymmetricEncryption::encrypt(key, iv, plain);
+    Ok(cyph)
   }
 
-  pub fn decrypt(&self, other: &YPublicKey, iv: YIV, cyph: &[u8]) -> Option<Vec<u8>> {
-    if let Some(key) = self.derive_key(other) {
-      let plain = YSymmetricEncryption::decrypt(key, iv, cyph);
-      Some(plain)
-    } else {
-      None
-    }
+  pub fn decrypt(&self, other: &YPublicKey, iv: YIV, cyph: &[u8]) -> YResult<Vec<u8>> {
+    let key = self.derive_key(other)?;
+    let plain = YSymmetricEncryption::decrypt(key, iv, cyph);
+    Ok(plain)
   }
 
-  pub fn authenticate(&self, other: &YPublicKey, cyph: &[u8]) -> Option<YMACCode> {
-    if let Some(key) = self.derive_key(other) {
-      let tag = YMAC::mac(key, cyph);
-      Some(tag)
-    } else {
-      None
-    }
+  pub fn authenticate(&self, other: &YPublicKey, cyph: &[u8]) -> YResult<YMACCode> {
+    let key = self.derive_key(other)?;
+    let tag = YMAC::mac(key, cyph);
+    Ok(tag)
   }
 
-  pub fn verify(&self, other: &YPublicKey, cyph: &[u8], tag: YMACCode) -> Option<bool> {
-    if let Some(key) = self.derive_key(other) {
-        let mut mac = YMAC::new(key);
-        mac.update(cyph);
-        Some(mac.verify(tag))
-    } else {
-      None
-    }
+  pub fn verify(&self, other: &YPublicKey, cyph: &[u8], tag: YMACCode) -> YResult<bool> {
+    let key = self.derive_key(other)?;
+    let mut mac = YMAC::new(key);
+    mac.update(cyph);
+    Ok(mac.verify(tag))
   }
 
-  pub fn encrypt_and_authenticate(&self, other: &YPublicKey, iv: YIV, plain: &[u8]) -> Option<(Vec<u8>, YMACCode)> {
-    let _cyph = self.encrypt(other, iv, plain);
-    if _cyph.is_none() { return None }
-    let cyph = _cyph.unwrap();
-    let _tag = self.authenticate(other, cyph.as_slice());
-    if _tag.is_none() { return None }
-    let tag = _tag.unwrap();
-    Some((cyph, tag))
+  pub fn encrypt_and_authenticate(&self, other: &YPublicKey, iv: YIV, plain: &[u8]) -> YResult<(Vec<u8>, YMACCode)> {
+    let cyph = self.encrypt(other, iv, plain)?;
+    let tag = self.authenticate(other, cyph.as_slice())?;
+    Ok((cyph, tag))
   }
 
-  pub fn verify_and_decrypt(&self, other: &YPublicKey, iv: YIV, cyph: &[u8], tag: YMACCode) -> Option<Vec<u8>> {
-    if let Some(verified) = self.verify(other, cyph, tag) {
-      if verified {
-          self.decrypt(other, iv, cyph)
-      } else {
-        None
-      }
+  pub fn verify_and_decrypt(&self, other: &YPublicKey, iv: YIV, cyph: &[u8], tag: YMACCode) -> YResult<Vec<u8>> {
+    let verified = self.verify(other, cyph, tag)?;
+    if verified {
+      self.decrypt(other, iv, cyph)
     } else {
-      None
+      Err(YErrorKind::InvalidCyph.into())
     }
   }
 }

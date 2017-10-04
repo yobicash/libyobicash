@@ -50,7 +50,7 @@ impl YTime {
 
   pub fn from_little_endian(b: &[u8]) -> YResult<YTime> {
     if b.len() != 8 {
-      return Err(YErrorKind::InvalidLength(8, b.len()).into());
+      return Err(YErrorKind::InvalidLength.into());
     }
     let t = YTime::from_timestamp(LittleEndian::read_u64(b));
     Ok(t)
@@ -58,7 +58,7 @@ impl YTime {
 
   pub fn from_big_endian(b: &[u8]) -> YResult<YTime> {
     if b.len() != 8 {
-      return Err(YErrorKind::InvalidLength(8, b.len()).into());
+      return Err(YErrorKind::InvalidLength.into());
     }
     let t = YTime::from_timestamp(BigEndian::read_u64(b));
     Ok(t)

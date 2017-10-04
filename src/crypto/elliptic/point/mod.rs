@@ -8,6 +8,7 @@ use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::Neg;
 use std::ops::{Mul, MulAssign};
+use errors::*;
 use crypto::elliptic::scalar::YScalar;
 
 #[derive(Copy, Clone, Debug)]
@@ -20,24 +21,17 @@ impl Default for YPoint {
 }
 
 impl YPoint {
-  pub fn random() -> YPoint {
+  pub fn random() -> YResult<YPoint> {
     let mut b = [0u8; 32];
     for i in 0..32 {
       b[i] = random::<u8>();
     }
-    let mut point = YPoint::from_bytes(&b);
-    while point.is_none() {
-      for i in 0..32 {
-        b[i] = random::<u8>();
-      }
-      point = YPoint::from_bytes(&b)
-    }
-    point.unwrap()
+    YPoint::from_bytes(&b)
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YPoint> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YPoint> {
     if b.len() != 32 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
     let mut _b = [0u8; 32];
     for i in 0..32 {
@@ -45,9 +39,10 @@ impl YPoint {
     }
     let compressed = CompressedEdwardsY(_b);
     if let Some(point) = compressed.decompress() {
-      Some(YPoint(point))
+      Ok(YPoint(point))
     } else {
-      None
+      let reason = String::from("Failed decompressing the point");
+      return Err(YErrorKind::InvalidPoint(reason).into());
     }
   }
 

@@ -42,17 +42,14 @@ impl YOutput {
     plain: &[u8],
     custom: Option<[u8; 32]>) -> YResult<YOutput> {
     let sender = sk.public_key();
-    if let Some(data) = YData::new(sk, recipient, iv, plain) {
-      Ok(YOutput {
-        sender: sender.clone(),
-        recipient: recipient.clone(),
-        amount: data.amount(),
-        data: Some(data),
-        custom: custom,
-      })
-    } else {
-      Err(YErrorKind::Unknown.into())
-    }
+    let data = YData::new(sk, recipient, iv, plain)?;
+    Ok(YOutput {
+      sender: sender.clone(),
+      recipient: recipient.clone(),
+      amount: data.amount(),
+      data: Some(data),
+      custom: custom,
+    })
   }
 
   pub fn to_bytes(&self) -> YResult<Vec<u8>> {
@@ -67,12 +64,9 @@ impl YOutput {
     buf.write(amount_buf.as_slice())?;
 
     if let Some(_data) = self.data.clone() {
-      if let Some(_data_buf) = _data.to_bytes() {
-        buf.write_u32::<BigEndian>(_data_buf.len() as u32)?;
-        buf.write(_data_buf.as_slice())?;
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let _data_buf = _data.to_bytes()?;
+      buf.write_u32::<BigEndian>(_data_buf.len() as u32)?;
+      buf.write(_data_buf.as_slice())?;
     } else {
       buf.write_u32::<BigEndian>(0)?;
     }
@@ -89,7 +83,7 @@ impl YOutput {
 
   pub fn from_bytes(b: &[u8]) -> YResult<YOutput> {
     if b.len() < 140 {
-      return Err(YErrorKind::InvalidLength(140, b.len()).into());
+      return Err(YErrorKind::InvalidLength.into());
     }
 
     let mut out = YOutput::default();
@@ -98,19 +92,11 @@ impl YOutput {
 
     let mut sender_buf = [0u8; 64];
     reader.read_exact(&mut sender_buf[..])?;
-    if let Some(out_sender) = YPublicKey::from_bytes(&sender_buf[..]) {
-      out.sender = out_sender;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    out.sender = YPublicKey::from_bytes(&sender_buf[..])?;
 
     let mut recipient_buf = [0u8; 64];
     reader.read_exact(&mut recipient_buf[..])?;
-    if let Some(out_recipient) = YPublicKey::from_bytes(&recipient_buf[..]) {
-      out.recipient = out_recipient;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    out.recipient = YPublicKey::from_bytes(&recipient_buf[..])?;
 
     let amount_size = reader.read_u32::<BigEndian>()?;
     if amount_size > 0 {
@@ -132,11 +118,7 @@ impl YOutput {
         data[i] = 0;
       }
       reader.read_exact(data.as_mut_slice())?;
-      if let Some(out_data) = YData::from_bytes(data.as_slice()) {
-        out.data = Some(out_data);
-      } else {
-        out.data = None;
-      }
+      out.data = Some(YData::from_bytes(data.as_slice())?);
     }
 
     let has_custom = reader.read_u32::<BigEndian>()?;

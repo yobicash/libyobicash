@@ -2,6 +2,7 @@ use typenum::consts::U64;
 use generic_array::GenericArray;
 use rust_crypto::aes::{KeySize, ctr};
 use rust_crypto::symmetriccipher::SynchronousStreamCipher;
+use errors::*;
 use crypto::key::YKey;
 
 pub struct YSymmetricEncryption;
@@ -10,11 +11,11 @@ pub struct YSymmetricEncryption;
 pub struct YIV(pub GenericArray<u8, U64>);
 
 impl YIV {
-  pub fn from_bytes(b: &[u8]) -> Option<YIV> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YIV> {
     if b.len() != 64 {
-      return None;
+      return Err(YErrorKind::InvalidLength.into());
     }
-    Some(YIV(*GenericArray::from_slice(&b[..])))
+    Ok(YIV(*GenericArray::from_slice(&b[..])))
   }
 
   pub fn to_bytes(&self) -> [u8; 64] {
