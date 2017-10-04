@@ -130,4 +130,9 @@ impl YData {
   pub fn amount(&self) -> YAmount {
     YAmount::from_u64(self.data.len() as u64).unwrap()
   }
+
+  pub fn drop(mut self) -> YData {
+    self.data = Vec::new();
+    self
+  }
 }
