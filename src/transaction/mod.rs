@@ -260,4 +260,20 @@ impl YTransaction {
     }
     Some(true)
   }
+
+  pub fn drop_output(mut self, idx: u32) -> Option<YTransaction> {
+    let i = idx as usize;
+    if self.outputs.len() -1 < i {
+      return None;
+    }
+    self.outputs[i] = self.outputs[i].clone().drop();
+    Some(self)
+  }
+
+  pub fn drop_all(mut self) -> YTransaction {
+    for i in 0..self.outputs.len() {
+      self.outputs[i] = self.outputs[i].clone().drop();
+    }
+    self
+  }
 }
