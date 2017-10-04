@@ -13,9 +13,7 @@ pub struct YTransaction {
   id: YDigest,
   version: YVersion,
   time: YTime,
-  inputs_len: u32,
   inputs: Vec<YInput>,
-  outputs_len: u32,
   outputs: Vec<YOutput>,
 }
 
@@ -23,8 +21,6 @@ impl YTransaction {
   pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> Option<YTransaction> {
     // TODO: check unique inputs
     // TODO: check unique outputs
-    let inputs_len = inputs.len() as u32;
-    let outputs_len = outputs.len() as u32;
     let now = YTime::now();
     let version = YVersion::default();
     let id = YDigest::default();
@@ -32,12 +28,11 @@ impl YTransaction {
       id: id,
       version: version,
       time: now,
-      inputs_len: inputs_len,
       inputs: inputs.clone(),
-      outputs_len: outputs_len,
       outputs: outputs,
     };
-    for i in 0..inputs_len as usize {
+    let inputs_len = inputs.len();
+    for i in 0..inputs_len {
       if let Some(_c) = tx.calc_challenge(i as u32) {
         if inputs[i].c != _c {
           return None;
@@ -243,19 +238,19 @@ impl YTransaction {
   }
 
   pub fn verify_input(&self, idx: u32, output: &YOutput) -> Option<bool> {
-    if self.inputs_len - 1 < idx {
+    if self.inputs.len() - 1 < idx as usize {
       return None;
     }
     Some(self.inputs[idx as usize].verify(output))
   }
 
   pub fn verify(&self, outputs: Vec<YOutput>) -> Option<bool> {
-    let len = self.inputs_len;
-    if outputs.len() as u32 != len {
+    let len = self.inputs.len();
+    if outputs.len() != len {
       return None;
     }
     for idx in 0..len {
-      if let Some(verified) = self.verify_input(idx, &outputs[idx as usize]) {
+      if let Some(verified) = self.verify_input(idx as u32, &outputs[idx as usize]) {
         if !verified {
           return Some(false)
         }
