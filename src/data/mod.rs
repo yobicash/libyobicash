@@ -1,14 +1,17 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use crypto::digest::YDigest;
+use crypto::hash::YHash;
+use crypto::mac::YMACCode;
 use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
 use crypto::encryption::ecies::YECIES;
 use crypto::encryption::symmetric::YIV;
-use crypto::mac::YMACCode;
 use amount::YAmount;
 use std::io::{Write, Read, Cursor};
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
 pub struct YData {
   pub data: Vec<u8>,
+  pub checksum: YDigest,
   pub iv: YIV,
   pub tag: YMACCode,
 }
@@ -21,8 +24,10 @@ impl YData {
     plain: &[u8]) -> Option<YData> {
     let ecies = YECIES::new(sk.clone());
     if let Some((data, tag)) = ecies.encrypt_and_authenticate(other, iv, plain) {
+      let digest = YHash::hash(data.as_slice());
       Some(YData{
         data: data,
+        checksum: digest,
         iv: iv,
         tag: tag,
       })
@@ -39,6 +44,10 @@ impl YData {
       Err(_) => { return None; },
     }
     match buf.write(self.data.as_slice()) {
+      Ok(_) => {},
+      Err(_) => { return None; },
+    }
+    match buf.write(&self.checksum.to_bytes()[..]) {
       Ok(_) => {},
       Err(_) => { return None; },
     }
@@ -74,6 +83,17 @@ impl YData {
     match reader.read_exact(data.data.as_mut_slice()) {
       Ok(_) => {},
       Err(_) => { return None; }
+    }
+
+    let mut checksum_buf = [0u8; 64];
+    match reader.read_exact(&mut checksum_buf[..]) {
+      Ok(_) => {},
+      Err(_) => { return None; },
+    }
+    if let Some(_checksum) = YDigest::from_bytes(&checksum_buf[..]) {
+      data.checksum = _checksum;
+    } else {
+      return None;
     }
 
     match reader.read_exact(&mut data.iv.to_bytes()[..]) {
