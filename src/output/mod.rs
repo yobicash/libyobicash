@@ -221,4 +221,12 @@ impl YOutput {
 
     Some(out)
   }
+
+  pub fn drop(mut self) -> YOutput {
+    if self.data.is_some() {
+      let data = self.data.unwrap().clone();
+      self.data = Some(data.drop());
+    }
+    self
+  }
 }
