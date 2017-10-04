@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use errors::*;
 use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
 use crypto::encryption::symmetric::YIV;
 use amount::YAmount;
@@ -19,13 +20,13 @@ impl YOutput {
     sk: &YSecretKey,
     recipient: &YPublicKey,
     amount: YAmount,
-    custom: Option<[u8; 32]>) -> Option<YOutput> {
+    custom: Option<[u8; 32]>) -> YResult<YOutput> {
     let sender = sk.public_key();
     let max_amount = YAmount::max_value();
     if amount > max_amount {
-      return None;
+      return Err(YErrorKind::AmountOutOfBound.into());
     }
-    Some(YOutput {
+    Ok(YOutput {
       sender: sender.clone(),
       recipient: recipient.clone(),
       amount: amount.clone(),
@@ -39,10 +40,10 @@ impl YOutput {
     recipient: &YPublicKey,
     iv: YIV,
     plain: &[u8],
-    custom: Option<[u8; 32]>) -> Option<YOutput> {
+    custom: Option<[u8; 32]>) -> YResult<YOutput> {
     let sender = sk.public_key();
     if let Some(data) = YData::new(sk, recipient, iv, plain) {
-      Some(YOutput {
+      Ok(YOutput {
         sender: sender.clone(),
         recipient: recipient.clone(),
         amount: data.amount(),
@@ -50,75 +51,45 @@ impl YOutput {
         custom: custom,
       })
     } else {
-      None
+      Err(YErrorKind::Unknown.into())
     }
   }
 
-  pub fn to_bytes(&self) -> Option<Vec<u8>> {
+  pub fn to_bytes(&self) -> YResult<Vec<u8>> {
     let mut buf = Vec::new();
 
-    match buf.write(&self.sender.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+    buf.write(&self.sender.to_bytes()[..])?;
 
-    match buf.write(&self.recipient.to_bytes()[..]) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+    buf.write(&self.recipient.to_bytes()[..])?;
 
     let amount_buf = self.amount.to_bytes();
-    match buf.write_u32::<BigEndian>(amount_buf.len() as u32) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
-    match buf.write(amount_buf.as_slice()) {
-      Ok(_) => {},
-      Err(_) => { return None; },
-    }
+    buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
+    buf.write(amount_buf.as_slice())?;
 
     if let Some(_data) = self.data.clone() {
       if let Some(_data_buf) = _data.to_bytes() {
-        match buf.write_u32::<BigEndian>(_data_buf.len() as u32) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
-        match buf.write(_data_buf.as_slice()) {
-          Ok(_) => {},
-          Err(_) => { return None; },
-        }
+        buf.write_u32::<BigEndian>(_data_buf.len() as u32)?;
+        buf.write(_data_buf.as_slice())?;
       } else {
-        return None;
+        return Err(YErrorKind::Unknown.into());
       }
     } else {
-      match buf.write_u32::<BigEndian>(0) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
+      buf.write_u32::<BigEndian>(0)?;
     }
 
     if let Some(_custom) = self.custom {
-      match buf.write_u32::<BigEndian>(1) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
-      match buf.write(&_custom[..]) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
+      buf.write_u32::<BigEndian>(1)?;
+      buf.write(&_custom[..])?;
     } else {
-      match buf.write_u32::<BigEndian>(0) {
-        Ok(_) => {},
-        Err(_) => { return None; },
-      }
+      buf.write_u32::<BigEndian>(0)?;
     }
 
-    Some(buf)
+    Ok(buf)
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YOutput> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YOutput> {
     if b.len() < 140 {
-      return None;
+      return Err(YErrorKind::InvalidLength(140, b.len()).into());
     }
 
     let mut out = YOutput::default();
@@ -126,90 +97,56 @@ impl YOutput {
     let mut reader = Cursor::new(b);
 
     let mut sender_buf = [0u8; 64];
-    match reader.read_exact(&mut sender_buf[..]) {
-      Ok(_) => { 
-        if let Some(out_sender) = YPublicKey::from_bytes(&sender_buf[..]) {
-          out.sender = out_sender;
-        } else {
-          return None;
-        }
-      },
-      Err(_) => { return None; },
+    reader.read_exact(&mut sender_buf[..])?;
+    if let Some(out_sender) = YPublicKey::from_bytes(&sender_buf[..]) {
+      out.sender = out_sender;
+    } else {
+      return Err(YErrorKind::Unknown.into());
     }
 
     let mut recipient_buf = [0u8; 64];
-    match reader.read_exact(&mut recipient_buf[..]) {
-      Ok(_) => { 
-        if let Some(out_recipient) = YPublicKey::from_bytes(&recipient_buf[..]) {
-          out.recipient = out_recipient;
-        } else {
-          return None;
-        }
-      },
-      Err(_) => { return None; },
+    reader.read_exact(&mut recipient_buf[..])?;
+    if let Some(out_recipient) = YPublicKey::from_bytes(&recipient_buf[..]) {
+      out.recipient = out_recipient;
+    } else {
+      return Err(YErrorKind::Unknown.into());
     }
 
-    match reader.read_u32::<BigEndian>() {
-      Ok(amount_size) => {
-        if amount_size > 0 {
-          let mut amount = Vec::new();
-          for i in 0..amount_size as usize {
-            amount[i] = 0;
-          }
-          match reader.read_exact(amount.as_mut_slice()) {
-            Ok(_) => {
-              out.amount = YAmount::from_bytes(amount.as_slice());
-            },
-            Err(_) => { return None; },
-          }
-        }
-      },
-      Err(_) => { return None },
+    let amount_size = reader.read_u32::<BigEndian>()?;
+    if amount_size > 0 {
+      let mut amount = Vec::new();
+      for i in 0..amount_size as usize {
+        amount[i] = 0;
+      }
+      reader.read_exact(amount.as_mut_slice())?;
+      out.amount = YAmount::from_bytes(amount.as_slice());
     }
 
-    match reader.read_u32::<BigEndian>() {
-      Ok(data_size) => {
-        if out.amount == YAmount::zero() && data_size != 0 {
-          return None;
-        }
-        if data_size > 0 {
-          let mut data = Vec::new();
-          for i in 0..data_size as usize {
-            data[i] = 0;
-          }
-          match reader.read_exact(data.as_mut_slice()) {
-            Ok(_) => {
-              if let Some(out_data) = YData::from_bytes(data.as_slice()) {
-                out.data = Some(out_data);
-              } else {
-                return None;
-              }
-            },
-            Err(_) => { return None; },
-          }
-        } else {
-          out.data = None;
-        }
-      },
-      Err(_) => { return None },
+    let data_size = reader.read_u32::<BigEndian>()?;
+    if out.amount == YAmount::zero() && data_size != 0 {
+      return Err(YErrorKind::Unknown.into());
+    }
+    if data_size > 0 {
+      let mut data = Vec::new();
+      for i in 0..data_size as usize {
+        data[i] = 0;
+      }
+      reader.read_exact(data.as_mut_slice())?;
+      if let Some(out_data) = YData::from_bytes(data.as_slice()) {
+        out.data = Some(out_data);
+      } else {
+        out.data = None;
+      }
     }
 
-    match reader.read_u32::<BigEndian>() {
-      Ok(has_custom) => {
-        if has_custom == 1 {
-          let mut custom = [0u8; 32];
-          match reader.read_exact(&mut custom[..]) {
-            Ok(_) => {
-              out.custom = Some(custom)
-            },
-            Err(_) => { return None; },
-          }
-        }
-      },
-      Err(_) => { return None },
+    let has_custom = reader.read_u32::<BigEndian>()?;
+    if has_custom == 1 {
+      let mut custom = [0u8; 32];
+      reader.read_exact(&mut custom[..])?;
+      out.custom = Some(custom);
     }
 
-    Some(out)
+    Ok(out)
   }
 
   pub fn drop(mut self) -> YOutput {

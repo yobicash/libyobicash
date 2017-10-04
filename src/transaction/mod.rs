@@ -115,12 +115,9 @@ impl YTransaction {
     buf.write_u32::<BigEndian>(outputs_len as u32)?;
     
     for i in 0..outputs_len {
-      if let Some(output_buf) = outputs[i].to_bytes() {
-        buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
-        buf.write(output_buf.as_slice())?;
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let output_buf = outputs[i].to_bytes()?;
+      buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
+      buf.write(output_buf.as_slice())?;
     }
     Ok(YHash::hash(buf.as_slice())) 
   }
@@ -149,12 +146,9 @@ impl YTransaction {
     let outputs_len = outputs.len();
     buf.write_u32::<BigEndian>(outputs_len as u32)?;
     for i in 0..outputs_len {
-      if let Some(output_buf) = outputs[i].to_bytes() {
-        buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
-        buf.write(output_buf.as_slice())?;
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let output_buf = outputs[i].to_bytes()?;
+      buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
+      buf.write(output_buf.as_slice())?;
     }
     Ok(buf)
   }
@@ -195,11 +189,8 @@ impl YTransaction {
 
     for i in 0..outputs_len {
       let output_len = BigEndian::read_u32(&b[i+4..i+8]) as usize;
-      if let Some(output) = YOutput::from_bytes(&b[i+8..i+8+output_len]) {
-        tx.outputs.push(output);      
-      } else {
-        return Err(YErrorKind::Unknown.into());
-      }
+      let output = YOutput::from_bytes(&b[i+8..i+8+output_len])?;
+      tx.outputs.push(output);      
     }
 
     for i in 0..inputs_len as usize {
