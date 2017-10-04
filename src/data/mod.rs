@@ -3,7 +3,7 @@ use errors::*;
 use crypto::digest::YDigest;
 use crypto::hash::YHash;
 use crypto::mac::YMACCode;
-use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
+use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::ecies::YECIES;
 use crypto::encryption::symmetric::YIV;
 use amount::YAmount;

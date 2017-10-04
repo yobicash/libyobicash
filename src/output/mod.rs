@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use errors::*;
-use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
+use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::symmetric::YIV;
 use amount::YAmount;
 use data::YData;

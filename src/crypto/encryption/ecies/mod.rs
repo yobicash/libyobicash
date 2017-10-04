@@ -1,7 +1,7 @@
 use curve25519_dalek::edwards::IsIdentity;
 use errors::*;
 use crypto::elliptic::point::YPoint;
-use crypto::elliptic::credentials::{YSecretKey, YPublicKey};
+use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::key::YKey;
 use crypto::encryption::symmetric::{YSymmetricEncryption, YIV};
 use crypto::mac::{YMAC, YMACCode};
