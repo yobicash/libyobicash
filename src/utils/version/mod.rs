@@ -1,7 +1,8 @@
-use semver::{Version, SemVerError};
+use semver::Version;
 use byteorder::{LittleEndian, BigEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
 use ::VERSION;
+use errors::*;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct YVersion(pub Version);
@@ -17,7 +18,7 @@ impl YVersion {
     YVersion(Version::new(major, minor, patch))
   }
 
-  pub fn parse(s: &str) -> Result<YVersion, SemVerError> {
+  pub fn parse(s: &str) -> YResult<YVersion> {
     let version = Version::parse(s)?;
     Ok(YVersion(version))
   }
@@ -26,93 +27,51 @@ impl YVersion {
     format!("{}", self.0) 
   }
 
-  pub fn to_little_endian(&self) -> Option<[u8; 24]> {
+  pub fn to_little_endian(&self) -> YResult<[u8; 24]> {
     let mut res = [0; 24];
     let mut buf = Vec::new();
-    match buf.write_u64::<LittleEndian>(self.0.major) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
-    match buf.write_u64::<LittleEndian>(self.0.minor) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
-    match buf.write_u64::<LittleEndian>(self.0.patch) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
+    buf.write_u64::<LittleEndian>(self.0.major)?;
+    buf.write_u64::<LittleEndian>(self.0.minor)?;
+    buf.write_u64::<LittleEndian>(self.0.patch)?;
     for i in 0..24 {
       res[i] = buf[i]
     }
-    Some(res)
+    Ok(res)
   }
 
-  pub fn to_big_endian(&self) -> Option<[u8; 24]> {
+  pub fn to_big_endian(&self) -> YResult<[u8; 24]> {
     let mut res = [0; 24];
     let mut buf = Vec::new();
-    match buf.write_u64::<BigEndian>(self.0.major) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
-    match buf.write_u64::<BigEndian>(self.0.minor) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
-    match buf.write_u64::<BigEndian>(self.0.patch) {
-      Ok(_) => {},
-      Err(_) => { return None },
-    }
+    buf.write_u64::<BigEndian>(self.0.major)?;
+    buf.write_u64::<BigEndian>(self.0.minor)?;
+    buf.write_u64::<BigEndian>(self.0.patch)?;
     for i in 0..24 {
       res[i] = buf[i]
     }
-    Some(res)
+    Ok(res)
   }
 
-  pub fn to_bytes(&self) -> Option<[u8; 24]> {
+  pub fn to_bytes(&self) -> YResult<[u8; 24]> {
     self.to_big_endian()
   }
 
-  pub fn from_little_endian(b: &[u8]) -> Option<YVersion> {
-    let mut major: u64 = 0;
-    let mut minor: u64 = 0;
-    let mut patch: u64 = 0;
+  pub fn from_little_endian(b: &[u8]) -> YResult<YVersion> {
     let mut reader = Cursor::new(b);
-    match reader.read_u64::<LittleEndian>() {
-      Ok(_major) => { major = major },
-      Err(_) => { return None },
-    }
-    match reader.read_u64::<LittleEndian>() {
-      Ok(_minor) => { minor = minor },
-      Err(_) => { return None },
-    }
-    match reader.read_u64::<LittleEndian>() {
-      Ok(_patch) => { patch = patch },
-      Err(_) => { return None },
-    }
-    Some(YVersion::new(major, minor, patch))
+    let major = reader.read_u64::<LittleEndian>()?;
+    let minor = reader.read_u64::<LittleEndian>()?;
+    let patch = reader.read_u64::<LittleEndian>()?;
+    Ok(YVersion::new(major, minor, patch))
   }
 
-  pub fn from_big_endian(b: &[u8]) -> Option<YVersion> {
-    let mut major: u64 = 0;
-    let mut minor: u64 = 0;
-    let mut patch: u64 = 0;
+  pub fn from_big_endian(b: &[u8]) -> YResult<YVersion> {
     let mut reader = Cursor::new(b);
-    match reader.read_u64::<BigEndian>() {
-      Ok(_major) => { major = major },
-      Err(_) => { return None },
-    }
-    match reader.read_u64::<BigEndian>() {
-      Ok(_minor) => { minor = minor },
-      Err(_) => { return None },
-    }
-    match reader.read_u64::<BigEndian>() {
-      Ok(_patch) => { patch = patch },
-      Err(_) => { return None },
-    }
-    Some(YVersion::new(major, minor, patch))
+    let major = reader.read_u64::<BigEndian>()?;
+    let minor = reader.read_u64::<BigEndian>()?;
+    let patch = reader.read_u64::<BigEndian>()?;
+    Ok(YVersion::new(major, minor, patch))
   }
 
-  pub fn from_bytes(b: &[u8]) -> Option<YVersion> {
+  pub fn from_bytes(b: &[u8]) -> YResult<YVersion> {
     YVersion::from_big_endian(b)
   }
 }

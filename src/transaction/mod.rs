@@ -87,13 +87,12 @@ impl YTransaction {
 
   pub fn calc_id(&self) -> YResult<YDigest> {
     let mut buf = Vec::new();
-    if let Some(version_buf) = self.version.to_bytes() {
-      buf.write(&version_buf[..])?;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
-    
-    buf.write(&self.time.to_bytes()[..])?;
+   
+    let version_buf = self.version.to_bytes()?;
+    buf.write(&version_buf[..])?;
+   
+    let time_buf = self.time.to_bytes();
+    buf.write(&time_buf[..])?;
 
     let inputs = self.inputs.clone();
     let inputs_len = inputs.len();
@@ -122,12 +121,13 @@ impl YTransaction {
   pub fn to_bytes(&self) -> YResult<Vec<u8>> {
     let mut buf = Vec::new();
     buf.write(&self.id.to_bytes()[..])?;
-    if let Some(version_buf) = self.version.to_bytes() {
-      buf.write(&version_buf[..])?;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
-    buf.write(&self.time.to_bytes()[..])?;
+   
+    let version_buf = self.version.to_bytes()?;
+    buf.write(&version_buf[..])?;
+   
+    let time_buf = self.time.to_bytes();
+    buf.write(&time_buf[..])?;
+
     let inputs = self.inputs.clone();
     let inputs_len = inputs.len();
     buf.write_u32::<BigEndian>(inputs_len as u32)?;
@@ -160,11 +160,7 @@ impl YTransaction {
       return Err(YErrorKind::Unknown.into());
     }
 
-    if let Some(_version) = YVersion::from_bytes(&b[64..88]) {
-      tx.version = _version;
-    } else {
-      return Err(YErrorKind::Unknown.into());
-    }
+    tx.version = YVersion::from_bytes(&b[64..88])?;
 
     tx.time = YTime::from_bytes(&b[88..96]);
 

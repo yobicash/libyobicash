@@ -1,3 +1,4 @@
+use semver::SemVerError;
 use std::io::Error as IOError;
 
 error_chain! {
@@ -9,6 +10,7 @@ error_chain! {
 
   foreign_links {
     IO(IOError);
+    Version(SemVerError);
   }
 
   errors {
