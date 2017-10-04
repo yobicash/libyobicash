@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, BigEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
 use ::VERSION;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct YVersion(pub Version);
 
 impl Default for YVersion {

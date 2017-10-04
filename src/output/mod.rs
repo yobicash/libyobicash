@@ -149,74 +149,64 @@ impl YOutput {
       Err(_) => { return None; },
     }
 
-    let mut amount_size = 0u32;
     match reader.read_u32::<BigEndian>() {
-      Ok(_amount_size) => { amount_size = _amount_size },
-      Err(_) => { return None },
-    }
-
-    if amount_size > 0 {
-      let mut amount = Vec::new();
-      for i in 0..amount_size as usize {
-        amount[i] = 0;
-      }
-      match reader.read_exact(amount.as_mut_slice()) {
-        Ok(_) => {
-          out.amount = YAmount::from_bytes(amount.as_slice());
-        },
-        Err(_) => { return None; },
-      }
-    }
-
-    let mut data_size = 0u32;
-    match reader.read_u32::<BigEndian>() {
-      Ok(_data_size) => {
-        if amount_size == 0 && _data_size != 0 {
-          return None;
+      Ok(amount_size) => {
+        if amount_size > 0 {
+          let mut amount = Vec::new();
+          for i in 0..amount_size as usize {
+            amount[i] = 0;
+          }
+          match reader.read_exact(amount.as_mut_slice()) {
+            Ok(_) => {
+              out.amount = YAmount::from_bytes(amount.as_slice());
+            },
+            Err(_) => { return None; },
+          }
         }
-        data_size = _data_size
       },
       Err(_) => { return None },
     }
 
-    // NB: Result to manage
-    if YAmount::from_u64(data_size as u64).unwrap() <= out.amount {
-      return None;
-    }
-
-    if data_size > 0 {
-      let mut data = Vec::new();
-      for i in 0..data_size as usize {
-        data[i] = 0;
-      }
-      match reader.read_exact(data.as_mut_slice()) {
-        Ok(_) => {
-          if let Some(out_data) = YData::from_bytes(data.as_slice()) {
-            out.data = Some(out_data);
-          } else {
-            return None;
-          }
-        },
-        Err(_) => { return None; },
-      }
-    } else {
-      out.data = None;
-    }
-
-    let mut has_custom = 0u32;
     match reader.read_u32::<BigEndian>() {
-      Ok(_has_custom) => { has_custom = _has_custom },
+      Ok(data_size) => {
+        if out.amount == YAmount::zero() && data_size != 0 {
+          return None;
+        }
+        if data_size > 0 {
+          let mut data = Vec::new();
+          for i in 0..data_size as usize {
+            data[i] = 0;
+          }
+          match reader.read_exact(data.as_mut_slice()) {
+            Ok(_) => {
+              if let Some(out_data) = YData::from_bytes(data.as_slice()) {
+                out.data = Some(out_data);
+              } else {
+                return None;
+              }
+            },
+            Err(_) => { return None; },
+          }
+        } else {
+          out.data = None;
+        }
+      },
       Err(_) => { return None },
     }
 
-    if has_custom == 1 {
-      let mut custom = [0u8; 32];
-      match reader.read_exact(&mut custom[..]) {
-        Ok(_) => {
-          out.custom = Some(custom)
-        },
-        Err(_) => { return None; },
-      }
+    match reader.read_u32::<BigEndian>() {
+      Ok(has_custom) => {
+        if has_custom == 1 {
+          let mut custom = [0u8; 32];
+          match reader.read_exact(&mut custom[..]) {
+            Ok(_) => {
+              out.custom = Some(custom)
+            },
+            Err(_) => { return None; },
+          }
+        }
+      },
+      Err(_) => { return None },
     }
 
     Some(out)

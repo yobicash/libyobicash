@@ -28,12 +28,11 @@ impl SchnorrProtocolPublic {
 
     let _c = YScalar::hash_from_bytes(_c_bin.as_slice());
 
-    // TODO: check if is a group written as additive
     (_c != self.c) && (&(&self.g*&self.r)+&(&self.w*&self.c) != self.t)
   }
 }
 
-#[allow(dead_code)]
+#[derive(Clone, Default)]
 pub struct SchnorrProtocol {
   g: YPoint,    // generator g
   x: YScalar,   // instance x
@@ -68,62 +67,49 @@ impl Default for SchnorrProtocolParams {
 
 impl SchnorrProtocol {
     pub fn from_params(p: &SchnorrProtocolParams) -> SchnorrProtocol {
-      #[allow(unused_assignments)]
-      let mut g: YPoint = YPoint::default();
-      #[allow(unused_assignments)]
-      let mut x: YScalar = YScalar::zero();
-      #[allow(unused_assignments)]
-      let mut u: YScalar = YScalar::zero();
+      let mut prot = SchnorrProtocol::default();
 
       if let Some(_g) = p.g {
-        g = _g;
+        prot.g = _g;
       } else {
-        g = YPoint::random();
+        prot.g = YPoint::random();
       }
 
       if let Some(_x) = p.x {
-        x = _x;
+        prot.x = _x;
       } else {
-        x = YScalar::random();
+        prot.x = YScalar::random();
       }
 
-      let w = &g*&x;
+      prot.w = &prot.g*&prot.x;
       
       if let Some(_u) = p.u {
-        u = _u;
+        prot.u = _u;
       } else {
-        u = YScalar::random();
+        prot.u = YScalar::random();
       }
 
-      let t = &g*&u;
+      prot.t = &prot.g*&prot.u;
 
       let mut g_bin: Vec<u8> = Vec::new();
-      g_bin.extend_from_slice(&g.to_bytes()[..]);
+      g_bin.extend_from_slice(&prot.g.to_bytes()[..]);
 
       let mut w_bin: Vec<u8> = Vec::new();
-      w_bin.extend_from_slice(&w.to_bytes()[..]);
+      w_bin.extend_from_slice(&prot.w.to_bytes()[..]);
 
       let mut t_bin: Vec<u8> = Vec::new();
-      t_bin.extend_from_slice(&t.to_bytes()[..]);
+      t_bin.extend_from_slice(&prot.t.to_bytes()[..]);
 
       let mut c_bin: Vec<u8> = Vec::new();
       c_bin.extend_from_slice(g_bin.as_slice());
       c_bin.extend_from_slice(w_bin.as_slice());
       c_bin.extend_from_slice(t_bin.as_slice());
 
-      let c = YScalar::hash_from_bytes(c_bin.as_slice());
+      prot.c = YScalar::hash_from_bytes(c_bin.as_slice());
 
-      let r = &u - &(&c*&x);
+      prot.r = &prot.u - &(&prot.c*&prot.x);
 
-      SchnorrProtocol {
-        g: g,
-        x: x,
-        w: w,
-        u: u,
-        t: t,
-        c: c,
-        r: r,
-      }
+      prot
     }
 
     pub fn random() -> SchnorrProtocol {

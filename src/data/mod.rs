@@ -71,15 +71,15 @@ impl YData {
 
     let mut data = YData::default();
 
-    let mut size = 0u32;
     match reader.read_u32::<BigEndian>() {
-      Ok(_size) => { size = _size },
+      Ok(size) => {
+        for i in 0..size as usize {
+          data.data[i] = 0;
+        }
+      },
       Err(_) => { return None },
     }
 
-    for i in 0..size as usize {
-      data.data[i] = 0;
-    }
     match reader.read_exact(data.data.as_mut_slice()) {
       Ok(_) => {},
       Err(_) => { return None; }
