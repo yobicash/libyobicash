@@ -19,8 +19,30 @@ pub struct YTransaction {
 
 impl YTransaction {
   pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> Option<YTransaction> {
-    // TODO: check unique inputs
-    // TODO: check unique outputs
+    let inputs_len = inputs.len();
+    let mut inputs_refs = Vec::new();
+    for i in 0..inputs_len {
+      let inp = inputs[i];
+      let refs = (inp.id, inp.idx);
+      inputs_refs.push(refs);
+    }
+    inputs_refs.sort();
+    inputs_refs.dedup();
+    if inputs_refs.len() != inputs_len {
+      return None;
+    }
+    let outputs_len = outputs.len();
+    let mut outputs_refs = Vec::new();
+    for i in 0..outputs_len {
+      let out = outputs[i].clone();
+      let refs = YHash::hash(&out.sender.to_bytes()[..]);
+      outputs_refs.push(refs);
+    }
+    outputs_refs.sort();
+    outputs_refs.dedup();
+    if outputs_refs.len() != outputs_len {
+      return None;
+    }
     let now = YTime::now();
     let version = YVersion::default();
     let id = YDigest::default();
