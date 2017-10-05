@@ -28,11 +28,3 @@ pub mod transaction;
 pub const VERSION: &str = "0.8.0";
 
 pub const MAX_AMOUNT: &str = "2048000000000000000000000";
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
