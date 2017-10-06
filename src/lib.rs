@@ -15,6 +15,7 @@ extern crate chrono;
 extern crate byteorder;
 #[macro_use]
 extern crate error_chain;
+extern crate rustc_serialize as serialize;
 
 pub mod errors;
 pub mod utils;

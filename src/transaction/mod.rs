@@ -1,4 +1,5 @@
 use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use utils::version::YVersion;
 use utils::time::YTime;
@@ -186,6 +187,15 @@ impl YTransaction {
     tx.id = tx.calc_id()?;
 
     Ok(tx)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YTransaction> {
+    let buf = s.from_hex()?;
+    YTransaction::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> YResult<String> {
+    Ok(self.to_bytes()?.to_hex())
   }
 
   pub fn verify_input(&self, idx: u32, output: &YOutput) -> YResult<bool> {

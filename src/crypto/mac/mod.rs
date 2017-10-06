@@ -3,6 +3,7 @@ use generic_array::GenericArray;
 use errors::*;
 use sha2::Sha512;
 use hmac::{Mac, Hmac};
+use serialize::hex::{FromHex, ToHex};
 use crypto::key::YKey;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
@@ -22,6 +23,15 @@ impl YMACCode {
       b[i] = self.0[i]
     }
     b
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YMACCode> {
+    let buf = s.from_hex()?;
+    YMACCode::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }
 

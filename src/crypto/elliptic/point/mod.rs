@@ -8,6 +8,7 @@ use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::Neg;
 use std::ops::{Mul, MulAssign};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::elliptic::scalar::YScalar;
 
@@ -48,6 +49,15 @@ impl YPoint {
 
   pub fn to_bytes(&self) -> [u8; 32] {
     self.0.compress_edwards().to_bytes()
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YPoint> {
+    let buf = s.from_hex()?;
+    YPoint::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }
 

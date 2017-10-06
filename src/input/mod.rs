@@ -1,4 +1,5 @@
 use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::digest::YDigest;
 use crypto::elliptic::scalar::YScalar;
@@ -76,6 +77,15 @@ impl YInput {
     input.r = YScalar::from_bytes(&b[172..204])?;
 
     Ok(input)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YInput> {
+    let buf = s.from_hex()?;
+    YInput::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> YResult<String> {
+    Ok(self.to_bytes()?.to_hex())
   }
 
   pub fn verify(&self, out: &YOutput) -> bool {

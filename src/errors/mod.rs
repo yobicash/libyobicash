@@ -1,3 +1,4 @@
+use serialize::hex::FromHexError;
 use semver::SemVerError;
 use std::io::Error as IOError;
 
@@ -10,6 +11,7 @@ error_chain! {
 
   foreign_links {
     IO(IOError);
+    Hex(FromHexError);
     Version(SemVerError);
   }
 

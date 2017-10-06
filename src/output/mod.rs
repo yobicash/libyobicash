@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::symmetric::YIV;
@@ -129,6 +130,15 @@ impl YOutput {
     }
 
     Ok(out)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YOutput> {
+    let buf = s.from_hex()?;
+    YOutput::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> YResult<String> {
+    Ok(self.to_bytes()?.to_hex())
   }
 
   pub fn drop(mut self) -> YOutput {

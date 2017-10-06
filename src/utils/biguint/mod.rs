@@ -5,6 +5,7 @@ use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
@@ -53,16 +54,8 @@ impl YBigUint {
     be
   }
 
-  pub fn to_bytes(&self) -> Vec<u8> {
-    self.to_big_endian()
-  }
-
   pub fn from_big_endian(b: &[u8]) -> YBigUint {
     YBigUint(U512::from_big_endian(b))
-  }
-
-  pub fn from_bytes(b: &[u8]) -> YBigUint {
-    YBigUint::from_big_endian(b)
   }
 
   pub fn to_little_endian(&self) -> Vec<u8> {
@@ -73,6 +66,23 @@ impl YBigUint {
 
   pub fn from_little_endian(b: &[u8]) -> YBigUint {
     YBigUint(U512::from_little_endian(b))
+  }
+
+  pub fn from_bytes(b: &[u8]) -> YBigUint {
+    YBigUint::from_big_endian(b)
+  }
+
+  pub fn to_bytes(&self) -> Vec<u8> {
+    self.to_big_endian()
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YBigUint> {
+    let buf = s.from_hex()?;
+    Ok(YBigUint::from_bytes(buf.as_slice()))
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }
 

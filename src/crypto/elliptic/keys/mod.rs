@@ -1,5 +1,6 @@
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
@@ -43,6 +44,15 @@ impl YPublicKey {
     pk.pk = YPoint::from_bytes(pk_buf)?;
 
     Ok(pk)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YPublicKey> {
+    let buf = s.from_hex()?;
+    YPublicKey::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }
 
@@ -105,5 +115,14 @@ impl YSecretKey {
     sk.sk = YScalar::from_bytes(sk_buf)?;
 
     Ok(sk)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YSecretKey> {
+    let buf = s.from_hex()?;
+    YSecretKey::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }

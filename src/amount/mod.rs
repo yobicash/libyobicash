@@ -6,6 +6,7 @@ use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
@@ -59,16 +60,8 @@ impl YAmount {
     self.0.to_big_endian()
   }
 
-  pub fn to_bytes(&self) -> Vec<u8> {
-    self.to_big_endian()
-  }
-
   pub fn from_big_endian(b: &[u8]) -> YAmount {
     YAmount(YBigUint::from_big_endian(b))
-  }
-
-  pub fn from_bytes(b: &[u8]) -> YAmount {
-    YAmount::from_big_endian(b)
   }
 
   pub fn to_little_endian(&self) -> Vec<u8> {
@@ -77,6 +70,23 @@ impl YAmount {
 
   pub fn from_little_endian(b: &[u8]) -> YAmount {
     YAmount(YBigUint::from_little_endian(b))
+  }
+
+  pub fn from_bytes(b: &[u8]) -> YAmount {
+    YAmount::from_big_endian(b)
+  }
+
+  pub fn to_bytes(&self) -> Vec<u8> {
+    self.to_big_endian()
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YAmount> {
+    let buf = s.from_hex()?;
+    Ok(YAmount::from_bytes(buf.as_slice()))
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
   }
 }
 

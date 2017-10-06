@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::digest::YDigest;
 use crypto::hash::YHash;
@@ -71,6 +72,15 @@ impl YData {
     reader.read_exact(&mut data.tag.to_bytes()[..])?;
 
     Ok(data)
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YData> {
+    let buf = s.from_hex()?;
+    YData::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> YResult<String> {
+    Ok(self.to_bytes()?.to_hex())
   }
 
   pub fn verify(&self, sk: &YSecretKey, other: &YPublicKey) -> YResult<bool> {

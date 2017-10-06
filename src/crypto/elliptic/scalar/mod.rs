@@ -7,6 +7,7 @@ use std::ops::{Sub, SubAssign};
 use std::ops::Neg;
 use std::ops::{Mul, MulAssign};
 use std::ops::{Index, IndexMut};
+use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use utils::biguint::YBigUint;
 
@@ -48,6 +49,19 @@ impl YScalar {
     Ok(YScalar(scalar))
   }
 
+  pub fn to_bytes(&self) -> [u8; 32] {
+    *self.0.as_bytes()
+  }
+
+  pub fn from_hex(s: &str) -> YResult<YScalar> {
+    let buf = s.from_hex()?;
+    YScalar::from_bytes(buf.as_slice())
+  }
+
+  pub fn to_hex(&self) -> String {
+    self.to_bytes()[..].to_hex()
+  }
+
   pub fn from_biguint(n: &YBigUint) -> YResult<YScalar> {
     YScalar::from_bytes(n.to_little_endian().as_slice())
   }
@@ -58,10 +72,6 @@ impl YScalar {
 
   pub fn invert(&self) -> YScalar {
     YScalar(self.0.invert())
-  }
-
-  pub fn to_bytes(&self) -> [u8; 32] {
-    *self.0.as_bytes()
   }
 
   pub fn reduce(b: &[u8; 64]) -> YScalar {
