@@ -1,3 +1,5 @@
+use serialize::hex::{FromHex, ToHex};
+use libyobicash::crypto::digest::YDigest;
 use libyobicash::crypto::hash::YHash;
 
 fn test_vectors<'a>() -> &'a [(&'a str, &'a str)] {
@@ -14,11 +16,10 @@ fn test_vectors<'a>() -> &'a [(&'a str, &'a str)] {
 }
 
 #[test]
-fn hash_step_by_step_test_vectors_succ() {
-  assert!(true)
-}
-
-#[test]
 fn hash_test_vectors_succ() {
-  assert!(true)
+  for v in test_vectors() {
+    let res = YHash::hash(v.0.as_bytes());
+    let test = YDigest::from_hex(v.1).unwrap();
+    assert_eq!(res, test)
+  }
 }
