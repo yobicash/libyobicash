@@ -26,6 +26,6 @@ pub mod output;
 pub mod input;
 pub mod transaction;
 
-pub const VERSION: &str = "0.8.0";
+pub const VERSION: &str = "0.1.0";
 
 pub const MAX_AMOUNT: &str = "2048000000000000000000000";
