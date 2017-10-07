@@ -2,7 +2,7 @@ use rand::random;
 use serialize::hex::{FromHex, ToHex};
 use libyobicash::crypto::mac::YMACCode;
 
-fn test_vectors<'a>() -> &'a [(&'a str, &'a str)] {
+fn test_vectors() -> Vec<(String, String)> {
   unreachable!()
 }
 

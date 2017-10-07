@@ -1,6 +1,6 @@
 use libyobicash::crypto::kdf::*;
 
-fn test_vectors<'a>() -> &'a [(&'a str, &'a str)] {
+fn test_vectors() -> Vec<(String, String)> {
   unreachable!()
 }
 
