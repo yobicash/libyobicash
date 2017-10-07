@@ -17,16 +17,10 @@ impl YPublicKey {
     }
   }
 
-  pub fn to_bytes(&self) -> [u8; 64] {
-    let mut buf = [0u8; 64];
-    let g_buf = self.g.to_bytes();
-    for i in 0..32 {
-      buf[i] = g_buf[i];
-    }
-    let pk_buf = self.pk.to_bytes();
-    for i in 0..32 {
-      buf[i] = pk_buf[i];
-    }
+  pub fn to_bytes(&self) -> Vec<u8> {
+    let mut buf = Vec::new();
+    buf.append(&mut self.g.to_bytes());
+    buf.append(&mut self.pk.to_bytes());
     buf
   }
 
@@ -88,16 +82,10 @@ impl YSecretKey {
     YPublicKey::new(self.g, &self.g*&self.sk)
   }
 
-  pub fn to_bytes(&self) -> [u8; 64] {
-    let mut buf = [0u8; 64];
-    let g_buf = self.g.to_bytes();
-    for i in 0..32 {
-      buf[i] = g_buf[i];
-    }
-    let sk_buf = self.sk.to_bytes();
-    for i in 0..32 {
-      buf[i] = sk_buf[i];
-    }
+  pub fn to_bytes(&self) -> Vec<u8> {
+    let mut buf = Vec::new();
+    buf.append(&mut self.g.to_bytes());
+    buf.append(&mut self.sk.to_bytes());
     buf
   }
 

@@ -47,8 +47,10 @@ impl YPoint {
     }
   }
 
-  pub fn to_bytes(&self) -> [u8; 32] {
-    self.0.compress_edwards().to_bytes()
+  pub fn to_bytes(&self) -> Vec<u8> {
+    let mut b = Vec::new();
+    b.extend_from_slice(&self.0.compress_edwards().as_bytes()[..]);
+    b
   }
 
   pub fn from_hex(s: &str) -> YResult<YPoint> {

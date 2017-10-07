@@ -49,8 +49,10 @@ impl YScalar {
     Ok(YScalar(scalar))
   }
 
-  pub fn to_bytes(&self) -> [u8; 32] {
-    *self.0.as_bytes()
+  pub fn to_bytes(&self) -> Vec<u8> {
+    let mut b = Vec::new();
+    b.extend_from_slice(&self.0.as_bytes()[..]);
+    b
   }
 
   pub fn from_hex(s: &str) -> YResult<YScalar> {

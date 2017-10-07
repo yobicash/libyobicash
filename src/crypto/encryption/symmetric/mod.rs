@@ -19,11 +19,9 @@ impl YIV {
     Ok(YIV(*GenericArray::from_slice(&b[..])))
   }
 
-  pub fn to_bytes(&self) -> [u8; 64] {
-    let mut b = [0u8; 64];
-    for i in 0..64 {
-      b[i] = self.0[i]
-    }
+  pub fn to_bytes(&self) -> Vec<u8> {
+    let mut b = Vec::new();
+    b.extend_from_slice(self.0.as_slice());
     b
   }
 
