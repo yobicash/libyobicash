@@ -16,6 +16,7 @@ extern crate byteorder;
 #[macro_use]
 extern crate error_chain;
 extern crate rustc_serialize as serialize;
+extern crate libc;
 
 pub mod errors;
 pub mod utils;

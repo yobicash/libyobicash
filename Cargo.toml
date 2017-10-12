@@ -1,7 +1,12 @@
 [package]
 name = "libyobicash"
 version = "0.1.0"
-authors = ["user"]
+authors = ["Christian Nyumbayire <chritchens@gmail.com>"]
+links = "ctaes"
+build = "build.rs"
+
+[build-dependencies]
+cc = "^1"
 
 [dependencies]
 chrono = "^0.4"
@@ -21,3 +26,4 @@ curve25519-dalek = "^0.11"
 rust-crypto = "^0.2"
 error-chain = "^0.11"
 rustc-serialize = "^0.3"
+libc = "^0.2"
