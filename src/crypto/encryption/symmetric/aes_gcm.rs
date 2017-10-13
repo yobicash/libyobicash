@@ -6,7 +6,7 @@ use errors::*;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
 pub struct AES_state {
-  pub slice: [u16; 8],
+    pub slice: [u16; 8],
 }
 
 #[repr(C)]
@@ -16,17 +16,22 @@ pub struct AES256_ctx {
 }
 
 #[link_name = "ctaes"]
-extern {
-    pub fn AES256_init(ctx: *mut AES256_ctx,
-                       key32: *const c_uchar);
+extern "C" {
+    pub fn AES256_init(ctx: *mut AES256_ctx, key32: *const c_uchar);
 
-    pub fn AES256_encrypt(ctx: *const AES256_ctx, blocks: usize,
-                          cipher16: *mut c_uchar,
-                          plain16: *const c_uchar);
+    pub fn AES256_encrypt(
+        ctx: *const AES256_ctx,
+        blocks: usize,
+        cipher16: *mut c_uchar,
+        plain16: *const c_uchar,
+    );
 
-    pub fn AES256_decrypt(ctx: *const AES256_ctx, blocks: usize,
-                          plain16: *mut c_uchar,
-                          cipher16: *const c_uchar);
+    pub fn AES256_decrypt(
+        ctx: *const AES256_ctx,
+        blocks: usize,
+        plain16: *mut c_uchar,
+        cipher16: *const c_uchar,
+    );
 }
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -34,9 +39,7 @@ pub struct AESGCMState(pub [u16; 8]);
 
 impl AESGCMState {
     fn as_c_repr(&self) -> AES_state {
-        AES_state {
-            slice: self.0,
-        }
+        AES_state { slice: self.0 }
     }
 
     fn from_c_repr(repr: AES_state) -> AESGCMState {
@@ -51,11 +54,9 @@ impl AESGCM256 {
     fn as_c_repr(&self) -> AES256_ctx {
         let mut arr = [AES_state::default(); 15];
         for i in 0..15 {
-          arr[i] = self.0[i].as_c_repr();
+            arr[i] = self.0[i].as_c_repr();
         }
-        AES256_ctx {
-            rk: arr,
-        }
+        AES256_ctx { rk: arr }
     }
 
     fn from_c_repr(repr: AES256_ctx) -> AESGCM256 {
@@ -80,15 +81,15 @@ pub type AES256GCMKey = GenericArray<u8, U32>;
 impl AESGCMCipher for AESGCM256 {
     type Ctx = AESGCM256;
     type KeySize = U32;
-    
+
     fn new(key: AES256GCMKey) -> Self {
         let mut ctx = AES256_ctx::default();
         unsafe {
-          AES256_init(&mut ctx, key.as_slice().as_ptr());
+            AES256_init(&mut ctx, key.as_slice().as_ptr());
         }
         AESGCM256::from_c_repr(ctx)
     }
-    
+
     fn encrypt(&mut self, plain: &[u8]) -> YResult<Vec<u8>> {
         let ctx = self.as_c_repr();
         let len = plain.len();
@@ -98,10 +99,10 @@ impl AESGCMCipher for AESGCM256 {
         let blocks = len / 16;
         let mut ciph = Vec::new();
         for _ in 0..blocks {
-          ciph.extend_from_slice(&[0u8; 16][..]);
+            ciph.extend_from_slice(&[0u8; 16][..]);
         }
         unsafe {
-          AES256_encrypt(&ctx, blocks, ciph.as_mut_ptr(), plain.as_ptr());
+            AES256_encrypt(&ctx, blocks, ciph.as_mut_ptr(), plain.as_ptr());
         }
         Ok(ciph)
     }
@@ -115,10 +116,10 @@ impl AESGCMCipher for AESGCM256 {
         let blocks = len / 16;
         let mut plain = Vec::new();
         for _ in 0..blocks {
-          plain.extend_from_slice(&[0u8; 16][..]);
+            plain.extend_from_slice(&[0u8; 16][..]);
         }
         unsafe {
-          AES256_decrypt(&ctx, blocks, plain.as_mut_ptr(), ciph.as_ptr());
+            AES256_decrypt(&ctx, blocks, plain.as_mut_ptr(), ciph.as_ptr());
         }
         Ok(plain)
     }
