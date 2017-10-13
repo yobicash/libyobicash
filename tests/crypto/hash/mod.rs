@@ -1,43 +1,42 @@
 use rand::random;
-use serialize::hex::FromHex;
 use libyobicash::crypto::hash::{YHash32, YHash64, YDigest32, YDigest64};
 
 #[test]
 fn digest32_from_bytes_succ() {
-  let mut b = [0u8; 32];
-  for i in 0..32 {
-    b[i] = random::<u8>();
-  }
-  let res = YDigest32::from_bytes(&b[..]);
-  assert!(res.is_ok())
+    let mut b = [0u8; 32];
+    for i in 0..32 {
+        b[i] = random::<u8>();
+    }
+    let res = YDigest32::from_bytes(&b[..]);
+    assert!(res.is_ok())
 }
 
 #[test]
 fn digest32_from_bytes_fail() {
-  let mut b = [0u8; 64];
-  for i in 0..64 {
-    b[i] = random::<u8>();
-  }
-  let res = YDigest32::from_bytes(&b[..]);
-  assert!(res.is_err())
+    let mut b = [0u8; 64];
+    for i in 0..64 {
+        b[i] = random::<u8>();
+    }
+    let res = YDigest32::from_bytes(&b[..]);
+    assert!(res.is_err())
 }
 
 #[test]
 fn digest32_from_hex_succ() {
-  let s = "df36e1c444a5986aaa9cb0e7352617425eb439274dfb49d794df78b796974131";
-  let res = YDigest32::from_hex(s);
-  assert!(res.is_ok())
+    let s = "df36e1c444a5986aaa9cb0e7352617425eb439274dfb49d794df78b796974131";
+    let res = YDigest32::from_hex(s);
+    assert!(res.is_ok())
 }
 
 #[test]
 fn digest32_from_hex_fail() {
-  let s = "df36e1c444a5986aaa9cb0e7352617425eb439274dfb49d794df78b79697413";
-  let res = YDigest32::from_hex(s);
-  assert!(res.is_err())
+    let s = "df36e1c444a5986aaa9cb0e7352617425eb439274dfb49d794df78b79697413";
+    let res = YDigest32::from_hex(s);
+    assert!(res.is_err())
 }
 
 fn test_vectors_32() -> Vec<(String, String)> {
-  vec![
+    vec![
     ("abc".to_string(),
     "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad".to_string()),
     ("".to_string(),
@@ -51,49 +50,49 @@ fn test_vectors_32() -> Vec<(String, String)> {
 
 #[test]
 fn hash32_test_vectors_succ() {
-  for v in test_vectors_32() {
-    let res = YHash32::hash(v.0.into_bytes().as_slice());
-    let test = YDigest32::from_hex(v.1.as_str()).unwrap();
-    assert_eq!(res, test)
-  }
+    for v in test_vectors_32() {
+        let res = YHash32::hash(v.0.into_bytes().as_slice());
+        let test = YDigest32::from_hex(v.1.as_str()).unwrap();
+        assert_eq!(res, test)
+    }
 }
 
 #[test]
 fn digest64_from_bytes_succ() {
-  let mut b = [0u8; 64];
-  for i in 0..64 {
-    b[i] = random::<u8>();
-  }
-  let res = YDigest64::from_bytes(&b[..]);
-  assert!(res.is_ok())
+    let mut b = [0u8; 64];
+    for i in 0..64 {
+        b[i] = random::<u8>();
+    }
+    let res = YDigest64::from_bytes(&b[..]);
+    assert!(res.is_ok())
 }
 
 #[test]
 fn digest64_from_bytes_fail() {
-  let mut b = [0u8; 32];
-  for i in 0..32 {
-    b[i] = random::<u8>();
-  }
-  let res = YDigest64::from_bytes(&b[..]);
-  assert!(res.is_err())
+    let mut b = [0u8; 32];
+    for i in 0..32 {
+        b[i] = random::<u8>();
+    }
+    let res = YDigest64::from_bytes(&b[..]);
+    assert!(res.is_err())
 }
 
 #[test]
 fn digest64_from_hex_succ() {
-  let s = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e";
-  let res = YDigest64::from_hex(s);
-  assert!(res.is_ok())
+    let s = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e";
+    let res = YDigest64::from_hex(s);
+    assert!(res.is_ok())
 }
 
 #[test]
 fn digest64_from_hex_fail() {
-  let s = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3ef";
-  let res = YDigest64::from_hex(s);
-  assert!(res.is_err())
+    let s = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3ef";
+    let res = YDigest64::from_hex(s);
+    assert!(res.is_err())
 }
 
 fn test_vectors_64() -> Vec<(String, String)> {
-  vec![
+    vec![
     ("abc".to_string(),
     "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f".to_string()),
     ("".to_string(),
@@ -107,9 +106,9 @@ fn test_vectors_64() -> Vec<(String, String)> {
 
 #[test]
 fn hash64_test_vectors_succ() {
-  for v in test_vectors_64() {
-    let res = YHash64::hash(v.0.into_bytes().as_slice());
-    let test = YDigest64::from_hex(v.1.as_str()).unwrap();
-    assert_eq!(res, test)
-  }
+    for v in test_vectors_64() {
+        let res = YHash64::hash(v.0.into_bytes().as_slice());
+        let test = YDigest64::from_hex(v.1.as_str()).unwrap();
+        assert_eq!(res, test)
+    }
 }

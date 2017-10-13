@@ -2,7 +2,6 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::elliptic::keys::{YSecretKey, YPublicKey};
-use crypto::encryption::symmetric::YIV;
 use amount::YAmount;
 use data::YData;
 use std::io::{Write, Read, Cursor};
@@ -40,12 +39,11 @@ impl YOutput {
     pub fn with_data(
         sk: &YSecretKey,
         recipient: &YPublicKey,
-        iv: YIV,
         plain: &[u8],
         custom: Option<[u8; 32]>,
     ) -> YResult<YOutput> {
         let sender = sk.public_key();
-        let data = YData::new(sk, recipient, iv, plain)?;
+        let data = YData::new(sk, recipient, plain)?;
         Ok(YOutput {
             sender: sender.clone(),
             recipient: recipient.clone(),

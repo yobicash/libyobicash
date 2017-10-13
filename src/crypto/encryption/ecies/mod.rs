@@ -2,7 +2,7 @@ use curve25519_dalek::edwards::IsIdentity;
 use errors::*;
 use crypto::elliptic::point::YPoint;
 use crypto::elliptic::keys::{YSecretKey, YPublicKey};
-use crypto::encryption::symmetric::{YSymmetricEncryption, YIV};
+use crypto::encryption::symmetric::YSymmetricEncryption;
 use crypto::mac::{YMAC, YMACCode};
 use crypto::key::YKey64;
 
@@ -31,15 +31,15 @@ impl YECIES {
         }
     }
 
-    pub fn encrypt(&self, other: &YPublicKey, iv: YIV, plain: &[u8]) -> YResult<Vec<u8>> {
+    pub fn encrypt(&self, other: &YPublicKey, plain: &[u8]) -> YResult<Vec<u8>> {
         let key = self.derive_key(other)?.reduce();
-        let cyph = YSymmetricEncryption::encrypt(key, iv, plain);
+        let cyph = YSymmetricEncryption::encrypt(key, plain)?;
         Ok(cyph)
     }
 
-    pub fn decrypt(&self, other: &YPublicKey, iv: YIV, cyph: &[u8]) -> YResult<Vec<u8>> {
+    pub fn decrypt(&self, other: &YPublicKey, cyph: &[u8]) -> YResult<Vec<u8>> {
         let key = self.derive_key(other)?.reduce();
-        let plain = YSymmetricEncryption::decrypt(key, iv, cyph);
+        let plain = YSymmetricEncryption::decrypt(key, cyph)?;
         Ok(plain)
     }
 
@@ -59,10 +59,9 @@ impl YECIES {
     pub fn encrypt_and_authenticate(
         &self,
         other: &YPublicKey,
-        iv: YIV,
         plain: &[u8],
     ) -> YResult<(Vec<u8>, YMACCode)> {
-        let cyph = self.encrypt(other, iv, plain)?;
+        let cyph = self.encrypt(other, plain)?;
         let tag = self.authenticate(other, cyph.as_slice())?;
         Ok((cyph, tag))
     }
@@ -70,13 +69,12 @@ impl YECIES {
     pub fn verify_and_decrypt(
         &self,
         other: &YPublicKey,
-        iv: YIV,
         cyph: &[u8],
         tag: YMACCode,
     ) -> YResult<Vec<u8>> {
         let verified = self.verify(other, cyph, tag)?;
         if verified {
-            self.decrypt(other, iv, cyph)
+            self.decrypt(other, cyph)
         } else {
             Err(YErrorKind::InvalidCyph.into())
         }

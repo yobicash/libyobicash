@@ -5,7 +5,6 @@ use crypto::hash::{YHash64, YDigest64};
 use crypto::mac::YMACCode;
 use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::ecies::YECIES;
-use crypto::encryption::symmetric::YIV;
 use amount::YAmount;
 use std::io::{Write, Read, Cursor};
 
@@ -13,19 +12,17 @@ use std::io::{Write, Read, Cursor};
 pub struct YData {
     pub data: Vec<u8>,
     pub checksum: YDigest64,
-    pub iv: YIV,
     pub tag: YMACCode,
 }
 
 impl YData {
-    pub fn new(sk: &YSecretKey, other: &YPublicKey, iv: YIV, plain: &[u8]) -> YResult<YData> {
+    pub fn new(sk: &YSecretKey, other: &YPublicKey, plain: &[u8]) -> YResult<YData> {
         let ecies = YECIES::new(sk.clone());
-        let (data, tag) = ecies.encrypt_and_authenticate(other, iv, plain)?;
+        let (data, tag) = ecies.encrypt_and_authenticate(other, plain)?;
         let digest = YHash64::hash(data.as_slice());
         Ok(YData {
             data: data,
             checksum: digest,
-            iv: iv,
             tag: tag,
         })
     }
@@ -36,13 +33,12 @@ impl YData {
         buf.write_u32::<BigEndian>(size)?;
         buf.write(self.data.as_slice())?;
         buf.write(&self.checksum.to_bytes()[..])?;
-        buf.write(&self.iv.to_bytes()[..])?;
         buf.write(&self.tag.to_bytes()[..])?;
         Ok(buf)
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YData> {
-        if b.len() < 132 {
+        if b.len() < 100 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -61,8 +57,6 @@ impl YData {
         reader.read_exact(&mut checksum_buf[..])?;
 
         data.checksum = YDigest64::from_bytes(&checksum_buf[..])?;
-
-        reader.read_exact(&mut data.iv.to_bytes()[..])?;
 
         reader.read_exact(&mut data.tag.to_bytes()[..])?;
 
@@ -85,7 +79,7 @@ impl YData {
 
     pub fn verify_and_decrypt(&self, sk: &YSecretKey, other: &YPublicKey) -> YResult<Vec<u8>> {
         let ecies = YECIES::new(sk.clone());
-        ecies.verify_and_decrypt(other, self.iv, self.data.as_slice(), self.tag)
+        ecies.verify_and_decrypt(other, self.data.as_slice(), self.tag)
     }
 
     pub fn amount(&self) -> YAmount {

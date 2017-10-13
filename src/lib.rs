@@ -9,7 +9,6 @@ extern crate curve25519_dalek;
 extern crate rand;
 extern crate bigint;
 extern crate subtle;
-extern crate crypto as rust_crypto;
 extern crate semver;
 extern crate chrono;
 extern crate byteorder;
