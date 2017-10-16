@@ -5,6 +5,7 @@ use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::symmetric::YSymmetricEncryption;
 use crypto::mac::{YMAC, YMACCode};
 use crypto::key::YKey64;
+use crypto::hash::YHash64;
 
 pub struct YECIES(pub YSecretKey);
 
@@ -21,10 +22,11 @@ impl YECIES {
         self.0.public_key()
     }
 
-    pub fn derive_key(&self, other: &YPublicKey) -> YResult<YKey64> {
+    pub fn derive_shared_key(&self, other: &YPublicKey) -> YResult<YKey64> {
         let _key = &other.pk * &self.0.sk;
         if !_key.is_identity() {
-            YKey64::from_bytes(&_key.to_bytes()[..])
+            let h = YHash64::hash(&_key.x_field()[..]);
+            YKey64::from_bytes(h.to_bytes().as_slice())
         } else {
             let reason = String::from("point at infinity");
             Err(YErrorKind::InvalidPoint(reason).into())
@@ -32,25 +34,25 @@ impl YECIES {
     }
 
     pub fn encrypt(&self, other: &YPublicKey, plain: &[u8]) -> YResult<Vec<u8>> {
-        let key = self.derive_key(other)?.reduce();
+        let key = self.derive_shared_key(other)?.reduce();
         let cyph = YSymmetricEncryption::encrypt(key, plain)?;
         Ok(cyph)
     }
 
     pub fn decrypt(&self, other: &YPublicKey, cyph: &[u8]) -> YResult<Vec<u8>> {
-        let key = self.derive_key(other)?.reduce();
+        let key = self.derive_shared_key(other)?.reduce();
         let plain = YSymmetricEncryption::decrypt(key, cyph)?;
         Ok(plain)
     }
 
     pub fn authenticate(&self, other: &YPublicKey, cyph: &[u8]) -> YResult<YMACCode> {
-        let key = self.derive_key(other)?;
+        let key = self.derive_shared_key(other)?;
         let tag = YMAC::mac(key, cyph);
         Ok(tag)
     }
 
     pub fn verify(&self, other: &YPublicKey, cyph: &[u8], tag: YMACCode) -> YResult<bool> {
-        let key = self.derive_key(other)?;
+        let key = self.derive_shared_key(other)?;
         let mut mac = YMAC::new(key);
         mac.update(cyph);
         Ok(mac.verify(tag))

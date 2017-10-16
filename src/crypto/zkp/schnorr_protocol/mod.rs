@@ -1,4 +1,3 @@
-use errors::*;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 
@@ -52,23 +51,23 @@ pub struct SchnorrProtocolParams {
 }
 
 impl SchnorrProtocolParams {
-    pub fn random() -> YResult<SchnorrProtocolParams> {
-        Ok(SchnorrProtocolParams {
-            g: Some(YPoint::random()?),
+    pub fn random() -> SchnorrProtocolParams {
+        SchnorrProtocolParams {
+            g: Some(YPoint::random()),
             x: Some(YScalar::random()),
             u: Some(YScalar::random()),
-        })
+        }
     }
 }
 
 impl SchnorrProtocol {
-    pub fn from_params(p: &SchnorrProtocolParams) -> YResult<SchnorrProtocol> {
+    pub fn from_params(p: &SchnorrProtocolParams) -> SchnorrProtocol {
         let mut prot = SchnorrProtocol::default();
 
         if let Some(_g) = p.g {
             prot.g = _g;
         } else {
-            prot.g = YPoint::random()?;
+            prot.g = YPoint::random();
         }
 
         if let Some(_x) = p.x {
@@ -105,11 +104,11 @@ impl SchnorrProtocol {
 
         prot.r = &prot.u - &(&prot.c * &prot.x);
 
-        Ok(prot)
+        prot
     }
 
-    pub fn random() -> YResult<SchnorrProtocol> {
-        SchnorrProtocol::from_params(&SchnorrProtocolParams::random()?)
+    pub fn random() -> SchnorrProtocol {
+        SchnorrProtocol::from_params(&SchnorrProtocolParams::random())
     }
 
     pub fn to_public(&self) -> SchnorrProtocolPublic {
