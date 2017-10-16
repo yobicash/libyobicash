@@ -4,7 +4,6 @@ use rand::thread_rng;
 use subtle::Equal;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
-use std::ops::Neg;
 use std::ops::{Mul, MulAssign};
 use std::ops::{Index, IndexMut};
 use serialize::hex::{FromHex, ToHex};
@@ -72,6 +71,15 @@ impl YScalar {
         YBigUint::from_little_endian(&self.0.as_bytes()[..])
     }
 
+    pub fn from_u64(n: u64) -> YResult<YScalar> {
+        YScalar::from_biguint(&YBigUint::from_u64(n))
+    }
+
+    // NB: panics in case of failure
+    pub fn to_u64(&self) -> u64 {
+        self.to_biguint().to_u64()
+    }
+
     pub fn invert(&self) -> YScalar {
         YScalar(self.0.invert())
     }
@@ -83,7 +91,7 @@ impl YScalar {
 
 impl PartialEq for YScalar {
     fn eq(&self, other: &YScalar) -> bool {
-        self.0.ct_eq(&other.0) == 0u8
+        self.0.ct_eq(&other.0) == 1u8
     }
 }
 
@@ -100,14 +108,6 @@ impl<'a, 'b> Add<&'b YScalar> for &'a YScalar {
 impl<'b> AddAssign<&'b YScalar> for YScalar {
     fn add_assign(&mut self, other: &'b YScalar) {
         self.0.add_assign(&other.0)
-    }
-}
-
-impl<'a> Neg for &'a YScalar {
-    type Output = YScalar;
-
-    fn neg(self) -> YScalar {
-        YScalar(self.0.neg())
     }
 }
 

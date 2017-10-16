@@ -83,7 +83,7 @@ impl YData {
     }
 
     pub fn amount(&self) -> YAmount {
-        YAmount::from_u64(self.data.len() as u64).unwrap()
+        YAmount::from_u64(self.data.len() as u64)
     }
 
     pub fn drop(mut self) -> YData {

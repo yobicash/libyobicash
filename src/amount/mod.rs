@@ -1,6 +1,5 @@
 use utils::biguint::YBigUint;
 use MAX_AMOUNT;
-use std::ops::Not;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
@@ -27,12 +26,12 @@ impl YAmount {
     }
 
     // NB: panics
-    pub fn as_u64(&self) -> u64 {
-        self.0.as_u64()
+    pub fn to_u64(&self) -> u64 {
+        self.0.to_u64()
     }
 
-    pub fn from_u64(n: u64) -> YResult<YAmount> {
-        YAmount::parse(format!("{}", n).as_str())
+    pub fn from_u64(n: u64) -> YAmount {
+        YAmount(YBigUint::from_u64(n))
     }
 
     pub fn zero() -> YAmount {
@@ -87,14 +86,6 @@ impl YAmount {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
-    }
-}
-
-impl Not for YAmount {
-    type Output = YAmount;
-
-    fn not(self) -> YAmount {
-        YAmount(self.0.not())
     }
 }
 

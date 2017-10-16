@@ -1,5 +1,4 @@
-use bigint::uint::U512;
-use std::ops::Not;
+use bigint::uint::U256;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
@@ -9,27 +8,27 @@ use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
-pub struct YBigUint(pub U512);
+pub struct YBigUint(pub U256);
 
 impl YBigUint {
     pub fn parse(s: &str) -> YResult<YBigUint> {
-        match U512::from_dec_str(s) {
+        match U256::from_dec_str(s) {
             Ok(bu) => Ok(YBigUint(bu)),
             Err(_) => Err(YErrorKind::ParseBigInt(String::from(s)).into()),
         }
     }
 
-    // NB: panics
-    pub fn as_u64(&self) -> u64 {
+    // NB: panics in case of failure
+    pub fn to_u64(&self) -> u64 {
         self.0.as_u64()
     }
 
-    pub fn from_u64(n: u64) -> YResult<YBigUint> {
-        YBigUint::parse(format!("{}", n).as_str())
+    pub fn from_u64(n: u64) -> YBigUint {
+        YBigUint(U256::from(n))
     }
 
     pub fn zero() -> YBigUint {
-        YBigUint(U512::zero())
+        YBigUint(U256::zero())
     }
 
     pub fn is_zero(&self) -> bool {
@@ -37,11 +36,11 @@ impl YBigUint {
     }
 
     pub fn one() -> YBigUint {
-        YBigUint(U512::one())
+        YBigUint(U256::one())
     }
 
     pub fn max_value() -> YBigUint {
-        YBigUint(U512::max_value())
+        YBigUint(U256::max_value())
     }
 
     pub fn pow(self, exp: YBigUint) -> YBigUint {
@@ -49,23 +48,27 @@ impl YBigUint {
     }
 
     pub fn to_big_endian(&self) -> Vec<u8> {
+        let mut buf = [0u8; 32];
+        self.0.to_big_endian(&mut buf[..]);
         let mut be: Vec<u8> = Vec::new();
-        self.0.to_big_endian(be.as_mut_slice());
+        be.extend_from_slice(&buf[..]);
         be
     }
 
     pub fn from_big_endian(b: &[u8]) -> YBigUint {
-        YBigUint(U512::from_big_endian(b))
+        YBigUint(U256::from_big_endian(b))
     }
 
     pub fn to_little_endian(&self) -> Vec<u8> {
+        let mut buf = [0u8; 32];
+        self.0.to_little_endian(&mut buf[..]);
         let mut be: Vec<u8> = Vec::new();
-        self.0.to_little_endian(be.as_mut_slice());
+        be.extend_from_slice(&buf[..]);
         be
     }
 
     pub fn from_little_endian(b: &[u8]) -> YBigUint {
-        YBigUint(U512::from_little_endian(b))
+        YBigUint(U256::from_little_endian(b))
     }
 
     pub fn from_bytes(b: &[u8]) -> YBigUint {
@@ -83,14 +86,6 @@ impl YBigUint {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
-    }
-}
-
-impl Not for YBigUint {
-    type Output = YBigUint;
-
-    fn not(self) -> YBigUint {
-        YBigUint(self.0.not())
     }
 }
 
