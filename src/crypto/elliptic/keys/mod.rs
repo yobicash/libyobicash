@@ -31,7 +31,7 @@ impl YPublicKey {
         let g_buf = &b[0..32];
         pk.g = YPoint::from_bytes(g_buf)?;
 
-        let pk_buf = &b[0..32];
+        let pk_buf = &b[32..64];
         pk.pk = YPoint::from_bytes(pk_buf)?;
 
         Ok(pk)
@@ -58,11 +58,11 @@ impl YSecretKey {
         YSecretKey { g: g, sk: sk }
     }
 
-    pub fn random() -> YResult<YSecretKey> {
-        Ok(YSecretKey {
+    pub fn random() -> YSecretKey {
+        YSecretKey {
             g: YPoint::random(),
             sk: YScalar::random(),
-        })
+        }
     }
 
     pub fn from_g(g: YPoint) -> YSecretKey {
@@ -93,7 +93,7 @@ impl YSecretKey {
         let g_buf = &b[0..32];
         sk.g = YPoint::from_bytes(g_buf)?;
 
-        let sk_buf = &b[0..32];
+        let sk_buf = &b[32..64];
         sk.sk = YScalar::from_bytes(sk_buf)?;
 
         Ok(sk)

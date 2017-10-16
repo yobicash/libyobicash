@@ -20,17 +20,10 @@ fn point_from_bytes_fail() {
 
 #[test]
 fn point_to_bytes_succ() {
-    let mut b = [0u8; 32];
-    for i in 0..32 {
-        b[i] = random::<u8>();
-    }
-    let point = YPoint::from_bytes(&b[..]).unwrap();
-    let mut c = [0u8; 32];
-    let point_buf = point.to_bytes();
-    for i in 0..32 {
-        c[i] = point_buf[i];
-    }
-    assert_eq!(b, c)
+    let p_a = YPoint::random();
+    let p_buf = p_a.to_bytes();
+    let p_b = YPoint::from_bytes(p_buf.as_slice()).unwrap();
+    assert_eq!(p_a, p_b)
 }
 
 #[test]
