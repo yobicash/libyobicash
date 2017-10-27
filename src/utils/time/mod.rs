@@ -13,6 +13,7 @@ impl Default for YTime {
 }
 
 impl YTime {
+    // NB: months and days starts from 1
     pub fn new(y: u64, mm: u64, d: u64, h: u64, m: u64, s: u64) -> YTime {
         let date_time = NaiveDate::from_ymd(y as i32, mm as u32, d as u32).and_hms(
             h as u32,
