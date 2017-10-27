@@ -23,52 +23,8 @@ impl YTime {
     }
 
     pub fn now() -> YTime {
-        YTime(Utc::now())
-    }
-
-    pub fn to_timestamp(&self) -> u64 {
-        self.0.timestamp() as u64 // cause it will never be < 1/1/1970
-    }
-
-    pub fn to_little_endian(&self) -> [u8; 8] {
-        let mut buf = [0; 8];
-        LittleEndian::write_u64(&mut buf, self.to_timestamp());
-        buf
-    }
-
-    pub fn to_big_endian(&self) -> [u8; 8] {
-        let mut buf = [0; 8];
-        BigEndian::write_u64(&mut buf, self.to_timestamp());
-        buf
-    }
-
-    pub fn to_bytes(&self) -> [u8; 8] {
-        self.to_big_endian()
-    }
-
-    pub fn from_timestamp(ts: u64) -> YTime {
-        let ndt = NaiveDateTime::from_timestamp(ts as i64, 0);
-        YTime(DateTime::<Utc>::from_utc(ndt, Utc))
-    }
-
-    pub fn from_little_endian(b: &[u8]) -> YResult<YTime> {
-        if b.len() != 8 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        let t = YTime::from_timestamp(LittleEndian::read_u64(b));
-        Ok(t)
-    }
-
-    pub fn from_big_endian(b: &[u8]) -> YResult<YTime> {
-        if b.len() != 8 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        let t = YTime::from_timestamp(BigEndian::read_u64(b));
-        Ok(t)
-    }
-
-    pub fn from_bytes(b: &[u8]) -> YResult<YTime> {
-        YTime::from_big_endian(b)
+        // NB: let it panic?
+        YTime(Utc::now().with_nanosecond(0).unwrap())
     }
 
     pub fn years(&self) -> u64 {
@@ -87,11 +43,56 @@ impl YTime {
         self.0.hour() as u64
     }
 
-    pub fn mins(&self) -> u64 {
+    pub fn minutes(&self) -> u64 {
         self.0.minute() as u64
     }
 
-    pub fn secs(&self) -> u64 {
+    pub fn seconds(&self) -> u64 {
         self.0.second() as u64
+    }
+
+    pub fn to_timestamp(&self) -> u64 {
+        self.0.timestamp() as u64 // cause it will never be < 1/1/1970
+    }
+
+    pub fn from_timestamp(ts: u64) -> YTime {
+        let ndt = NaiveDateTime::from_timestamp(ts as i64, 0);
+        YTime(DateTime::<Utc>::from_utc(ndt, Utc).with_nanosecond(0).unwrap())
+    }
+
+    pub fn to_little_endian(&self) -> [u8; 8] {
+        let mut buf = [0; 8];
+        LittleEndian::write_u64(&mut buf, self.to_timestamp());
+        buf
+    }
+
+    pub fn from_little_endian(b: &[u8]) -> YResult<YTime> {
+        if b.len() != 8 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        let t = YTime::from_timestamp(LittleEndian::read_u64(b));
+        Ok(t)
+    }
+
+    pub fn to_big_endian(&self) -> [u8; 8] {
+        let mut buf = [0; 8];
+        BigEndian::write_u64(&mut buf, self.to_timestamp());
+        buf
+    }
+
+    pub fn from_big_endian(b: &[u8]) -> YResult<YTime> {
+        if b.len() != 8 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        let t = YTime::from_timestamp(BigEndian::read_u64(b));
+        Ok(t)
+    }
+
+    pub fn to_bytes(&self) -> [u8; 8] {
+        self.to_big_endian()
+    }
+
+    pub fn from_bytes(b: &[u8]) -> YResult<YTime> {
+        YTime::from_big_endian(b)
     }
 }
