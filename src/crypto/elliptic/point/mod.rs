@@ -58,7 +58,7 @@ impl YPoint {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut b = Vec::new();
-        b.extend_from_slice(&self.0.compress_edwards().as_bytes()[..]);
+        b.extend_from_slice(&self.0.compress().as_bytes()[..]);
         b
     }
 
@@ -110,6 +110,11 @@ impl YPoint {
         });
         Ok(p)
     }
+}
+
+pub fn diffie_hellman(sk: &YScalar, pk: &YPoint) -> [u8; 32] {
+    let dh = (&sk.0*&pk.0.to_montgomery()).compress();
+    dh.to_bytes()
 }
 
 impl PartialEq for YPoint {

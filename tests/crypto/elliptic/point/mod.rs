@@ -1,4 +1,5 @@
 use rand::random;
+use libyobicash::crypto::elliptic::scalar::*;
 use libyobicash::crypto::elliptic::point::*;
 
 #[test]
@@ -55,4 +56,30 @@ fn point_fields_succ() {
     let y = p_a.y_field();
     let p_b = YPoint::from_fields(x.as_slice(), y.as_slice()).unwrap();
     assert_eq!(p_a, p_b)
+}
+
+#[test]
+fn diffie_hellman_succ() {
+    let g = YPoint::default();
+    let sk_1 = YScalar::random();
+    let pk_1 = &g*&sk_1;
+    let sk_2 = YScalar::random();
+    let pk_2 = &g*&sk_2;
+    let dh_1 = diffie_hellman(&sk_1, &pk_2);
+    let dh_2 = diffie_hellman(&sk_2, &pk_1);
+    assert_eq!(dh_1, dh_2)
+}
+
+#[test]
+fn diffie_hellman_fail() {
+    let g_1 = YPoint::default();
+    let sk_1 = YScalar::random();
+    let pk_1 = &g_1*&sk_1;
+    let sk_g_2 = YScalar::random();
+    let g_2 = &g_1*&sk_g_2;
+    let sk_2 = YScalar::random();
+    let pk_2 = &g_2*&sk_2;
+    let dh_1 = diffie_hellman(&sk_1, &pk_2);
+    let dh_2 = diffie_hellman(&sk_2, &pk_1);
+    assert_ne!(dh_1, dh_2)
 }

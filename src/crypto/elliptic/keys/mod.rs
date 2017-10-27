@@ -1,5 +1,6 @@
 use crypto::elliptic::scalar::YScalar;
-use crypto::elliptic::point::YPoint;
+use crypto::elliptic::point::{YPoint, diffie_hellman};
+use crypto::key::YKey32;
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
@@ -106,5 +107,14 @@ impl YSecretKey {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
+    }
+
+    pub fn shared_key(&self, pk: &YPublicKey) -> YResult<YKey32> {
+        if self.g != pk.g {
+            let msg = String::from("Invalid generator");
+            return Err(YErrorKind::InvalidPoint(msg).into());
+        }
+        let key = diffie_hellman(&self.sk, &pk.pk);
+        YKey32::from_bytes(&key[..])
     }
 }
