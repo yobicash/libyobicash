@@ -23,6 +23,10 @@ impl YVersion {
         Ok(YVersion(version))
     }
 
+    pub fn from_str(s: &str) -> YResult<YVersion> {
+        YVersion::parse(s)
+    }
+
     pub fn to_string(&self) -> String {
         format!("{}", self.0)
     }
@@ -39,6 +43,14 @@ impl YVersion {
         Ok(res)
     }
 
+    pub fn from_little_endian(b: &[u8]) -> YResult<YVersion> {
+        let mut reader = Cursor::new(b);
+        let major = reader.read_u64::<LittleEndian>()?;
+        let minor = reader.read_u64::<LittleEndian>()?;
+        let patch = reader.read_u64::<LittleEndian>()?;
+        Ok(YVersion::new(major, minor, patch))
+    }
+
     pub fn to_big_endian(&self) -> YResult<[u8; 24]> {
         let mut res = [0; 24];
         let mut buf = Vec::new();
@@ -51,24 +63,16 @@ impl YVersion {
         Ok(res)
     }
 
-    pub fn to_bytes(&self) -> YResult<[u8; 24]> {
-        self.to_big_endian()
-    }
-
-    pub fn from_little_endian(b: &[u8]) -> YResult<YVersion> {
-        let mut reader = Cursor::new(b);
-        let major = reader.read_u64::<LittleEndian>()?;
-        let minor = reader.read_u64::<LittleEndian>()?;
-        let patch = reader.read_u64::<LittleEndian>()?;
-        Ok(YVersion::new(major, minor, patch))
-    }
-
     pub fn from_big_endian(b: &[u8]) -> YResult<YVersion> {
         let mut reader = Cursor::new(b);
         let major = reader.read_u64::<BigEndian>()?;
         let minor = reader.read_u64::<BigEndian>()?;
         let patch = reader.read_u64::<BigEndian>()?;
         Ok(YVersion::new(major, minor, patch))
+    }
+
+    pub fn to_bytes(&self) -> YResult<[u8; 24]> {
+        self.to_big_endian()
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YVersion> {
