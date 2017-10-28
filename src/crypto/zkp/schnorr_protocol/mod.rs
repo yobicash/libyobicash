@@ -1,7 +1,7 @@
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 
-pub struct SchnorrProtocolPublic {
+pub struct YSchnorrProtocolPublic {
     pub g: YPoint,
     pub w: YPoint,
     pub t: YPoint,
@@ -9,7 +9,7 @@ pub struct SchnorrProtocolPublic {
     pub r: YScalar,
 }
 
-impl SchnorrProtocolPublic {
+impl YSchnorrProtocolPublic {
     pub fn verify(&self) -> bool {
 
         let mut g_bin: Vec<u8> = Vec::new();
@@ -33,7 +33,7 @@ impl SchnorrProtocolPublic {
 }
 
 #[derive(Clone, Default)]
-pub struct SchnorrProtocol {
+pub struct YSchnorrProtocol {
     g: YPoint, // generator g
     x: YScalar, // instance x
     w: YPoint, // needed? witness w = g^x
@@ -44,15 +44,15 @@ pub struct SchnorrProtocol {
 }
 
 #[derive(Default)]
-pub struct SchnorrProtocolParams {
+pub struct YSchnorrProtocolParams {
     g: Option<YPoint>,
     x: Option<YScalar>,
     u: Option<YScalar>,
 }
 
-impl SchnorrProtocolParams {
-    pub fn random() -> SchnorrProtocolParams {
-        SchnorrProtocolParams {
+impl YSchnorrProtocolParams {
+    pub fn random() -> YSchnorrProtocolParams {
+        YSchnorrProtocolParams {
             g: Some(YPoint::random()),
             x: Some(YScalar::random()),
             u: Some(YScalar::random()),
@@ -60,9 +60,9 @@ impl SchnorrProtocolParams {
     }
 }
 
-impl SchnorrProtocol {
-    pub fn from_params(p: &SchnorrProtocolParams) -> SchnorrProtocol {
-        let mut prot = SchnorrProtocol::default();
+impl YSchnorrProtocol {
+    pub fn from_params(p: &YSchnorrProtocolParams) -> YSchnorrProtocol {
+        let mut prot = YSchnorrProtocol::default();
 
         if let Some(_g) = p.g {
             prot.g = _g;
@@ -107,12 +107,12 @@ impl SchnorrProtocol {
         prot
     }
 
-    pub fn random() -> SchnorrProtocol {
-        SchnorrProtocol::from_params(&SchnorrProtocolParams::random())
+    pub fn random() -> YSchnorrProtocol {
+        YSchnorrProtocol::from_params(&YSchnorrProtocolParams::random())
     }
 
-    pub fn to_public(&self) -> SchnorrProtocolPublic {
-        SchnorrProtocolPublic {
+    pub fn to_public(&self) -> YSchnorrProtocolPublic {
+        YSchnorrProtocolPublic {
             g: self.g,
             w: self.w,
             t: self.t,

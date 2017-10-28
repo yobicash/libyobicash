@@ -4,7 +4,7 @@ use errors::*;
 use crypto::hash::YDigest64;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
-use crypto::zkp::schnorr_protocol::SchnorrProtocolPublic;
+use crypto::zkp::schnorr_protocol::YSchnorrProtocolPublic;
 use output::YOutput;
 use std::io::Write;
 
@@ -24,10 +24,7 @@ impl YInput {
         id: YDigest64,
         idx: u32,
         height: u64,
-        g: YPoint,
-        t: YPoint,
-        c: YScalar,
-        r: YScalar,
+        prot: YSchnorrProtocolPublic,
     ) -> YResult<YInput> {
         if height == 0 {
             Err(YErrorKind::InvalidHeight.into())
@@ -36,10 +33,10 @@ impl YInput {
                 id: id,
                 idx: idx,
                 height: height,
-                g: g,
-                t: t,
-                c: c,
-                r: r,
+                g: prot.g,
+                t: prot.t,
+                c: prot.c,
+                r: prot.r,
             })
         }
     }
@@ -90,7 +87,7 @@ impl YInput {
     }
 
     pub fn verify(&self, out: &YOutput) -> bool {
-        let prot = SchnorrProtocolPublic {
+        let prot = YSchnorrProtocolPublic {
             g: self.g,
             w: out.recipient.pk,
             t: self.t,

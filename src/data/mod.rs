@@ -30,6 +30,7 @@ impl YData {
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
         let mut buf = Vec::new();
         let size = self.data.len() as u32;
+        println!("[to_bytes] data size: {}", size);
         buf.write_u32::<BigEndian>(size)?;
         buf.write(self.data.as_slice())?;
         buf.write(&self.checksum.to_bytes()[..])?;
@@ -47,18 +48,24 @@ impl YData {
         let mut data = YData::default();
 
         let size = reader.read_u32::<BigEndian>()?;
+        println!("[from_bytes] data size: {}", size);
 
+        let mut data_buf = Vec::new();
         for i in 0..size as usize {
-            data.data[i] = 0;
+            println!("i: {}", i);
+            data_buf.push(0);
         }
-        reader.read_exact(data.data.as_mut_slice())?;
+
+        reader.read_exact(data_buf.as_mut_slice())?;
+        data.data = data_buf;
 
         let mut checksum_buf = [0u8; 64];
         reader.read_exact(&mut checksum_buf[..])?;
-
         data.checksum = YDigest64::from_bytes(&checksum_buf[..])?;
 
-        reader.read_exact(&mut data.tag.to_bytes()[..])?;
+        let mut tag_buf = [0u8; 64];
+        reader.read_exact(&mut tag_buf)?;
+        data.tag = YMACCode::from_bytes(&tag_buf[..])?;
 
         Ok(data)
     }
