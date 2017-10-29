@@ -22,6 +22,10 @@ impl YOutput {
         amount: YAmount,
         custom: Option<[u8; 32]>,
     ) -> YResult<YOutput> {
+        if sk.g != recipient.g {
+            let msg = String::from("Invalid generator");
+            return Err(YErrorKind::InvalidPoint(msg).into());
+        }
         let sender = sk.public_key();
         let max_amount = YAmount::max_value();
         if amount > max_amount {
@@ -102,21 +106,18 @@ impl YOutput {
         let amount_size = reader.read_u32::<BigEndian>()?;
         if amount_size > 0 {
             let mut amount = Vec::new();
-            for i in 0..amount_size as usize {
-                amount[i] = 0;
+            for _ in 0..amount_size as usize {
+                amount.push(0);
             }
             reader.read_exact(amount.as_mut_slice())?;
             out.amount = YAmount::from_bytes(amount.as_slice());
         }
 
         let data_size = reader.read_u32::<BigEndian>()?;
-        if out.amount == YAmount::zero() && data_size != 0 {
-            return Err(YErrorKind::Unknown.into());
-        }
         if data_size > 0 {
             let mut data = Vec::new();
-            for i in 0..data_size as usize {
-                data[i] = 0;
+            for _ in 0..data_size as usize {
+                data.push(0);
             }
             reader.read_exact(data.as_mut_slice())?;
             out.data = Some(YData::from_bytes(data.as_slice())?);

@@ -19,6 +19,7 @@ pub struct YTransaction {
 }
 
 impl YTransaction {
+    // TODO: new(utxos: Vec<UTXO>, outputs: Vec<YOutput>)
     pub fn new(inputs: Vec<YInput>, outputs: Vec<YOutput>) -> YResult<YTransaction> {
         let inputs_len = inputs.len();
         let mut inputs_refs = Vec::new();
@@ -57,6 +58,7 @@ impl YTransaction {
         let inputs_len = inputs.len();
         for i in 0..inputs_len {
             let c = tx.calc_challenge(i as u32)?;
+            // NB: nonsense!!!!!!!!
             if inputs[i].c != c {
                 return Err(YErrorKind::InvalidInputChallenge(i).into());
             }

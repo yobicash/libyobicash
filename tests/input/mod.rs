@@ -1,6 +1,10 @@
 use rand::random;
 use libyobicash::crypto::hash::YDigest64;
+use libyobicash::crypto::elliptic::scalar::YScalar;
+use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;
+use libyobicash::amount::YAmount;
+use libyobicash::output::YOutput;
 use libyobicash::input::YInput;
 
 #[test]
@@ -59,20 +63,45 @@ fn input_bytes_fail() {
 
 #[test]
 fn input_verify_succ() {
-    // TODO
+    let secret_prot = YSchnorrProtocol::random();
+    let public_prot = secret_prot.to_public();
+    let g = public_prot.g;
+    let recipient_sk = YSecretKey::new(g, secret_prot.x);
+    let recipient_pk = recipient_sk.public_key();
+    let sender_sk = YSecretKey::from_g(g);
+    let amount = YAmount::one();
+    let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    let mut _id = [0u8; 64];
+    for i in 0..64 {
+        _id[i] = random();
+    }
+    let id = YDigest64::from_bytes(&_id[..]).unwrap();
+    let idx = 0;
+    let height = 1;
+    let input = YInput::new(id, idx, height, public_prot).unwrap();
+    let verified = input.verify(&output);
+    assert!(verified)
 }
 
 #[test]
 fn input_verify_fail() {
-    // TODO
-}
-
-#[test]
-fn input_verify_and_decrypt_succ() {
-    // TODO
-}
-
-#[test]
-fn input_verify_and_decrypt_fail() {
-    // TODO
+    let secret_prot = YSchnorrProtocol::random();
+    let public_prot = secret_prot.to_public();
+    let g = public_prot.g;
+    let recipient_sk = YSecretKey::new(g, secret_prot.x);
+    let recipient_pk = recipient_sk.public_key();
+    let sender_sk = YSecretKey::from_g(g);
+    let amount = YAmount::one();
+    let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    let mut _id = [0u8; 64];
+    for i in 0..64 {
+        _id[i] = random();
+    }
+    let id = YDigest64::from_bytes(&_id[..]).unwrap();
+    let idx = 0;
+    let height = 1;
+    let mut input = YInput::new(id, idx, height, public_prot).unwrap();
+    input.c = YScalar::random();
+    let verified = input.verify(&output);
+    assert!(!verified)
 }

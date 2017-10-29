@@ -95,7 +95,8 @@ impl PartialEq for YScalar {
     }
 }
 
-impl Eq for YScalar {}
+impl Eq for YScalar {
+}
 
 impl<'a, 'b> Add<&'b YScalar> for &'a YScalar {
     type Output = YScalar;

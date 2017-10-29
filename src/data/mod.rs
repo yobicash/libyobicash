@@ -17,6 +17,10 @@ pub struct YData {
 
 impl YData {
     pub fn new(sk: &YSecretKey, other: &YPublicKey, plain: &[u8]) -> YResult<YData> {
+        if sk.g != other.g {
+            let msg = String::from("Invalid generator");
+            return Err(YErrorKind::InvalidPoint(msg).into());
+        }
         let ecies = YECIES::new(sk.clone());
         let (data, tag) = ecies.encrypt_and_authenticate(other, plain)?;
         let digest = YHash64::hash(data.as_slice());
@@ -30,7 +34,6 @@ impl YData {
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
         let mut buf = Vec::new();
         let size = self.data.len() as u32;
-        println!("[to_bytes] data size: {}", size);
         buf.write_u32::<BigEndian>(size)?;
         buf.write(self.data.as_slice())?;
         buf.write(&self.checksum.to_bytes()[..])?;
@@ -48,11 +51,9 @@ impl YData {
         let mut data = YData::default();
 
         let size = reader.read_u32::<BigEndian>()?;
-        println!("[from_bytes] data size: {}", size);
 
         let mut data_buf = Vec::new();
-        for i in 0..size as usize {
-            println!("i: {}", i);
+        for _ in 0..size as usize {
             data_buf.push(0);
         }
 

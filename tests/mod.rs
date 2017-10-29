@@ -8,4 +8,5 @@ mod amount;
 mod data;
 mod input;
 mod output;
+mod utxo;
 mod transaction;
