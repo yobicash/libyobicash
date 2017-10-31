@@ -32,6 +32,7 @@ impl YData {
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        self.check()?;
         let mut buf = Vec::new();
         let size = self.data.len() as u32;
         buf.write_u32::<BigEndian>(size)?;
@@ -68,6 +69,8 @@ impl YData {
         reader.read_exact(&mut tag_buf)?;
         data.tag = YMACCode::from_bytes(&tag_buf[..])?;
 
+        data.check()?;
+
         Ok(data)
     }
 
@@ -97,5 +100,13 @@ impl YData {
     pub fn drop(mut self) -> YData {
         self.data = Vec::new();
         self
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        let digest = YHash64::hash(self.data.as_slice());
+        if self.checksum != digest {
+            return Err(YErrorKind::InvalidChecksum.into());
+        }
+        Ok(())
     }
 }

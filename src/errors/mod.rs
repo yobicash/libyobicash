@@ -57,17 +57,30 @@ error_chain! {
       description("Duplicate item")
     }
 
+    InvalidAmount {
+        description("Invalid amount")
+    }
+
+    InvalidChecksum {
+        description("Invalid checksum")
+    }
+
     InvalidChallenge(idx: usize) {
       description("Invalid challenge")
       display("Invalid challenge at index {}", idx)
     }
 
-    InvalidActivation {
-        description("Invalid activation")
+    InvalidVersion(v: String) {
+        description("Invalid version")
+        display("Invalid version: {}", v)
     }
 
-    Unknown {
-      description("unknown error")
+    InvalidTime {
+        description("Invalid time")
+    }
+
+    InvalidActivation {
+        description("Invalid activation")
     }
   }
 }

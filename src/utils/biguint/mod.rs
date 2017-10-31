@@ -8,14 +8,20 @@ use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
+use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Error as FmtError;
 use errors::*;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct YBigUint(pub BigUint);
 
 impl YBigUint {
     pub fn parse(s: &str) -> YResult<YBigUint> {
         Ok(YBigUint(BigUint::from_str(s)?))
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.to_str_radix(10)
     }
 
     pub fn to_u64(&self) -> YResult<u64> {
@@ -79,6 +85,18 @@ impl YBigUint {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
+    }
+}
+
+impl Debug for YBigUint {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        write!(f, "{}", self.to_string())
+    }
+}
+
+impl Display for YBigUint {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        write!(f, "{}", self.to_string())
     }
 }
 

@@ -15,12 +15,11 @@ fn utxo_new_succ() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 1;
     let g = YPoint::default();
     let secret = YSecretKey::from_g(g);
     let recipient = secret.to_public();
     let amount = YAmount::one();
-    let res = YUTXO::new(id, idx, height, recipient, amount);
+    let res = YUTXO::new(id, idx, recipient, amount);
     assert!(res.is_ok())
 }
 
@@ -32,12 +31,11 @@ fn utxo_new_fail() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 0;
     let g = YPoint::default();
     let secret = YSecretKey::from_g(g);
     let recipient = secret.to_public();
-    let amount = YAmount::one();
-    let res = YUTXO::new(id, idx, height, recipient, amount);
+    let amount = YAmount::max_value() + YAmount::one();
+    let res = YUTXO::new(id, idx, recipient, amount);
     assert!(res.is_err())
 }
 
@@ -55,8 +53,7 @@ fn utxo_from_output_succ() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 1;
-    let res = YUTXO::from_output(&output, id, idx, height);
+    let res = YUTXO::from_output(&output, id, idx);
     assert!(res.is_ok())
 }
 
@@ -67,15 +64,15 @@ fn utxo_from_output_fail() {
     let recipient_sk = YSecretKey::from_g(g);
     let recipient_pk = recipient_sk.to_public();
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    output.amount += YAmount::max_value();
     let mut _id = [0u8; 64];
     for i in 0..64 {
         _id[i] = random();
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 0;
-    let res = YUTXO::from_output(&output, id, idx, height);
+    let res = YUTXO::from_output(&output, id, idx);
     assert!(res.is_err())
 }
 
@@ -87,12 +84,11 @@ fn utxo_to_input_succ() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 1;
     let g = YPoint::default();
     let secret = YSecretKey::from_g(g);
     let recipient = secret.to_public();
     let amount = YAmount::one();
-    let utxo = YUTXO::new(id, idx, height, recipient, amount).unwrap();
+    let utxo = YUTXO::new(id, idx, recipient, amount).unwrap();
     let u = YScalar::random();
     let c = YScalar::random();
     let res = utxo.to_input(secret.sk, u, c);
@@ -107,12 +103,11 @@ fn utxo_to_input_fail() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 1;
     let g = YPoint::default();
     let secret = YSecretKey::from_g(g);
     let recipient = secret.to_public();
     let amount = YAmount::one();
-    let utxo = YUTXO::new(id, idx, height, recipient, amount).unwrap();
+    let utxo = YUTXO::new(id, idx, recipient, amount).unwrap();
     let false_x = YScalar::random();
     let u = YScalar::random();
     let c = YScalar::random();
@@ -128,12 +123,11 @@ fn utxo_bytes_succ() {
     }
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let height = 1;
     let g = YPoint::default();
     let secret = YSecretKey::from_g(g);
     let recipient = secret.to_public();
     let amount = YAmount::one();
-    let utxo_a = YUTXO::new(id, idx, height, recipient, amount).unwrap();
+    let utxo_a = YUTXO::new(id, idx, recipient, amount).unwrap();
     let utxo_buf = utxo_a.to_bytes().unwrap();
     let utxo_b = YUTXO::from_bytes(utxo_buf.as_slice()).unwrap();
     assert_eq!(utxo_a.to_bytes().unwrap(), utxo_b.to_bytes().unwrap())
@@ -141,8 +135,8 @@ fn utxo_bytes_succ() {
 
 #[test]
 fn utxo_bytes_fail() {
-    let mut b = [0u8; 143];
-    for i in 0..143 {
+    let mut b = [0u8; 135];
+    for i in 0..135 {
         b[i] = random();
     }
     let res = YUTXO::from_bytes(&b[..]);

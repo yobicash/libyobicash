@@ -1,4 +1,4 @@
-use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::hash::YDigest64;
@@ -6,13 +6,12 @@ use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 use crypto::zkp::schnorr_protocol::YSchnorrProtocolPublic;
 use output::YOutput;
-use std::io::Write;
+use std::io::{Write, Read, Cursor};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct YInput {
     pub id: YDigest64,
     pub idx: u32,
-    pub height: u64,
     pub g: YPoint,
     pub t: YPoint,
     pub c: YScalar,
@@ -23,21 +22,15 @@ impl YInput {
     pub fn new(
         id: YDigest64,
         idx: u32,
-        height: u64,
         prot: YSchnorrProtocolPublic,
-    ) -> YResult<YInput> {
-        if height == 0 {
-            Err(YErrorKind::InvalidHeight.into())
-        } else {
-            Ok(YInput {
-                id: id,
-                idx: idx,
-                height: height,
-                g: prot.g,
-                t: prot.t,
-                c: prot.c,
-                r: prot.r,
-            })
+    ) -> YInput {
+        YInput {
+            id: id,
+            idx: idx,
+            g: prot.g,
+            t: prot.t,
+            c: prot.c,
+            r: prot.r,
         }
     }
 
@@ -45,7 +38,6 @@ impl YInput {
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
         buf.write_u32::<BigEndian>(self.idx)?;
-        buf.write_u64::<BigEndian>(self.height)?;
         buf.write(&self.g.to_bytes()[..])?;
         buf.write(&self.t.to_bytes()[..])?;
         buf.write(&self.c.to_bytes()[..])?;
@@ -54,25 +46,35 @@ impl YInput {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YInput> {
-        if b.len() != 204 {
+        if b.len() != 196 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
         let mut input = YInput::default();
 
-        input.id = YDigest64::from_bytes(&b[0..64])?;
+        let mut reader = Cursor::new(b);
 
-        input.idx = BigEndian::read_u32(&b[64..68]);
+        let mut id_buf = [0u8; 64];
+        reader.read_exact(&mut id_buf[..])?;
+        input.id = YDigest64::from_bytes(&id_buf[..])?;
 
-        input.height = BigEndian::read_u64(&b[68..76]);
+        input.idx = reader.read_u32::<BigEndian>()?;
 
-        input.g = YPoint::from_bytes(&b[76..108])?;
+        let mut g_buf = [0u8; 32];
+        reader.read_exact(&mut g_buf[..])?;
+        input.g = YPoint::from_bytes(&g_buf[..])?;
 
-        input.t = YPoint::from_bytes(&b[108..140])?;
+        let mut t_buf = [0u8; 32];
+        reader.read_exact(&mut t_buf[..])?;
+        input.t = YPoint::from_bytes(&t_buf[..])?;
 
-        input.c = YScalar::from_bytes(&b[140..172])?;
+        let mut c_buf = [0u8; 32];
+        reader.read_exact(&mut c_buf[..])?;
+        input.c = YScalar::from_bytes(&c_buf[..])?;
 
-        input.r = YScalar::from_bytes(&b[172..204])?;
+        let mut r_buf = [0u8; 32];
+        reader.read_exact(&mut r_buf[..])?;
+        input.r = YScalar::from_bytes(&r_buf[..])?;
 
         Ok(input)
     }

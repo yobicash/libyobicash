@@ -12,7 +12,7 @@ pub struct YOutput {
     pub recipient: YPublicKey,
     pub amount: YAmount,
     pub data: Option<YData>,
-    pub custom: Option<[u8; 32]>,
+    pub custom: Option<Vec<u8>>,
 }
 
 impl YOutput {
@@ -20,16 +20,18 @@ impl YOutput {
         sk: &YSecretKey,
         recipient: &YPublicKey,
         amount: YAmount,
-        custom: Option<[u8; 32]>,
+        custom: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
         if sk.g != recipient.g {
             let msg = String::from("Invalid generator");
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
         let sender = sk.to_public();
-        let max_amount = YAmount::max_value();
-        if amount > max_amount {
-            return Err(YErrorKind::AmountOutOfBound.into());
+        amount.check()?;
+        if let Some(_custom) = custom.clone() {
+            if _custom.len() != 256 {
+                return Err(YErrorKind::InvalidLength.into());
+            }
         }
         Ok(YOutput {
             sender: sender.clone(),
@@ -44,8 +46,13 @@ impl YOutput {
         sk: &YSecretKey,
         recipient: &YPublicKey,
         plain: &[u8],
-        custom: Option<[u8; 32]>,
+        custom: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
+        if let Some(_custom) = custom.clone() {
+            if _custom.len() != 256 {
+                return Err(YErrorKind::InvalidLength.into());
+            }
+        }
         let sender = sk.to_public();
         let data = YData::new(sk, recipient, plain)?;
         Ok(YOutput {
@@ -58,13 +65,15 @@ impl YOutput {
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        self.check()?;
+
         let mut buf = Vec::new();
 
         buf.write(&self.sender.to_bytes()[..])?;
 
         buf.write(&self.recipient.to_bytes()[..])?;
 
-        let amount_buf = self.amount.to_bytes();
+        let amount_buf = self.amount.to_bytes()?;
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
         buf.write(amount_buf.as_slice())?;
 
@@ -76,7 +85,7 @@ impl YOutput {
             buf.write_u32::<BigEndian>(0)?;
         }
 
-        if let Some(_custom) = self.custom {
+        if let Some(_custom) = self.custom.clone() {
             buf.write_u32::<BigEndian>(1)?;
             buf.write(&_custom[..])?;
         } else {
@@ -110,7 +119,7 @@ impl YOutput {
                 amount.push(0);
             }
             reader.read_exact(amount.as_mut_slice())?;
-            out.amount = YAmount::from_bytes(amount.as_slice());
+            out.amount = YAmount::from_bytes(amount.as_slice())?;
         }
 
         let data_size = reader.read_u32::<BigEndian>()?;
@@ -125,10 +134,15 @@ impl YOutput {
 
         let has_custom = reader.read_u32::<BigEndian>()?;
         if has_custom == 1 {
-            let mut custom = [0u8; 32];
-            reader.read_exact(&mut custom[..])?;
+            let mut custom = Vec::new();
+            for _ in 0..256 {
+                custom.push(0);
+            }
+            reader.read_exact(&mut custom.as_mut_slice())?;
             out.custom = Some(custom);
         }
+
+        out.check()?;
 
         Ok(out)
     }
@@ -143,10 +157,37 @@ impl YOutput {
     }
 
     pub fn drop(mut self) -> YOutput {
-        if self.data.is_some() {
-            let data = self.data.unwrap().clone();
-            self.data = Some(data.drop());
+        if let Some(_data) = self.data {
+            self.data = Some(_data.drop());
         }
         self
+    }
+
+    pub fn has_data(&self) -> bool {
+        self.data.is_some()
+    }
+
+    pub fn is_dropped(&self) -> bool {
+        !self.has_data()
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        if self.sender.g != self.recipient.g {
+            let msg = String::from("Invalid generator");
+            return Err(YErrorKind::InvalidPoint(msg).into());
+        }
+        self.amount.check()?;
+        if let Some(_custom) = self.custom.clone() {
+            if _custom.len() != 256 {
+                return Err(YErrorKind::InvalidLength.into());
+            }
+        }
+        if let Some(_data) = self.data.clone() {
+            let data_size = _data.amount()?;
+            if data_size != YAmount::zero() && self.amount != data_size {
+               return Err(YErrorKind::InvalidAmount.into()); 
+            }
+        }
+        Ok(())
     }
 }

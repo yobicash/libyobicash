@@ -15,13 +15,14 @@ pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
+    pub height: u64,
     pub activation: Option<YTime>,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, height: u64, activation: Option<YTime>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         if xs.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
@@ -58,12 +59,17 @@ impl YTransaction {
             return Err(YErrorKind::DuplicateItem.into());
         }
         
+        if height == 0 {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+        
         let now = YTime::now();
-        if activation.is_some() {
-            if activation.clone().unwrap() <= now {
-                return Err(YErrorKind::InvalidActivation.into());
+        if let Some(_activation) = activation.clone() {
+            if _activation <= now {
+                return Err(YErrorKind::InvalidTime.into());
             }
         }
+
         let version = YVersion::default();
         let id = YDigest64::default();
         let mut inputs = Vec::new();
@@ -80,6 +86,7 @@ impl YTransaction {
         let mut tx = YTransaction {
             id: id,
             version: version,
+            height: height,
             time: now,
             activation: activation,
             inputs: inputs.clone(),
@@ -109,6 +116,8 @@ impl YTransaction {
 
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
+
+        buf.write_u64::<BigEndian>(self.height)?;
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
@@ -159,6 +168,8 @@ impl YTransaction {
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
 
+        buf.write_u64::<BigEndian>(self.height)?;
+
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
@@ -195,11 +206,15 @@ impl YTransaction {
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        self.check()?;
+
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
 
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
+
+        buf.write_u64::<BigEndian>(self.height)?;
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
@@ -235,7 +250,7 @@ impl YTransaction {
 
     pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
         if b.len() < 104 {
-            return Err(YErrorKind::Unknown.into());
+            return Err(YErrorKind::InvalidLength.into());
         }
 
         let mut tx = YTransaction::default();
@@ -249,6 +264,8 @@ impl YTransaction {
         let mut ver_buf = [0u8; 24];
         reader.read_exact(&mut ver_buf[..])?;
         tx.version = YVersion::from_bytes(&ver_buf[..])?;
+
+        tx.height = reader.read_u64::<BigEndian>()?;
 
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
@@ -287,6 +304,8 @@ impl YTransaction {
             tx.outputs.push(output);
         }
 
+        tx.check()?;
+
         Ok(tx)
     }
 
@@ -301,7 +320,7 @@ impl YTransaction {
 
     pub fn verify_input(&self, idx: u32, output: &YOutput) -> YResult<bool> {
         if self.inputs.len() < 1 + idx as usize {
-            return Err(YErrorKind::Unknown.into());
+            return Err(YErrorKind::InvalidLength.into());
         }
         Ok(self.inputs[idx as usize].verify(output))
     }
@@ -336,5 +355,60 @@ impl YTransaction {
             self.outputs[i] = self.outputs[i].clone().drop();
         }
         self
+    }
+
+    pub fn is_dropped(&self) -> bool {
+        let mut dropped = true;
+        for i in 0..self.outputs.len() {
+            dropped &= self.outputs[i].is_dropped();
+        }
+        dropped
+    }
+
+    pub fn is_active(&self) -> bool {
+        if let Some(_activation) = self.activation.clone() {
+            _activation <= YTime::now()
+        } else {
+            false
+        }
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        if self.id != self.calc_id()? {
+            return Err(YErrorKind::InvalidChecksum.into());
+        }
+        if self.version > YVersion::default() {
+            let v = self.version.to_string();
+            return Err(YErrorKind::InvalidVersion(v).into());
+        }
+        
+        if self.height == 0 {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        let time = self.time.clone();
+        let now = YTime::now();
+        if time < now {
+            return Err(YErrorKind::InvalidTime.into())
+        }
+
+        if let Some(_activation) = self.activation.clone() {
+            if _activation <= time {
+                return Err(YErrorKind::InvalidTime.into())
+            }
+        }
+
+        for i in 0..self.inputs.len() {
+            let input = self.inputs[i].clone();
+            if input.c != self.calc_challenge(i as u32)? {
+                return Err(YErrorKind::InvalidChallenge(i).into());
+            }
+        }
+
+        for output in self.outputs.clone() {
+            output.check()?;
+        }
+
+        Ok(())
     }
 }

@@ -15,40 +15,27 @@ use std::io::{Write, Read, Cursor};
 pub struct YUTXO {
 pub id: YDigest64,
 pub idx: u32,
-pub height: u64,
 pub recipient: YPublicKey,
 pub amount: YAmount,
 }
 
 impl YUTXO {
-    pub fn new(id: YDigest64, idx: u32, height: u64, recipient: YPublicKey, amount: YAmount) -> YResult<YUTXO> {
-        if height == 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-        if amount > YAmount::max_value() {
-            return Err(YErrorKind::AmountOutOfBound.into());
-        }
+    pub fn new(id: YDigest64, idx: u32, recipient: YPublicKey, amount: YAmount) -> YResult<YUTXO> {
+        amount.check()?;
         Ok(YUTXO {
             id: id,
             idx: idx,
-            height: height,
             recipient: recipient,
             amount: amount,
         })
     }
 
-    pub fn from_output(out: &YOutput, id: YDigest64, idx: u32, height: u64) -> YResult<YUTXO> {
-        if height == 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
+    pub fn from_output(out: &YOutput, id: YDigest64, idx: u32) -> YResult<YUTXO> {
         let amount = out.amount.clone();
-        if amount > YAmount::max_value() {
-            return Err(YErrorKind::AmountOutOfBound.into());
-        }
+        amount.check()?;
         Ok(YUTXO {
             id: id,
             idx: idx,
-            height: height,
             recipient: out.recipient,
             amount: amount,
         })
@@ -71,23 +58,24 @@ impl YUTXO {
             r: &u + &(&x*&c),
         };
         let prot = secret_prot.to_public();
-        YInput::new(self.id, self.idx, self.height, prot)
+        let input = YInput::new(self.id, self.idx, prot);
+        Ok(input)
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        self.check()?;
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
         buf.write_u32::<BigEndian>(self.idx)?;
-        buf.write_u64::<BigEndian>(self.height)?;
         buf.write(&self.recipient.to_bytes()[..])?;
-        let amount_buf = self.amount.to_bytes();
+        let amount_buf = self.amount.to_bytes()?;
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
         buf.write(amount_buf.as_slice())?;
         Ok(buf)
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YUTXO> {
-        if b.len() < 144 {
+        if b.len() < 136 {
             return Err(YErrorKind::InvalidLength.into());
         }
         
@@ -101,8 +89,6 @@ impl YUTXO {
 
         utxo.idx = reader.read_u32::<BigEndian>()?;
 
-        utxo.height = reader.read_u64::<BigEndian>()?;
-
         let mut recipient_buf = [0u8; 64];
         reader.read_exact(&mut recipient_buf[..])?;
         utxo.recipient = YPublicKey::from_bytes(&recipient_buf[..])?;
@@ -114,8 +100,10 @@ impl YUTXO {
                 amount.push(0);
             }
             reader.read_exact(amount.as_mut_slice())?;
-            utxo.amount = YAmount::from_bytes(amount.as_slice());
+            utxo.amount = YAmount::from_bytes(amount.as_slice())?;
         }
+
+        utxo.check()?;
 
         Ok(utxo)
     }
@@ -127,5 +115,9 @@ impl YUTXO {
 
     pub fn to_hex(&self) -> YResult<String> {
         Ok(self.to_bytes()?.to_hex())
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        self.amount.check()
     }
 }
