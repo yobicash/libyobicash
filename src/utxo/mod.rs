@@ -68,7 +68,7 @@ impl YUTXO {
             u: u,
             t: &g*&u,
             c: c,
-            r: &u + &(&c*&x),
+            r: &u + &(&x*&c),
         };
         let prot = secret_prot.to_public();
         YInput::new(self.id, self.idx, self.height, prot)

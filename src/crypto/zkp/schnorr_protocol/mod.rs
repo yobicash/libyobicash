@@ -1,7 +1,7 @@
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::*;
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct YSchnorrProtocolParams {
     g: Option<YPoint>,
     x: Option<YScalar>,
@@ -18,14 +18,14 @@ impl YSchnorrProtocolParams {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct YSchnorrProtocol {
     pub g: YPoint, // generator g
     pub x: YScalar, // instance x
-    pub w: YPoint, // needed? witness w = g^x
+    pub w: YPoint, // witness w = g^x
     pub u: YScalar, // random u
-    pub t: YPoint, // needed? commit t = g^u
-    pub c: YScalar, // needed? challenge c = H(g, t)
+    pub t: YPoint, // commit t = g^u
+    pub c: YScalar, // challenge c = H(g, t)
     pub r: YScalar, // reply r = u + cx
 }
 
@@ -91,6 +91,7 @@ impl YSchnorrProtocol {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default)]
 pub struct YSchnorrProtocolPublic {
     pub g: YPoint,
     pub w: YPoint,
@@ -101,28 +102,8 @@ pub struct YSchnorrProtocolPublic {
 
 impl YSchnorrProtocolPublic {
     pub fn verify(&self) -> bool {
-
-        let mut g_bin: Vec<u8> = Vec::new();
-        g_bin.extend_from_slice(&self.g.to_bytes()[..]);
-
-        let mut w_bin: Vec<u8> = Vec::new();
-        w_bin.extend_from_slice(&self.w.to_bytes()[..]);
-
-        let mut t_bin: Vec<u8> = Vec::new();
-        t_bin.extend_from_slice(&self.t.to_bytes()[..]);
-
-        let mut _c_bin: Vec<u8> = Vec::new();
-        _c_bin.extend_from_slice(g_bin.as_slice());
-        _c_bin.extend_from_slice(w_bin.as_slice());
-        _c_bin.extend_from_slice(t_bin.as_slice());
-
-        let _c = YScalar::hash_from_bytes(_c_bin.as_slice());
-
         let gr = &self.g * &self.r;
         let twc = &self.t + &(&self.w * &self.c);
-
-        println!("gr: {:?},\n\ntwc: {:?}\n", gr, twc);
-
-        (_c == self.c) && (gr == twc)
+        gr == twc
     }
 }
