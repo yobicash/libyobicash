@@ -90,7 +90,7 @@ impl YData {
         ecies.verify_and_decrypt(other, self.data.as_slice(), self.tag)
     }
 
-    pub fn amount(&self) -> YAmount {
+    pub fn amount(&self) -> YResult<YAmount> {
         YAmount::from_u64(self.data.len() as u64)
     }
 

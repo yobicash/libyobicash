@@ -11,7 +11,7 @@ use input::YInput;
 use output::YOutput;
 use std::io::{Write, Read, Cursor};
 
-#[derive(Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YUTXO {
 pub id: YDigest64,
 pub idx: u32,
@@ -41,7 +41,7 @@ impl YUTXO {
         if height == 0 {
             return Err(YErrorKind::InvalidHeight.into());
         }
-        let amount = out.amount;
+        let amount = out.amount.clone();
         if amount > YAmount::max_value() {
             return Err(YErrorKind::AmountOutOfBound.into());
         }

@@ -73,7 +73,7 @@ impl YSecretKey {
         }
     }
 
-    pub fn public_key(&self) -> YPublicKey {
+    pub fn to_public(&self) -> YPublicKey {
         YPublicKey::new(self.g, &self.g * &self.sk)
     }
 

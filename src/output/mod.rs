@@ -6,7 +6,7 @@ use amount::YAmount;
 use data::YData;
 use std::io::{Write, Read, Cursor};
 
-#[derive(Clone, Eq, PartialEq, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YOutput {
     pub sender: YPublicKey,
     pub recipient: YPublicKey,
@@ -26,7 +26,7 @@ impl YOutput {
             let msg = String::from("Invalid generator");
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
-        let sender = sk.public_key();
+        let sender = sk.to_public();
         let max_amount = YAmount::max_value();
         if amount > max_amount {
             return Err(YErrorKind::AmountOutOfBound.into());
@@ -46,12 +46,12 @@ impl YOutput {
         plain: &[u8],
         custom: Option<[u8; 32]>,
     ) -> YResult<YOutput> {
-        let sender = sk.public_key();
+        let sender = sk.to_public();
         let data = YData::new(sk, recipient, plain)?;
         Ok(YOutput {
             sender: sender.clone(),
             recipient: recipient.clone(),
-            amount: data.amount(),
+            amount: data.amount()?,
             data: Some(data),
             custom: custom,
         })

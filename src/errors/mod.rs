@@ -1,5 +1,6 @@
 use serialize::hex::FromHexError;
 use semver::SemVerError;
+use num_bigint::ParseBigIntError as BigUintError;
 use std::io::Error as IOError;
 
 error_chain! {
@@ -13,6 +14,7 @@ error_chain! {
     IO(IOError);
     Hex(FromHexError);
     Version(SemVerError);
+    BigUint(BigUintError);
   }
 
   errors {
@@ -25,9 +27,13 @@ error_chain! {
       display("Index {} out of bound in array of length {}", idx, length)
     }
 
-    ParseBigInt(s: String) {
-      description("Bigint string parsing error")
-      display("Unable to parse the bigint string {}", s)
+    ParseBigUint(s: String) {
+      description("Biguint parsing error")
+      display("Unable to parse the biguint: {}", s)
+    }
+
+    BigUintOutOfBound {
+        description("BigUint out ouf bound")
     }
 
     InvalidPoint(reason: String) {
@@ -51,9 +57,13 @@ error_chain! {
       description("Duplicate item")
     }
 
-    InvalidInputChallenge(idx: usize) {
-      description("Invalid input challenge")
-      display("Invalid input challenge at index {}", idx)
+    InvalidChallenge(idx: usize) {
+      description("Invalid challenge")
+      display("Invalid challenge at index {}", idx)
+    }
+
+    InvalidActivation {
+        description("Invalid activation")
     }
 
     Unknown {

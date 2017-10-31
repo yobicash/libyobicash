@@ -9,7 +9,7 @@ fn output_new_succ() {
     let g = YPoint::default();
     let sender_sk = YSecretKey::from_g(g);
     let recipient_sk = YSecretKey::from_g(g);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let amount = YAmount::one();
     let res = YOutput::new(&sender_sk, &recipient_pk, amount, None);
     assert!(res.is_ok())
@@ -21,7 +21,7 @@ fn output_new_fail() {
     let sender_sk = YSecretKey::from_g(sender_g);
     let recipient_g = YPoint::random();
     let recipient_sk = YSecretKey::from_g(recipient_g);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let amount = YAmount::one();
     let res = YOutput::new(&sender_sk, &recipient_pk, amount, None);
     assert!(res.is_err())
@@ -32,7 +32,7 @@ fn output_new_with_data_succ() {
     let g = YPoint::default();
     let sender_sk = YSecretKey::from_g(g);
     let recipient_sk = YSecretKey::from_g(g);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let plain = [0u8; 32];
     let res = YOutput::with_data(&sender_sk, &recipient_pk, &plain[..], None);
     assert!(res.is_ok())
@@ -43,7 +43,7 @@ fn output_new_with_data_fail() {
     let g = YPoint::default();
     let sender_sk = YSecretKey::from_g(g);
     let recipient_sk = YSecretKey::from_g(g);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let plain = [0u8; 31];
     let res = YOutput::with_data(&sender_sk, &recipient_pk, &plain[..], None);
     assert!(res.is_err())
@@ -54,7 +54,7 @@ fn output_bytes_succ() {
     let g = YPoint::default();
     let sender_sk = YSecretKey::from_g(g);
     let recipient_sk = YSecretKey::from_g(g);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let plain = [0u8; 32];
     let output_a = YOutput::with_data(&sender_sk, &recipient_pk, &plain[..], None).unwrap();
     let output_buf = output_a.to_bytes().unwrap();

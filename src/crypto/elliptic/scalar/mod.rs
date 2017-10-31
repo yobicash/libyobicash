@@ -71,12 +71,11 @@ impl YScalar {
         YBigUint::from_little_endian(&self.0.as_bytes()[..])
     }
 
-    pub fn from_u64(n: u64) -> YResult<YScalar> {
-        YScalar::from_biguint(&YBigUint::from_u64(n))
+    pub fn from_u64(n: u64) -> YScalar {
+        YScalar(Scalar::from_u64(n))
     }
 
-    // NB: panics in case of failure
-    pub fn to_u64(&self) -> u64 {
+    pub fn to_u64(&self) -> YResult<u64> {
         self.to_biguint().to_u64()
     }
 

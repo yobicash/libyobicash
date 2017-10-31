@@ -8,7 +8,7 @@ use std::ops::{Rem, RemAssign};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
 pub struct YAmount(pub YBigUint);
 
 impl YAmount {
@@ -25,13 +25,12 @@ impl YAmount {
         Ok(YAmount(n))
     }
 
-    // NB: panics
-    pub fn to_u64(&self) -> u64 {
+    pub fn to_u64(&self) -> YResult<u64> {
         self.0.to_u64()
     }
 
-    pub fn from_u64(n: u64) -> YAmount {
-        YAmount(YBigUint::from_u64(n))
+    pub fn from_u64(n: u64) -> YResult<YAmount> {
+        Ok(YAmount(YBigUint::from_u64(n)?))
     }
 
     pub fn zero() -> YAmount {
@@ -49,10 +48,6 @@ impl YAmount {
     pub fn max_value() -> YAmount {
         let m = YBigUint::parse(MAX_AMOUNT).unwrap();
         YAmount(m)
-    }
-
-    pub fn pow(self, exp: YAmount) -> YAmount {
-        YAmount(self.0.pow(exp.0))
     }
 
     pub fn to_big_endian(&self) -> Vec<u8> {
@@ -99,7 +94,7 @@ impl Add for YAmount {
 
 impl AddAssign for YAmount {
     fn add_assign(&mut self, other: YAmount) {
-        *self = self.add(other);
+        *self = self.clone().add(other);
     }
 }
 
@@ -113,7 +108,7 @@ impl Sub for YAmount {
 
 impl SubAssign for YAmount {
     fn sub_assign(&mut self, other: YAmount) {
-        *self = self.sub(other);
+        *self = self.clone().sub(other);
     }
 }
 
@@ -127,7 +122,7 @@ impl Mul for YAmount {
 
 impl MulAssign for YAmount {
     fn mul_assign(&mut self, other: YAmount) {
-        *self = self.mul(other);
+        *self = self.clone().mul(other);
     }
 }
 
@@ -141,7 +136,7 @@ impl Div for YAmount {
 
 impl DivAssign for YAmount {
     fn div_assign(&mut self, other: YAmount) {
-        *self = self.div(other);
+        *self = self.clone().div(other);
     }
 }
 
@@ -155,6 +150,6 @@ impl Rem for YAmount {
 
 impl RemAssign for YAmount {
     fn rem_assign(&mut self, other: YAmount) {
-        *self = self.rem(other);
+        *self = self.clone().rem(other);
     }
 }

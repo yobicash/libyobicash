@@ -67,7 +67,7 @@ fn input_verify_succ() {
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
     let recipient_sk = YSecretKey::new(g, secret_prot.x);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let sender_sk = YSecretKey::from_g(g);
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
@@ -89,7 +89,7 @@ fn input_verify_fail() {
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
     let recipient_sk = YSecretKey::new(g, secret_prot.x);
-    let recipient_pk = recipient_sk.public_key();
+    let recipient_pk = recipient_sk.to_public();
     let sender_sk = YSecretKey::from_g(g);
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();

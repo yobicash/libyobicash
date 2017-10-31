@@ -68,34 +68,34 @@ fn scalar_from_biguint_succ() {
 
 #[test]
 fn scalar_multiply_add_succ() {
-    let a = YScalar::from_u64(1).unwrap();
-    let b = YScalar::from_u64(2).unwrap();
-    let c = YScalar::from_u64(3).unwrap();
-    let d = YScalar::from_u64(5).unwrap();
+    let a = YScalar::from_u64(1);
+    let b = YScalar::from_u64(2);
+    let c = YScalar::from_u64(3);
+    let d = YScalar::from_u64(5);
     let e = YScalar::multiply_add(&a, &b, &c);
     assert_eq!(e, d)
 }
 
 #[test]
 fn scalar_add_succ() {
-    let a = YScalar::from_u64(1).unwrap();
-    let b = YScalar::from_u64(2).unwrap();
-    let c = YScalar::from_u64(3).unwrap();
+    let a = YScalar::from_u64(1);
+    let b = YScalar::from_u64(2);
+    let c = YScalar::from_u64(3);
     assert_eq!(c, (&a+&b))
 }
 
 #[test]
 fn scalar_sub_succ() {
-    let a = YScalar::from_u64(3).unwrap();
-    let b = YScalar::from_u64(2).unwrap();
-    let c = YScalar::from_u64(1).unwrap();
+    let a = YScalar::from_u64(3);
+    let b = YScalar::from_u64(2);
+    let c = YScalar::from_u64(1);
     assert_eq!(c, (&a-&b))
 }
 
 #[test]
 fn scalar_mul_succ() {
-    let a = YScalar::from_u64(2).unwrap();
-    let b = YScalar::from_u64(3).unwrap();
-    let c = YScalar::from_u64(6).unwrap();
+    let a = YScalar::from_u64(2);
+    let b = YScalar::from_u64(3);
+    let c = YScalar::from_u64(6);
     assert_eq!(c, (&a*&b))
 }

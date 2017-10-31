@@ -7,9 +7,9 @@ use libyobicash::crypto::encryption::ecies::YECIES;
 fn ecies_shared_key_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let ecies_b = YECIES::new(sk_b);
     let key_a = ecies_a.shared_key(&pk_b).unwrap();
@@ -23,7 +23,7 @@ fn ecies_shared_key_fail() {
     let sk_a = YSecretKey::from_g(g_a);
     let g_b = YPoint::random();
     let sk_b = YSecretKey::from_g(g_b);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let res = ecies_a.shared_key(&pk_b);
     assert!(res.is_err())
@@ -34,7 +34,7 @@ fn ecies_encrypt_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt = [0u8; 16];
     for i in 0..16 {
@@ -49,7 +49,7 @@ fn ecies_encrypt_fail() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt = [0u8; 17];
     for i in 0..17 {
@@ -63,9 +63,9 @@ fn ecies_encrypt_fail() {
 fn ecies_decrypt_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let ecies_b = YECIES::new(sk_b);
     let mut ptxt_a = [0u8; 16];
@@ -81,9 +81,9 @@ fn ecies_decrypt_succ() {
 fn ecies_decrypt_fail() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {
@@ -101,7 +101,7 @@ fn ecies_authenticate_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {
@@ -117,7 +117,7 @@ fn ecies_authenticate_fail() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {
@@ -125,7 +125,7 @@ fn ecies_authenticate_fail() {
     }
     let cyph = ecies_a.encrypt(&pk_b, &ptxt_a[..]).unwrap();
     let sk_c = YSecretKey::random();
-    let pk_c = sk_c.public_key();
+    let pk_c = sk_c.to_public();
     let res = ecies_a.authenticate(&pk_c, cyph.as_slice());
     assert!(res.is_err())
 }
@@ -134,9 +134,9 @@ fn ecies_authenticate_fail() {
 fn ecies_verify_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let ecies_b = YECIES::new(sk_b);
     let mut ptxt_a = [0u8; 16];
@@ -153,9 +153,9 @@ fn ecies_verify_succ() {
 fn ecies_verify_fail() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {
@@ -174,7 +174,7 @@ fn ecies_encrypt_and_authenticate_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {
@@ -194,7 +194,7 @@ fn ecies_encrypt_and_authenticate_fail() {
         ptxt_a[i] = random();
     }
     let sk_c = YSecretKey::random();
-    let pk_c = sk_c.public_key();
+    let pk_c = sk_c.to_public();
     let res = ecies_a.encrypt_and_authenticate(&pk_c, &ptxt_a[..]);
     assert!(res.is_err())
 }
@@ -203,9 +203,9 @@ fn ecies_encrypt_and_authenticate_fail() {
 fn ecies_verify_and_decrypt_succ() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let ecies_b = YECIES::new(sk_b);
     let mut ptxt_a = [0u8; 16];
@@ -221,9 +221,9 @@ fn ecies_verify_and_decrypt_succ() {
 fn ecies_verify_and_decrypt_fail() {
     let g = YPoint::random();
     let sk_a = YSecretKey::from_g(g);
-    let pk_a = sk_a.public_key();
+    let pk_a = sk_a.to_public();
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let ecies_a = YECIES::new(sk_a);
     let mut ptxt_a = [0u8; 16];
     for i in 0..16 {

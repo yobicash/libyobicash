@@ -8,7 +8,7 @@ fn data_new_succ() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain = [0u8; 32];
     for i in 0..32 {
         plain[i] = random();
@@ -22,7 +22,7 @@ fn data_new_fail() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain = [0u8; 31];
     for i in 0..31 {
         plain[i] = random();
@@ -36,7 +36,7 @@ fn data_bytes_succ() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain = [0u8; 32];
     for i in 0..32 {
         plain[i] = random();
@@ -62,7 +62,7 @@ fn data_verify_succ() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain = [0u8; 32];
     for i in 0..32 {
         plain[i] = random();
@@ -77,7 +77,7 @@ fn data_verify_fail() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain = [0u8; 32];
     for i in 0..32 {
         plain[i] = random();
@@ -93,7 +93,7 @@ fn data_verify_and_decrypt_succ() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain_a = [0u8; 32];
     for i in 0..32 {
         plain_a[i] = random();
@@ -108,7 +108,7 @@ fn data_verify_and_decrypt_fail() {
     let g = YPoint::default();
     let sk_a = YSecretKey::from_g(g);
     let sk_b = YSecretKey::from_g(g);
-    let pk_b = sk_b.public_key();
+    let pk_b = sk_b.to_public();
     let mut plain_a = [0u8; 32];
     for i in 0..32 {
         plain_a[i] = random();

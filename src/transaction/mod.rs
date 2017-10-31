@@ -10,30 +10,33 @@ use output::YOutput;
 use utxo::YUTXO;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
+    pub activation: Option<YTime>,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         if xs.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
         }
+        
         let mut xs_copy = xs.clone();
         xs_copy.dedup();
         if xs_copy.len() != utxos_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
+        
         let mut utxos_refs = Vec::new();
         for i in 0..utxos_len {
-            let inp = utxos[i];
-            let refs = (inp.id, inp.idx);
+            let utxo = utxos[i].clone();
+            let refs = (utxo.id, utxo.idx);
             utxos_refs.push(refs);
         }
         utxos_refs.sort();
@@ -41,6 +44,7 @@ impl YTransaction {
         if utxos_refs.len() != utxos_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
+        
         let outputs_len = outputs.len();
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
@@ -53,7 +57,13 @@ impl YTransaction {
         if outputs_refs.len() != outputs_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
+        
         let now = YTime::now();
+        if activation.is_some() {
+            if activation.clone().unwrap() <= now {
+                return Err(YErrorKind::InvalidActivation.into());
+            }
+        }
         let version = YVersion::default();
         let id = YDigest64::default();
         let mut inputs = Vec::new();
@@ -63,16 +73,19 @@ impl YTransaction {
             let u = YScalar::random();
             uxs.push(u);
             let c = YScalar::zero();
-            let utxo = utxos[i];
+            let utxo = utxos[i].clone();
             inputs.push(utxo.to_input(x, u, c)?);
         }
+        
         let mut tx = YTransaction {
             id: id,
             version: version,
             time: now,
+            activation: activation,
             inputs: inputs.clone(),
             outputs: outputs.clone(),
         };
+        
         let inputs_len = inputs.len();
         for i in 0..inputs_len {
             let x = xs[i];
@@ -99,6 +112,14 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
+
+        if let Some(_activation) = self.activation.clone() {
+            buf.write_u32::<BigEndian>(1)?;
+            let activation_buf = _activation.to_bytes();
+            buf.write(&activation_buf[..])?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -141,6 +162,14 @@ impl YTransaction {
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
+        if let Some(_activation) = self.activation.clone() {
+            buf.write_u32::<BigEndian>(1)?;
+            let activation_buf = _activation.to_bytes();
+            buf.write(&activation_buf[..])?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
 
@@ -174,6 +203,14 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
+
+        if let Some(_activation) = self.activation.clone() {
+            buf.write_u32::<BigEndian>(1)?;
+            let activation_buf = _activation.to_bytes();
+            buf.write(&activation_buf[..])?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -216,6 +253,13 @@ impl YTransaction {
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
         tx.time = YTime::from_bytes(&time_buf[..])?;
+
+        let has_activation = reader.read_u32::<BigEndian>()?;
+        if has_activation == 1 {
+            let mut activation_buf = [0u8; 8];
+            reader.read_exact(&mut activation_buf[..])?;
+            tx.activation = Some(YTime::from_bytes(&activation_buf[..])?);
+        }
 
         let inputs_len = reader.read_u32::<BigEndian>()? as usize;
 

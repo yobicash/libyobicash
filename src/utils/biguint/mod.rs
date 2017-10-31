@@ -1,34 +1,43 @@
-use bigint::uint::U256;
+use num_traits::{ToPrimitive, FromPrimitive};
+use num_traits::identities::{Zero, One};
+use num_bigint::BigUint;
+use serialize::hex::{FromHex, ToHex};
+use std::str::FromStr;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
-use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
-pub struct YBigUint(pub U256);
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+pub struct YBigUint(pub BigUint);
 
 impl YBigUint {
     pub fn parse(s: &str) -> YResult<YBigUint> {
-        match U256::from_dec_str(s) {
-            Ok(bu) => Ok(YBigUint(bu)),
-            Err(_) => Err(YErrorKind::ParseBigInt(String::from(s)).into()),
+        Ok(YBigUint(BigUint::from_str(s)?))
+    }
+
+    pub fn to_u64(&self) -> YResult<u64> {
+        match self.0.to_u64() {
+            Some(n) => { Ok(n) },
+            None => {
+                Err(YErrorKind::BigUintOutOfBound.into())
+            },
         }
     }
 
-    // NB: panics in case of failure
-    pub fn to_u64(&self) -> u64 {
-        self.0.as_u64()
-    }
-
-    pub fn from_u64(n: u64) -> YBigUint {
-        YBigUint(U256::from(n))
+    pub fn from_u64(n: u64) -> YResult<YBigUint> {
+        match BigUint::from_u64(n) {
+            Some(bu) => { Ok(YBigUint(bu)) },
+            None => {
+                Err(YErrorKind::BigUintOutOfBound.into())
+            },
+        }
     }
 
     pub fn zero() -> YBigUint {
-        YBigUint(U256::zero())
+        YBigUint(BigUint::zero())
     }
 
     pub fn is_zero(&self) -> bool {
@@ -36,39 +45,23 @@ impl YBigUint {
     }
 
     pub fn one() -> YBigUint {
-        YBigUint(U256::one())
-    }
-
-    pub fn max_value() -> YBigUint {
-        YBigUint(U256::max_value())
-    }
-
-    pub fn pow(self, exp: YBigUint) -> YBigUint {
-        YBigUint(self.0.pow(exp.0))
+        YBigUint(BigUint::one())
     }
 
     pub fn to_big_endian(&self) -> Vec<u8> {
-        let mut buf = [0u8; 32];
-        self.0.to_big_endian(&mut buf[..]);
-        let mut be: Vec<u8> = Vec::new();
-        be.extend_from_slice(&buf[..]);
-        be
+        self.0.to_bytes_be()
     }
 
     pub fn from_big_endian(b: &[u8]) -> YBigUint {
-        YBigUint(U256::from_big_endian(b))
+        YBigUint(BigUint::from_bytes_be(b))
     }
 
     pub fn to_little_endian(&self) -> Vec<u8> {
-        let mut buf = [0u8; 32];
-        self.0.to_little_endian(&mut buf[..]);
-        let mut be: Vec<u8> = Vec::new();
-        be.extend_from_slice(&buf[..]);
-        be
+        self.0.to_bytes_le()
     }
 
     pub fn from_little_endian(b: &[u8]) -> YBigUint {
-        YBigUint(U256::from_little_endian(b))
+        YBigUint(BigUint::from_bytes_le(b))
     }
 
     pub fn from_bytes(b: &[u8]) -> YBigUint {
@@ -99,7 +92,7 @@ impl Add for YBigUint {
 
 impl AddAssign for YBigUint {
     fn add_assign(&mut self, other: YBigUint) {
-        *self = self.add(other);
+        *self = self.clone().add(other);
     }
 }
 
@@ -113,7 +106,7 @@ impl Sub for YBigUint {
 
 impl SubAssign for YBigUint {
     fn sub_assign(&mut self, other: YBigUint) {
-        *self = self.sub(other);
+        *self = self.clone().sub(other);
     }
 }
 
@@ -127,7 +120,7 @@ impl Mul for YBigUint {
 
 impl MulAssign for YBigUint {
     fn mul_assign(&mut self, other: YBigUint) {
-        *self = self.mul(other);
+        *self = self.clone().mul(other);
     }
 }
 
@@ -141,7 +134,7 @@ impl Div for YBigUint {
 
 impl DivAssign for YBigUint {
     fn div_assign(&mut self, other: YBigUint) {
-        *self = self.div(other);
+        *self = self.clone().div(other);
     }
 }
 
@@ -155,6 +148,6 @@ impl Rem for YBigUint {
 
 impl RemAssign for YBigUint {
     fn rem_assign(&mut self, other: YBigUint) {
-        *self = self.rem(other);
+        *self = self.clone().rem(other);
     }
 }

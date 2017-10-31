@@ -18,7 +18,7 @@ impl YECIES {
     }
 
     pub fn public_key(&self) -> YPublicKey {
-        self.0.public_key()
+        self.0.to_public()
     }
 
     pub fn shared_key(&self, other: &YPublicKey) -> YResult<YKey64> {
