@@ -8,7 +8,6 @@ use std::ops::{Mul, MulAssign};
 use std::ops::{Index, IndexMut};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
-use utils::biguint::YBigUint;
 
 #[derive(Copy, Clone, Debug)]
 pub struct YScalar(pub Scalar);
@@ -63,20 +62,8 @@ impl YScalar {
         self.to_bytes()[..].to_hex()
     }
 
-    pub fn from_biguint(n: &YBigUint) -> YResult<YScalar> {
-        YScalar::from_bytes(n.to_little_endian().as_slice())
-    }
-
-    pub fn to_biguint(&self) -> YBigUint {
-        YBigUint::from_little_endian(&self.0.as_bytes()[..])
-    }
-
     pub fn from_u64(n: u64) -> YScalar {
         YScalar(Scalar::from_u64(n))
-    }
-
-    pub fn to_u64(&self) -> YResult<u64> {
-        self.to_biguint().to_u64()
     }
 
     pub fn invert(&self) -> YScalar {

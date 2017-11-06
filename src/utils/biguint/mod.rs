@@ -1,3 +1,4 @@
+use rand;
 use num_traits::{ToPrimitive, FromPrimitive};
 use num_traits::identities::{Zero, One};
 use num_bigint::BigUint;
@@ -16,6 +17,14 @@ use errors::*;
 pub struct YBigUint(pub BigUint);
 
 impl YBigUint {
+    pub fn random() -> YBigUint {
+        let mut b = [0u8; 32];
+        for i in 0..32 {
+            b[i] = rand::random();
+        }
+        YBigUint::from_bytes(&b[..])
+    }
+
     pub fn parse(s: &str) -> YResult<YBigUint> {
         Ok(YBigUint(BigUint::from_str(s)?))
     }

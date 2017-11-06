@@ -59,14 +59,6 @@ fn scalar_to_hex_succ() {
 }
 
 #[test]
-fn scalar_from_biguint_succ() {
-    let scalar_a = YScalar::random();
-    let scalar_a_bg = scalar_a.to_biguint();
-    let scalar_b = YScalar::from_biguint(&scalar_a_bg).unwrap();
-    assert_eq!(scalar_a, scalar_b)
-}
-
-#[test]
 fn scalar_multiply_add_succ() {
     let a = YScalar::from_u64(1);
     let b = YScalar::from_u64(2);
