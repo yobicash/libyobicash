@@ -1,10 +1,10 @@
 [package]
-name = "yobipy"
+name = "yobipyll"
 version = "0.1.0"
 authors = ["Gareth Nelson <gareth@yobicash.org>"]
 
 [lib]
-name = "yobipy"
+name = "yobipyll"
 crate-type = ["cdylib"]
 
 [dependencies.libyobicash]

@@ -29,6 +29,6 @@ rustc-serialize = "^0.3"
 libc = "^0.2"
 
 [workspace]
-members = ["yobipy"]
+members = ["yobipyll"]
 
 
