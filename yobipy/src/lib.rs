@@ -5,7 +5,7 @@ extern crate pyo3;
 
 use pyo3::prelude::*;
 
-#[py::modinit(yobipy)]
+#[py::modinit(libyobipy)]
 fn init_mod(py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
