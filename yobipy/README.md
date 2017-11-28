@@ -2,7 +2,13 @@
 
 This directory contains the python bindings for libyobicash, also known as yobipy.
 
-## Setting up
+## The easy way
+
+Install dependencies with pip and then run the build_yobipy.sh script.
+
+Current dependencies: pytest-cov and a working rust install.
+
+## Setting up manually
 
 First, build both libyobicash and yobipy_ll:
 
