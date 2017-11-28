@@ -11,12 +11,26 @@ FAILMSG=`mktemp`
 CURTASK_START=$START_TIMESTAMP
 CURTASK=Script
 
-
 function start_build() {
     echo "Logging to $LOGFILE"
     echo "Build started at $START_TIMESTAMP" > $LOGFILE
     touch $PASSMSG
     touch $FAILMSG
+}
+
+function start_deps() {
+    mkdir -p $HOME/.yobicash/packages
+    DEPCACHE=`realpath $HOME/.yobicash/packages`
+    echo "Fetching dependencies into $DEPCACHE:"
+}
+
+function fetch_dep() {
+    printf "$1:"
+    curl -o $DEPCACHE/$3 $2 --progress-bar
+}
+
+function finish_deps() {
+    echo "Finished fetching dependencies"
 }
 
 function finish_build() {

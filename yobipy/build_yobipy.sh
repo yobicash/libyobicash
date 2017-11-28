@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source buildutils.sh 
+source ./buildsys/buildutils.sh 
 
 SOURCE_ROOT_PATH=`realpath ..`
 RUST_TGT_PATH=`realpath $SOURCE_ROOT_PATH/target/debug`
