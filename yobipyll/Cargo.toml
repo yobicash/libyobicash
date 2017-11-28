@@ -1,0 +1,16 @@
+[package]
+name = "yobipyll"
+version = "0.1.0"
+authors = ["Gareth Nelson <gareth@yobicash.org>"]
+
+[lib]
+name = "yobipyll"
+crate-type = ["cdylib"]
+
+[dependencies.libyobicash]
+path = ".."
+
+[dependencies.pyo3]
+version = "0.2"
+features = ["extension-module"]
+
