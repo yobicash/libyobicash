@@ -6,12 +6,12 @@ use curve25519_dalek::edwards::ValidityCheck;
 use curve25519_dalek::field::FieldElement32;
 use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 use subtle::Equal;
-use rand::random;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
+use utils::random::Random;
 use crypto::elliptic::scalar::YScalar;
 
 #[derive(Copy, Clone, Debug)]
@@ -26,14 +26,10 @@ impl Default for YPoint {
 impl YPoint {
     pub fn random() -> YPoint {
         let mut b = [0u8; 32];
-        for i in 0..32 {
-            b[i] = random::<u8>();
-        }
+        Random::bytes_mut(&mut b);
         let mut p = YPoint::from_bytes(&b);
         while p.is_err() {
-            for i in 0..32 {
-                b[i] = random::<u8>();
-            }
+            Random::bytes_mut(&mut b);
             p = YPoint::from_bytes(&b);
         }
         p.unwrap()

@@ -1,4 +1,3 @@
-use rand::random;
 use libyobicash::crypto::hash::YDigest64;
 use libyobicash::crypto::elliptic::scalar::YScalar;
 use libyobicash::crypto::elliptic::point::YPoint;
@@ -6,13 +5,12 @@ use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::utxo::YUTXO;
+use libyobicash::utils::random::Random;
 
 #[test]
 fn utxo_new_succ() {
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let g = YPoint::default();
@@ -26,9 +24,7 @@ fn utxo_new_succ() {
 #[test]
 fn utxo_new_fail() {
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let g = YPoint::default();
@@ -48,9 +44,7 @@ fn utxo_from_output_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let res = YUTXO::from_output(&output, id, idx);
@@ -67,9 +61,7 @@ fn utxo_from_output_fail() {
     let mut output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     output.amount += YAmount::max_value();
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let res = YUTXO::from_output(&output, id, idx);
@@ -79,9 +71,7 @@ fn utxo_from_output_fail() {
 #[test]
 fn utxo_to_input_succ() {
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let g = YPoint::default();
@@ -98,9 +88,7 @@ fn utxo_to_input_succ() {
 #[test]
 fn utxo_to_input_fail() {
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let g = YPoint::default();
@@ -118,9 +106,7 @@ fn utxo_to_input_fail() {
 #[test]
 fn utxo_bytes_succ() {
     let mut _id = [0u8; 64];
-    for i in 0..64 {
-        _id[i] = random();
-    }
+    Random::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let g = YPoint::default();
@@ -136,9 +122,7 @@ fn utxo_bytes_succ() {
 #[test]
 fn utxo_bytes_fail() {
     let mut b = [0u8; 135];
-    for i in 0..135 {
-        b[i] = random();
-    }
+    Random::bytes_mut(&mut b);
     let res = YUTXO::from_bytes(&b[..]);
     assert!(res.is_err())
 }

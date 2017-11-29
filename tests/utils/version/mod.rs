@@ -1,5 +1,5 @@
-use rand::random;
 use libyobicash::utils::version::YVersion;
+use libyobicash::utils::random::Random;
 
 #[test]
 fn version_parse_succ() {
@@ -26,9 +26,7 @@ fn version_to_string_succ() {
 #[test]
 fn version_from_little_endian_succ() {
     let mut le_ver = [0u8; 24];
-    for i in 0..24 {
-        le_ver[i] = random();
-    }
+    Random::bytes_mut(&mut le_ver);
     let res = YVersion::from_little_endian(&le_ver[..]);
     assert!(res.is_ok())
 }
@@ -36,9 +34,7 @@ fn version_from_little_endian_succ() {
 #[test]
 fn version_from_little_endian_fail() {
     let mut le_ver = [0u8; 23];
-    for i in 0..23 {
-        le_ver[i] = random();
-    }
+    Random::bytes_mut(&mut le_ver);
     let res = YVersion::from_little_endian(&le_ver[..]);
     assert!(res.is_err())
 }
@@ -46,9 +42,7 @@ fn version_from_little_endian_fail() {
 #[test]
 fn version_to_little_endian_succ() {
     let mut le_ver_a = [0u8; 24];
-    for i in 0..24 {
-        le_ver_a[i] = random();
-    }
+    Random::bytes_mut(&mut le_ver_a);
     let ver = YVersion::from_little_endian(&le_ver_a[..]).unwrap();
     let le_ver_b = ver.to_little_endian().unwrap();
     assert_eq!(le_ver_a, le_ver_b)
@@ -57,9 +51,7 @@ fn version_to_little_endian_succ() {
 #[test]
 fn version_from_big_endian_succ() {
     let mut be_ver = [0u8; 24];
-    for i in 0..24 {
-        be_ver[i] = random();
-    }
+    Random::bytes_mut(&mut be_ver);
     let res = YVersion::from_big_endian(&be_ver[..]);
     assert!(res.is_ok())
 }
@@ -67,9 +59,7 @@ fn version_from_big_endian_succ() {
 #[test]
 fn version_from_big_endian_fail() {
     let mut be_ver = [0u8; 23];
-    for i in 0..23 {
-        be_ver[i] = random();
-    }
+    Random::bytes_mut(&mut be_ver);
     let res = YVersion::from_big_endian(&be_ver[..]);
     assert!(res.is_err())
 }
@@ -77,9 +67,7 @@ fn version_from_big_endian_fail() {
 #[test]
 fn version_to_big_endian_succ() {
     let mut be_ver_a = [0u8; 24];
-    for i in 0..24 {
-        be_ver_a[i] = random();
-    }
+    Random::bytes_mut(&mut be_ver_a);
     let ver = YVersion::from_big_endian(&be_ver_a[..]).unwrap();
     let be_ver_b = ver.to_big_endian().unwrap();
     assert_eq!(be_ver_a, be_ver_b)
@@ -88,9 +76,7 @@ fn version_to_big_endian_succ() {
 #[test]
 fn version_from_bytes_succ() {
     let mut bytes_ver = [0u8; 24];
-    for i in 0..24 {
-        bytes_ver[i] = random();
-    }
+    Random::bytes_mut(&mut bytes_ver);
     let res = YVersion::from_bytes(&bytes_ver[..]);
     assert!(res.is_ok())
 }
@@ -98,9 +84,7 @@ fn version_from_bytes_succ() {
 #[test]
 fn version_from_bytes_fail() {
     let mut bytes_ver = [0u8; 23];
-    for i in 0..23 {
-        bytes_ver[i] = random();
-    }
+    Random::bytes_mut(&mut bytes_ver);
     let res = YVersion::from_bytes(&bytes_ver[..]);
     assert!(res.is_err())
 }
@@ -108,9 +92,7 @@ fn version_from_bytes_fail() {
 #[test]
 fn version_to_bytes_succ() {
     let mut bytes_ver_a = [0u8; 24];
-    for i in 0..24 {
-        bytes_ver_a[i] = random();
-    }
+    Random::bytes_mut(&mut bytes_ver_a);
     let ver = YVersion::from_bytes(&bytes_ver_a[..]).unwrap();
     let bytes_ver_b = ver.to_bytes().unwrap();
     assert_eq!(bytes_ver_a, bytes_ver_b)
