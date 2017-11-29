@@ -388,7 +388,7 @@ impl YTransaction {
 
         let time = self.time.clone();
         let now = YTime::now();
-        if time < now {
+        if time > now {
             return Err(YErrorKind::InvalidTime.into())
         }
 
