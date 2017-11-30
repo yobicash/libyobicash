@@ -4,10 +4,11 @@ source ./buildsys/buildutils.sh
 
 SOURCE_ROOT_PATH=`realpath ..`
 RUST_TGT_PATH=`realpath $SOURCE_ROOT_PATH/target/debug`
+NCORES=`nproc --all`
 
 function build_crates {
     eval_with_log "build_crates()" "pushd $SOURCE_ROOT_PATH"
-    eval_with_log "build_crates()" "cargo build --color never -v -p libyobicash"
+    eval_with_log "build_crates()" "cargo build --color never -vv -j $NCORES -p libyobicash"
     BUILD_CRATES_RETVAL=$?
     eval_with_log "build_crates()" "popd"
     return $BUILD_CRATES_RETVAL
@@ -15,7 +16,7 @@ function build_crates {
 
 function build_ll_module {
     eval_with_log "build_ll_module()" "pushd $SOURCE_ROOT_PATH"
-    eval_with_log "build_ll_module()" "cargo build --color never -v -p yobipyll"
+    eval_with_log "build_ll_module()" "cargo build --color never -vv -j $NCORES -p yobipyll"
     BUILD_LLMOD_RETVAL=$?
     eval_with_log "build_ll_module()" "popd"
     return $BUILD_LLMOD_RETVAL

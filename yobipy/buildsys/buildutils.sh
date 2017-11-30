@@ -13,7 +13,19 @@ CURDEP_START=$BUILD_START
 CURDEP=None
 CURDEP_URL=None
 CURDEP_FILENAME=`mktemp`
-DEPCACHE=$HOME/.yobicash/packages
+
+YOBICASH_ROOT=$HOME/.yobicash          # where all yobicash stuff lives
+BUILDSYS_ROOT=$YOBICASH_ROOT/buildsys   # build-system specific stuff
+DEPCACHE=$BUILDSYS_ROOT/depcache        # cache of downloaded files
+DEPBUILD=$BUILDSYS_ROOT/depbuild        # where to unpack tarballs etc (i.e where we unpack for ./configure && make)
+
+YOBIPKGPREFIX=$YOBICASH_ROOT/packages/installed # where to install packages that have no other home
+
+echo "BuildSys - simple tools for installing yobicash and yobipy"
+echo "Cache location: $DEPCACHE"
+echo "Build location: $DEPBUILD"
+echo
+echo "If build fails, try clearing the contents of $DEPBUILD first, if it still fails, try doing 'rm -rf $BUILDSYS_ROOT'"
 
 function reset_log() {
     CUR_TIMESTAMP=`date -Is`
@@ -28,6 +40,18 @@ function log_entry() {
     LOGTEXT=$2
     CURTIME=`date -Is`
     echo "[$CURTIME] $LOGCONTEXT - $LOGTEXT" >>$LOGFILE
+}
+
+# unpacks a tarball or plain old .tar file
+# assumes badly behaved tarballs (i.e no prefix directory)
+# also does not overwrite existing files
+function untar_dep() {
+    TARBALL_NAME=$1
+    TARBALL_BASENAME=`echo $TARBALL_NAME | sed 's/.tar.*//'`
+    UNPACK_TARDIR="$DEPBUILD/$TARBALL_BASENAME"
+    eval_with_log "untar_dep()" "mkdir -p $UNPACK_TARDIR"
+    log_entry "untar_dep()" "Unpacking tarball $TARBALL_NAME into $UNPACK_TARDIR"
+    eval_with_log "untar_dep()" "pushd $UNPACK_TARDIR; tar kxvf $DEPCACHE/$TARBALL_NAME; popd"
 }
 
 # warning - black magic below
@@ -72,14 +96,37 @@ function start_build() {
     log_entry "start_build()" "Created temporary file for build success message: $PASSMSG"
     FAILMSG=`mktemp`
     log_entry "start_build()" "Created temporary file for build failure message: $FAILMSG"
+    eval_with_log "start_build()" "export PATH=$YOBIPKGPREFIX/installed:$PATH"
+    log_entry "start_build()" "Set path to $PATH"
 }
 
 function start_install() {
     echo "Installing..."
+    eval_with_log "start_install()" "mkdir -p $YOBIPKGPREFIX/installed/bin"
+    eval_with_log "start_install()" "export PATH=$YOBIPKGPREFIX/installed/bin:$PATH"
+    log_entry "start_install()" "Set path to $PATH"
     log_entry "start_install()" "Installation started"
 }
 
+function finish_install() {
+    echo "Installation completed successfully!"
+    log_entry "finish_install()" "Installation finished"
+}
+
+function abort_install() {
+    log_entry "abort_install()" "Aborted installation"
+
+    echo
+    echo -e '\e[31m\e[1mFailed to complete installation! \e[0m \e[39m'
+    echo
+    echo "See $LOGFILE for more details on failure\n"
+
+    log_entry "abort_install()" "Terminating script due to error"
+    exit 1
+}
+
 function start_dep_fetch() {
+    echo "Fetching dependencies..."
     log_entry "start_dep_fetch()" "Beginning dependency fetch, creating dependency cache directory"
     eval_with_log "start_dep_fetch()" "mkdir -p $HOME/.yobicash/packages"
     DEPCACHE=`realpath $HOME/.yobicash/packages`
@@ -105,7 +152,7 @@ function fetch_dep() {
     CURDEP_START=`date -Is`
 
     log_entry "fetch_dep()" "Downloading $CURDEP_FILENAME from $CURDEP_URL"
-    printf " * Fetching %-40s" "$CURDEP"
+    printf " * %-40s" "Fetching $CURDEP"
 
     CURLCMD="curl -o $DEPCACHE/$CURDEP_FILENAME -z $DEPCACHE/$CURDEP_FILENAME $CURDEP_URL"
 
@@ -193,3 +240,32 @@ function try_build_task() {
 
 
 
+function begin_install_task() {
+    CURTASK=$1
+    CURTASK_START=`date -Is`
+    log_entry "begin_install_task()" "Install task \"$CURTASK\" started"
+    printf " * %-40s" "$CURTASK"
+}
+
+function complete_install_task() {
+    log_entry "complete_install_task()" "Install task \"$CURTASK\" completed"
+    echo -e '\e[1m[\e[92m  OK  \e[39m]\e[0m'
+}
+
+function fail_install_task() {
+    log_entry "fail_install_task()" "Build task \"$CURTASK\" failed!"
+    echo  -e '\e[1m[\e[31m FAIL \e[39m]\e[0m'
+}
+
+function try_install_task() {
+    begin_install_task $1
+    printf "[%s] Running command: %s\n" "`date -Is`" "$2" >>$LOGFILE
+    "$2" ; TASK_RETVAL=$?
+    log_entry "try_install_task()" "RETVAL=$TASK_RETVAL"
+    if [[ $TASK_RETVAL -eq 0 ]]; then
+       complete_install_task
+    else
+       fail_install_task
+       abort_install
+    fi
+}
