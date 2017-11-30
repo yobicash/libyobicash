@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-get_apt_deps build-essential libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc pkg-config make git python3-dev python3-pip curl libffi-dev libsqlite3-dev libbfd-dev libiberty-dev
+get_apt_deps build-essential libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc pkg-config make git python3-dev python3-pip curl libffi-dev libsqlite3-dev binutils-dev libiberty-dev
 
 start_dep_fetch
 fetch_dep "Rust installer" "https://sh.rustup.rs" "rust_installer.sh"
