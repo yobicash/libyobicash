@@ -3,7 +3,8 @@ use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use utils::version::YVersion;
 use utils::time::YTime;
-use crypto::hash::{YHash64, YDigest64};
+use crypto::hash::digest::YDigest64;
+use crypto::hash::sha::YSHA512;
 use crypto::elliptic::scalar::YScalar;
 use input::YInput;
 use output::YOutput;
@@ -50,7 +51,7 @@ impl YTransaction {
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
             let out = outputs[i].clone();
-            let refs = YHash64::hash(&out.sender.to_bytes()[..]);
+            let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
             outputs_refs.push(refs);
         }
         outputs_refs.sort();
@@ -202,7 +203,7 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
-        Ok(YHash64::hash(buf.as_slice()))
+        Ok(YSHA512::hash(buf.as_slice()))
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {

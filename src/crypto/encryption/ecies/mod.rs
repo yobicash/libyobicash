@@ -4,7 +4,7 @@ use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::symmetric::YSymmetricEncryption;
 use crypto::mac::{YMAC, YMACCode};
 use crypto::key::YKey64;
-use crypto::hash::YHash64;
+use crypto::hash::sha::YSHA512;
 
 pub struct YECIES(pub YSecretKey);
 
@@ -23,7 +23,7 @@ impl YECIES {
 
     pub fn shared_key(&self, other: &YPublicKey) -> YResult<YKey64> {
         let _key = self.0.shared_key(other)?;
-        let h = YHash64::hash(_key.to_bytes().as_slice());
+        let h = YSHA512::hash(_key.to_bytes().as_slice());
         YKey64::from_bytes(h.to_bytes().as_slice())
     }
 

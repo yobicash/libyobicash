@@ -1,4 +1,4 @@
-use libyobicash::crypto::hash::YDigest64;
+use libyobicash::crypto::hash::digest::YDigest64;
 use libyobicash::crypto::elliptic::scalar::YScalar;
 use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;

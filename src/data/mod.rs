@@ -1,7 +1,8 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
-use crypto::hash::{YHash64, YDigest64};
+use crypto::hash::digest::YDigest64;
+use crypto::hash::sha::YSHA512;
 use crypto::mac::YMACCode;
 use crypto::elliptic::keys::{YSecretKey, YPublicKey};
 use crypto::encryption::ecies::YECIES;
@@ -23,7 +24,7 @@ impl YData {
         }
         let ecies = YECIES::new(sk.clone());
         let (data, tag) = ecies.encrypt_and_authenticate(other, plain)?;
-        let digest = YHash64::hash(data.as_slice());
+        let digest = YSHA512::hash(data.as_slice());
         Ok(YData {
             data: data,
             checksum: digest,
@@ -103,7 +104,7 @@ impl YData {
     }
 
     pub fn check(&self) -> YResult<()> {
-        let digest = YHash64::hash(self.data.as_slice());
+        let digest = YSHA512::hash(self.data.as_slice());
         if self.checksum != digest {
             return Err(YErrorKind::InvalidChecksum.into());
         }

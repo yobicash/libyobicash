@@ -1,7 +1,7 @@
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
-use crypto::hash::YDigest64;
+use crypto::hash::digest::YDigest64;
 use crypto::elliptic::scalar::YScalar;
 use crypto::elliptic::point::YPoint;
 use crypto::elliptic::keys::*;
