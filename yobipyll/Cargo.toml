@@ -2,10 +2,14 @@
 name = "yobipyll"
 version = "0.1.0"
 authors = ["Gareth Nelson <gareth@yobicash.org>"]
+build = "build.rs"
 
 [lib]
 name = "yobipyll"
 crate-type = ["cdylib"]
+
+[build-dependencies]
+built = "0.1"
 
 [dependencies.libyobicash]
 path = ".."

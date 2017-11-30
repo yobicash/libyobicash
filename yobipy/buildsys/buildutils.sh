@@ -59,7 +59,7 @@ function eval_with_log() {
     rm -f $CMD_OUT
     wait
 
-    log_entry "$LOGCONTEXT" "Command finished executing with exitcode $RETVAL"
+    log_entry "$LOGCONTEXT" "Command finished executing with exitcode $EVAL_RETVAL"
     rm -rf $TEMP_DIR
 
     return $EVAL_RETVAL

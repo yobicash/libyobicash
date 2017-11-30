@@ -15,7 +15,7 @@ function build_crates {
 
 function build_ll_module {
     eval_with_log "build_ll_module()" "pushd $SOURCE_ROOT_PATH"
-    eval_with_log "build_ll_module()" "cargo build --color never -v -p libyobicash"
+    eval_with_log "build_ll_module()" "cargo build --color never -v -p yobipyll"
     BUILD_LLMOD_RETVAL=$?
     eval_with_log "build_ll_module()" "popd"
     return $BUILD_LLMOD_RETVAL
@@ -34,10 +34,11 @@ function test_yobipy {
     eval_with_log "test_yobipy()" "export PYTHONPATH=$RUST_TGT_PATH:$PYTHONPATH"
     
     PYTEST_TMP=`mktemp`
-    eval_with_log "test_yobipy()" "pytest -vv --cov=yobipy --cov-report term --color=yes tests &>>$PYTEST_TMP"
+    eval_with_log "test_yobipy()" "pytest -vv --cov=yobipy --cov-report html --cov-report term --color=yes tests &>>$PYTEST_TMP"
     TEST_YOBIPY_RETVAL=$?
 
-    eval_with_log "test_yobipy()" "grep -A5000 -m1 coverage $PYTEST_TMP >>$PASSMSG"
+    printf "\n\npytest code coverage for yobipy:\n" >>$PASSMSG
+    eval_with_log "test_yobipy()" "grep -A5000 -m1 coverage $PYTEST_TMP | grep -v 'passed in' >>$PASSMSG"
     eval_with_log "test_yobipy()" "grep -A5000 -m1 FAILURE $PYTEST_TMP >>$FAILMSG"
 
     eval_with_log "test_yobipy()" "rm -f $PYTEST_TMP"
