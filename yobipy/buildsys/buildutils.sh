@@ -21,6 +21,10 @@ DEPBUILD=$BUILDSYS_ROOT/depbuild        # where to unpack tarballs etc (i.e wher
 
 YOBIPKGPREFIX=$YOBICASH_ROOT/packages/installed # where to install packages that have no other home
 
+mkdir -p $DEPCACHE >/dev/null
+mkdir -p $DEPBUILD >/dev/null
+mkdir -p $YOBIPKGPREFIX >/dev/null
+
 echo "BuildSys - simple tools for installing yobicash and yobipy"
 echo "Cache location: $DEPCACHE"
 echo "Build location: $DEPBUILD"
@@ -54,6 +58,7 @@ function untar_dep() {
     log_entry "untar_dep()" "Unpacking tarball $TARBALL_NAME into $UNPACK_TARDIR"
     eval_with_log "untar_dep()" "pushd $UNPACK_TARDIR; tar kxvf $DEPCACHE/$TARBALL_NAME; popd"
 }
+
 
 # warning - black magic below
 # do not call _prefix_time directly
@@ -137,14 +142,15 @@ function start_build() {
     log_entry "start_build()" "Created temporary file for build success message: $PASSMSG"
     FAILMSG=`mktemp`
     log_entry "start_build()" "Created temporary file for build failure message: $FAILMSG"
-    eval_with_log "start_build()" "export PATH=$YOBIPKGPREFIX/installed:$PATH"
+    eval_with_log "start_build()" "export PATH=$YOBIPKGPREFIX/bin:$PATH"
     log_entry "start_build()" "Set path to $PATH"
+    eval_with_log "start_build()" "export LD_LIBRARY_PATH=$YOBIPKGPREFIX/lib:$LD_LIBRARY_PATH"
 }
 
 function start_install() {
     echo "Installing..."
-    eval_with_log "start_install()" "mkdir -p $YOBIPKGPREFIX/installed/bin"
-    eval_with_log "start_install()" "export PATH=$YOBIPKGPREFIX/installed/bin:$PATH"
+    eval_with_log "start_install()" "mkdir -p $YOBIPKGPREFIX/bin"
+    eval_with_log "start_install()" "export PATH=$YOBIPKGPREFIX/bin:$PATH"
     log_entry "start_install()" "Set path to $PATH"
     log_entry "start_install()" "Installation started"
 }
@@ -169,8 +175,7 @@ function abort_install() {
 function start_dep_fetch() {
     echo "Fetching dependencies..."
     log_entry "start_dep_fetch()" "Beginning dependency fetch, creating dependency cache directory"
-    eval_with_log "start_dep_fetch()" "mkdir -p $HOME/.yobicash/packages"
-    DEPCACHE=`realpath $HOME/.yobicash/packages`
+    eval_with_log "start_dep_fetch()" "mkdir -p $DEPCACHE"
     log_entry "start_dep_fetch()" "Fetching dependencies into $DEPCACHE"
 }
 
@@ -201,6 +206,30 @@ function fetch_dep() {
 
     if [ $? -eq 0 ]; then
        END_TIMESTAMP=`date -Is`
+       echo -e '\e[1m[\e[92m  OK  \e[39m]\e[0m'
+       log_entry "fetch_dep()" "Finished downloading \"$CURDEP\""
+    else
+       echo  -e '\e[1m[\e[31m FAIL \e[39m]\e[0m'
+       abort_dep_fetch
+    fi
+}
+
+
+function fetch_git() {
+    CURDEP=$1
+    CURDEP_URL=$2
+    GIT_DIRNAME=$3
+    CURDEP_START=`date -Is`
+
+    log_entry "fetch_git()" "Downloading from git @ $CURDEP_URL into $DEPCACHE/$GIT_DIRNAME"
+    printf " * %-40s" "Fetching $CURDEP"
+
+    eval_with_log "fetch_git()" "rm -rf $DEPCACHE/$GIT_DIRNAME"
+    GITCMD="pushd $DEPCACHE; git clone $CURDEP_URL $GIT_DIRNAME; popd"
+
+    eval_with_log "fetch_git()" "$GITCMD"
+
+    if [ $? -eq 0 ]; then
        echo -e '\e[1m[\e[92m  OK  \e[39m]\e[0m'
        log_entry "fetch_dep()" "Finished downloading \"$CURDEP\""
     else

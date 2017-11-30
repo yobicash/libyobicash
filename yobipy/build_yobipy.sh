@@ -7,6 +7,7 @@ NCORES=`nproc --all`
 
 function build_crates {
     eval_with_log "build_crates()" "pushd $SOURCE_ROOT_PATH"
+    eval_with_log "build_crates()" "cargo clean"
     eval_with_log "build_crates()" "cargo build --color never -vv -j $NCORES -p libyobicash"
     BUILD_CRATES_RETVAL=$?
     eval_with_log "build_crates()" "popd"
@@ -25,6 +26,9 @@ function test_libyobicash {
     eval_with_log "test_libyobicash()" "pushd $SOURCE_ROOT_PATH"
     eval_with_log "test_libyobicash()" "RUST_BACKTRACE=1 cargo test --color never -v"
     TEST_LIBYOBICASH_RETVAL=$?
+    eval_with_log "test_libyobicash()" "cargo test --no-run"
+    eval_with_log "test_libyobicash()" "mkdir -p htmlcov/libyobicash; kcov htmlcov/libyobicash target/debug/libyobicash*"
+    eval_with_log "test_libyobicash()" "mkdir -p htmlcov/libyobicash; kcov htmlcov/libyobicash target/debug/mod*"
     eval_with_log "test_libyobicash()" "popd"
     return $TEST_LIBYOBICASH_RETVAL
 }

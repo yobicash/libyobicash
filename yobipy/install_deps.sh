@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-get_apt_deps build-essential libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc pkg-config make git python3-dev python3-pip curl libffi-dev libsqlite3-dev
+get_apt_deps build-essential libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc pkg-config make git python3-dev python3-pip curl libffi-dev libsqlite3-dev libbfd-dev libiberty-dev
 
 start_dep_fetch
 fetch_dep "Rust installer" "https://sh.rustup.rs" "rust_installer.sh"
 fetch_dep "Python 3.6.2" "https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tar.xz" "Python-3.6.2.tar.xz"
+fetch_git "Kcov" "https://github.com/SimonKagstrom/kcov.git" "kcov"
 finish_dep_fetch
 
 function install_rust_core() {
@@ -52,6 +53,19 @@ function compile_python() {
    return $COMPILE_RETVAL
 }
 
+function compile_kcov() {
+   eval_with_log "compile_kcov()" "mkdir -p $DEPBUILD/kcov"
+   eval_with_log "compile_kcov()" "pushd $DEPBUILD/kcov"
+   eval_with_log "compile_kcov()" "cmake -DCMAKE_INSTALL_PREFIX:PATH=$YOBIPKGPREFIX $DEPCACHE/kcov"
+   if [ ! $? -eq 0 ]; then
+      return $?
+   fi
+   NCORES=`nproc --all`
+   eval_with_log "compile_kcov()" "make -j$NCORES install"
+   eval_with_log "compile_kcov()" "cp $DEPBUILD/kcov/src/*.so $YOBIPKGPREFIX/lib"
+   eval_with_log "compile_kcov()" "popd"
+}
+
 function install_pip() {
    eval_with_log "install_pip()" "$YOBIPKGPREFIX/bin/python3.6 -m pip install --upgrade pip pipenv"
 }
@@ -65,6 +79,7 @@ try_install_task "Install rust core" install_rust_core
 try_install_task "Install rust nightly" install_rust_nightly
 try_install_task "Unpack and configure Python 3.6.2" configure_python
 try_install_task "Compile and install Python 3.6.2" compile_python
+try_install_task "Compile and install Kcov" compile_kcov
 try_install_task "Install latest pip and pipenv" install_pip
 try_install_task "Install packages from Pipfile" install_pip_packages
 finish_install
