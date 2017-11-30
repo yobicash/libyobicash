@@ -1,6 +1,6 @@
-use rand::random;
 use libyobicash::crypto::elliptic::scalar::*;
 use libyobicash::crypto::elliptic::point::*;
+use libyobicash::utils::random::Random;
 
 #[test]
 fn point_from_bytes_succ() {
@@ -12,9 +12,7 @@ fn point_from_bytes_succ() {
 #[test]
 fn point_from_bytes_fail() {
     let mut b = [0u8; 64];
-    for i in 0..64 {
-      b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YPoint::from_bytes(&b[..]);
     assert!(res.is_err())
 }

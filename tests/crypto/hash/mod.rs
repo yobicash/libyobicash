@@ -1,12 +1,10 @@
-use rand::random;
 use libyobicash::crypto::hash::{YHash32, YHash64, YDigest32, YDigest64};
+use libyobicash::utils::random::Random;
 
 #[test]
 fn digest32_from_bytes_succ() {
     let mut b = [0u8; 32];
-    for i in 0..32 {
-        b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YDigest32::from_bytes(&b[..]);
     assert!(res.is_ok())
 }
@@ -14,9 +12,7 @@ fn digest32_from_bytes_succ() {
 #[test]
 fn digest32_from_bytes_fail() {
     let mut b = [0u8; 64];
-    for i in 0..64 {
-        b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YDigest32::from_bytes(&b[..]);
     assert!(res.is_err())
 }
@@ -60,9 +56,7 @@ fn hash32_test_vectors_succ() {
 #[test]
 fn digest64_from_bytes_succ() {
     let mut b = [0u8; 64];
-    for i in 0..64 {
-        b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YDigest64::from_bytes(&b[..]);
     assert!(res.is_ok())
 }
@@ -70,9 +64,7 @@ fn digest64_from_bytes_succ() {
 #[test]
 fn digest64_from_bytes_fail() {
     let mut b = [0u8; 32];
-    for i in 0..32 {
-        b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YDigest64::from_bytes(&b[..]);
     assert!(res.is_err())
 }

@@ -1,12 +1,10 @@
-use rand::random;
 use libyobicash::crypto::elliptic::scalar::*;
+use libyobicash::utils::random::Random;
 
 #[test]
 fn scalar_from_bytes_succ() {
     let mut b = [0u8; 32];
-    for i in 0..32 {
-      b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YScalar::from_bytes(&b[..]);
     assert!(res.is_ok())
 }
@@ -14,9 +12,7 @@ fn scalar_from_bytes_succ() {
 #[test]
 fn scalar_from_bytes_fail() {
     let mut b = [0u8; 64];
-    for i in 0..64 {
-      b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let res = YScalar::from_bytes(&b[..]);
     assert!(res.is_err())
 }
@@ -24,9 +20,7 @@ fn scalar_from_bytes_fail() {
 #[test]
 fn scalar_to_bytes_succ() {
     let mut b = [0u8; 32];
-    for i in 0..32 {
-        b[i] = random::<u8>();
-    }
+    Random::bytes_mut(&mut b);
     let scalar = YScalar::from_bytes(&b[..]).unwrap();
     let mut c = [0u8; 32];
     let scalar_buf = scalar.to_bytes();

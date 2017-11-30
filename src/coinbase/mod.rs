@@ -4,48 +4,21 @@ use errors::*;
 use utils::version::YVersion;
 use utils::time::YTime;
 use crypto::hash::{YHash64, YDigest64};
-use crypto::elliptic::scalar::YScalar;
-use input::YInput;
 use output::YOutput;
-use utxo::YUTXO;
 use std::io::{Write, Cursor, Read};
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
-pub struct YTransaction {
+pub struct YCoinbase {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
     pub height: u64,
     pub activation: Option<YTime>,
-    pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
 }
 
-impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, height: u64, activation: Option<YTime>) -> YResult<YTransaction> {
-        let utxos_len = utxos.len();
-        if xs.len() != utxos_len {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        
-        let mut xs_copy = xs.clone();
-        xs_copy.dedup();
-        if xs_copy.len() != utxos_len {
-            return Err(YErrorKind::DuplicateItem.into());
-        }
-        
-        let mut utxos_refs = Vec::new();
-        for i in 0..utxos_len {
-            let utxo = utxos[i].clone();
-            let refs = (utxo.id, utxo.idx);
-            utxos_refs.push(refs);
-        }
-        utxos_refs.sort();
-        utxos_refs.dedup();
-        if utxos_refs.len() != utxos_len {
-            return Err(YErrorKind::DuplicateItem.into());
-        }
-        
+impl YCoinbase {
+    pub fn new(outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YCoinbase> {
         let outputs_len = outputs.len();
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
@@ -59,10 +32,6 @@ impl YTransaction {
             return Err(YErrorKind::DuplicateItem.into());
         }
         
-        if height == 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-        
         let now = YTime::now();
         if let Some(_activation) = activation.clone() {
             if _activation <= now {
@@ -72,94 +41,19 @@ impl YTransaction {
 
         let version = YVersion::default();
         let id = YDigest64::default();
-        let mut inputs = Vec::new();
-        let mut uxs = Vec::new();
-        for i in 0..utxos_len {
-            let x = xs[i];
-            let u = YScalar::random();
-            uxs.push(u);
-            let c = YScalar::zero();
-            let utxo = utxos[i].clone();
-            inputs.push(utxo.to_input(x, u, c)?);
-        }
         
-        let mut tx = YTransaction {
+        let mut cb = YCoinbase {
             id: id,
             version: version,
-            height: height,
+            height: 0,
             time: now,
             activation: activation,
-            inputs: inputs.clone(),
             outputs: outputs.clone(),
         };
-        
-        let inputs_len = inputs.len();
-        for i in 0..inputs_len {
-            let x = xs[i];
-            let u = uxs[i];
-            let c = tx.calc_challenge(i as u32)?;
-            let r = &u + &(&x*&c);
-            tx.inputs[i].c = c;
-            tx.inputs[i].r = r;
-        }
 
-        tx.id = tx.calc_id()?;
+        cb.id = cb.calc_id()?;
 
-        Ok(tx)
-    }
-
-    pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {
-        // a) the idx input is substituted with a default YInput
-        // b) all the non-idx inputs' challenges are substituted with the default YScalar
-        
-        let mut buf = Vec::new();
-
-        let version_buf = self.version.to_bytes()?;
-        buf.write(&version_buf[..])?;
-
-        buf.write_u64::<BigEndian>(self.height)?;
-
-        let time_buf = self.time.to_bytes();
-        buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
-
-        let inputs = self.inputs.clone();
-        let inputs_len = inputs.len();
-
-        buf.write_u32::<BigEndian>(inputs_len as u32)?;
-
-        for i in 0..inputs_len {
-            let mut input = inputs[i];
-            if i == idx as usize {
-                input = YInput::default();
-            } else {
-                input.c = YScalar::default();
-            }
-            let input_buf = input.to_bytes()?;
-            buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
-            buf.write(input_buf.as_slice())?;
-        }
-
-        let outputs = self.outputs.clone();
-        let outputs_len = outputs.len();
-
-        buf.write_u32::<BigEndian>(outputs_len as u32)?;
-
-        for i in 0..outputs_len {
-            let output_buf = outputs[i].to_bytes()?;
-            buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
-            buf.write(output_buf.as_slice())?;
-        }
-        
-        let c = YScalar::hash_from_bytes(buf.as_slice());
-        Ok(c)
+        Ok(cb)
     }
 
     pub fn calc_id(&self) -> YResult<YDigest64> {
@@ -179,17 +73,6 @@ impl YTransaction {
             buf.write(&activation_buf[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
-        }
-
-        let inputs = self.inputs.clone();
-        let inputs_len = inputs.len();
-
-        buf.write_u32::<BigEndian>(inputs_len as u32)?;
-
-        for i in 0..inputs_len {
-            let input_buf = inputs[i].to_bytes()?;
-            buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
-            buf.write(input_buf.as_slice())?;
         }
 
         let outputs = self.outputs.clone();
@@ -227,15 +110,6 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(0)?;
         }
 
-        let inputs = self.inputs.clone();
-        let inputs_len = inputs.len();
-        buf.write_u32::<BigEndian>(inputs_len as u32)?;
-        for i in 0..inputs_len {
-            let input_buf = inputs[i].to_bytes()?;
-            buf.write_u32::<BigEndian>(input_buf.len() as u32)?;
-            buf.write(input_buf.as_slice())?;
-        }
-
         let outputs = self.outputs.clone();
         let outputs_len = outputs.len();
         buf.write_u32::<BigEndian>(outputs_len as u32)?;
@@ -248,12 +122,12 @@ impl YTransaction {
         Ok(buf)
     }
 
-    pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
+    pub fn from_bytes(b: &[u8]) -> YResult<YCoinbase> {
         if b.len() < 104 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
-        let mut tx = YTransaction::default();
+        let mut tx = YCoinbase::default();
 
         let mut reader = Cursor::new(b);
 
@@ -278,19 +152,6 @@ impl YTransaction {
             tx.activation = Some(YTime::from_bytes(&activation_buf[..])?);
         }
 
-        let inputs_len = reader.read_u32::<BigEndian>()? as usize;
-
-        for _ in 0..inputs_len {
-            let input_len = reader.read_u32::<BigEndian>()? as usize;
-            let mut input_buf = Vec::new();
-            for _ in 0..input_len {
-                input_buf.push(0);
-            }
-            reader.read_exact(&mut input_buf.as_mut_slice())?;
-            let input = YInput::from_bytes(input_buf.as_slice())?;
-            tx.inputs.push(input);
-        }
-
         let outputs_len = reader.read_u32::<BigEndian>()? as usize;
 
         for _ in 0..outputs_len {
@@ -309,37 +170,20 @@ impl YTransaction {
         Ok(tx)
     }
 
-    pub fn from_hex(s: &str) -> YResult<YTransaction> {
+    pub fn from_hex(s: &str) -> YResult<YCoinbase> {
         let buf = s.from_hex()?;
-        YTransaction::from_bytes(buf.as_slice())
+        YCoinbase::from_bytes(buf.as_slice())
     }
 
     pub fn to_hex(&self) -> YResult<String> {
         Ok(self.to_bytes()?.to_hex())
     }
 
-    pub fn verify_input(&self, idx: u32, output: &YOutput) -> YResult<bool> {
-        if self.inputs.len() < 1 + idx as usize {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        Ok(self.inputs[idx as usize].verify(output))
-    }
-
-    pub fn verify(&self, outputs: &Vec<YOutput>) -> YResult<bool> {
-        let len = self.inputs.len();
-        if outputs.len() != len {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        for idx in 0..len {
-            let verified = self.verify_input(idx as u32, &outputs[idx as usize])?;
-            if !verified {
-                return Ok(false);
-            }
-        }
+    pub fn verify(&self) -> YResult<bool> {
         Ok(true)
     }
 
-    pub fn drop_output(mut self, idx: u32) -> YResult<YTransaction> {
+    pub fn drop_output(mut self, idx: u32) -> YResult<YCoinbase> {
         let i = idx as usize;
         if self.outputs.len() - 1 < i {
             return Err(
@@ -350,7 +194,7 @@ impl YTransaction {
         Ok(self)
     }
 
-    pub fn drop_all(mut self) -> YTransaction {
+    pub fn drop_all(mut self) -> YCoinbase {
         for i in 0..self.outputs.len() {
             self.outputs[i] = self.outputs[i].clone().drop();
         }
@@ -382,7 +226,7 @@ impl YTransaction {
             return Err(YErrorKind::InvalidVersion(v).into());
         }
         
-        if self.height == 0 {
+        if self.height != 0 {
             return Err(YErrorKind::InvalidHeight.into());
         }
 
@@ -395,13 +239,6 @@ impl YTransaction {
         if let Some(_activation) = self.activation.clone() {
             if _activation <= time {
                 return Err(YErrorKind::InvalidTime.into())
-            }
-        }
-
-        for i in 0..self.inputs.len() {
-            let input = self.inputs[i].clone();
-            if input.c != self.calc_challenge(i as u32)? {
-                return Err(YErrorKind::InvalidChallenge(i).into());
             }
         }
 

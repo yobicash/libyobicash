@@ -10,3 +10,4 @@ mod input;
 mod output;
 mod utxo;
 mod transaction;
+mod coinbase;
