@@ -4,9 +4,10 @@ This directory contains the python bindings for libyobicash, also known as yobip
 
 ## Installing - the easy way
 
- 1 - Install the dependencies using install_deps.sh, this will install rust, python and all other required tools+deps into your home directory.
- 2 - Build everything using build_yobipy.sh - this script will also run the test suites for all components, upon error check build.log.
- 3 - A python package will be built and a virtualenv configured for you, to use the virtualenv simply type "pipenv shell" and use python 3.6 to run your application code.
+ 1 - Load the build tools: source ./buildsys/buildutils.sh
+ 2 - Install the dependencies using install_deps.sh, this will install rust, python and all other required tools+deps into your home directory.
+ 3 - Build everything using build_yobipy.sh - this script will also run the test suites for all components, upon error check build.log.
+ 4 - A python package will be built and a virtualenv configured for you, to use the virtualenv simply type "pipenv shell" and use python 3.6 to run your application code.
 
 In summary:
 ```
@@ -15,6 +16,8 @@ In summary:
 pipenv shell
 python3.6 /path/to/your/app/code.py
 ```
+
+Or even simpler, just run ./build.sh
 
 ## Manual installation
 

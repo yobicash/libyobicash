@@ -26,6 +26,7 @@ echo "Cache location: $DEPCACHE"
 echo "Build location: $DEPBUILD"
 echo
 echo "If build fails, try clearing the contents of $DEPBUILD first, if it still fails, try doing 'rm -rf $BUILDSYS_ROOT'"
+echo "Note that if you are running buildutils.sh directly, nothing will happen: run install_deps.sh and then build_yobipy.sh"
 
 function reset_log() {
     CUR_TIMESTAMP=`date -Is`
@@ -87,6 +88,46 @@ function eval_with_log() {
     rm -rf $TEMP_DIR
 
     return $EVAL_RETVAL
+}
+
+function count_words() {
+    echo $#;
+}
+
+function get_apt_deps() {
+    if [ $UID -eq 0 ]; then
+       log_entry "get_apt_deps()" "Installing dependencies via apt-get"
+       eval_with_log "get_apt_deps()" "apt-get update && apt-get install -y $*"
+    else
+       for pkg_name in $*
+       do
+	  CHECK_PKGS="$pkg_name $CHECK_PKGS"
+       done
+       log_entry "get_apt_deps()" "Not running as root, manually checking for packages to install out of $CHECK_PKGS"
+       for pkg_name in $*
+       do
+           dpkg -s $pkg_name &>/dev/null
+	   if [ ! $? -eq 0 ]; then
+              MISSING_PACKAGES="$pkg_name $MISSING_PACKAGES"
+	      log_entry "get_apt_geps()" "Package $pkg_name not installed, will prompt user to install"
+	   fi
+       done
+       MISSING_COUNT=`count_words $MISSING_PACKAGES`
+       if [ ! $MISSING_COUNT -eq 0 ]; then
+	       printf "BuildSys needs these packages installed:\n"
+	       echo
+	       echo $MISSING_PACKAGES | xargs -n 1 printf "\t %s\n" 
+	       echo
+	       echo "Please open another terminal, and use the following commands:"
+	       echo
+	       printf "\t sudo apt-get update\n"
+	       printf "\t sudo apt-get install $MISSING_PACKAGES\n"
+	       echo
+	       echo "If these packages are already installed, or once you have finished installing them, hit enter to continue"
+               echo "Please note that BuildSys will not recheck, so please ensure the packages listed are installed before you hit enter"
+	       read
+       fi
+    fi
 }
 
 function start_build() {

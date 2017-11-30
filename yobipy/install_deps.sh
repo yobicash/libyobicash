@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-source ./buildsys/buildutils.sh 
+get_apt_deps build-essential libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc pkg-config make git python3-dev python3-pip curl libffi-dev libsqlite3-dev
 
-reset_log
 start_dep_fetch
 fetch_dep "Rust installer" "https://sh.rustup.rs" "rust_installer.sh"
 fetch_dep "Python 3.6.2" "https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tar.xz" "Python-3.6.2.tar.xz"

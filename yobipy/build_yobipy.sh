@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-source ./buildsys/buildutils.sh 
 
 SOURCE_ROOT_PATH=`realpath ..`
 RUST_TGT_PATH=`realpath $SOURCE_ROOT_PATH/target/debug`
@@ -46,7 +45,6 @@ function test_yobipy {
     return $TEST_YOBIPY_RETVAL
 }
 
-reset_log
 start_build
 try_build_task "Build libyobicash" build_crates
 try_build_task "Build low-level extension module" build_ll_module
