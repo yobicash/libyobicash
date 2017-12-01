@@ -1,4 +1,4 @@
-use rand::random;
+use rand::{random, thread_rng, sample};
 
 pub struct Random;
 
@@ -11,20 +11,14 @@ impl Random {
         random::<u64>()
     }
 
-    pub fn u32_range(len: u32) -> Vec<u32> {
-        let mut v = Vec::new();
-        for _ in 0..len {
-            v.push(random::<u32>());
-        }
-        v
+    pub fn u32_range(from: u32, to: u32) -> u32 {
+        let mut rng = thread_rng();
+        sample(&mut rng, from..to, 1)[0]
     }
 
-    pub fn u64_range(len: u32) -> Vec<u64> {
-        let mut v = Vec::new();
-        for _ in 0..len {
-            v.push(random::<u64>());
-        }
-        v
+    pub fn u64_range(from: u64, to: u64) -> u64 {
+        let mut rng = thread_rng();
+        sample(&mut rng, from..to, 1)[0]
     }
 
     pub fn bytes_mut(sl: &mut [u8]) {

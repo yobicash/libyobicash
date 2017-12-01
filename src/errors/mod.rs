@@ -86,5 +86,9 @@ error_chain! {
     InvalidBalloonDelta {
         description("Invalid Balloon delta parameter")
     }
+
+    InvalidBalloonTCost {
+        description("Invalid Balloon t cost parameter")
+    }
   }
 }
