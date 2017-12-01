@@ -82,5 +82,9 @@ error_chain! {
     InvalidActivation {
         description("Invalid activation")
     }
+
+    InvalidBalloonDelta {
+        description("Invalid Balloon delta parameter")
+    }
   }
 }

@@ -28,6 +28,22 @@ impl YDigest32 {
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
     }
+
+    pub fn to_u32(&self) -> u32 {
+        let mut n = self.0[0] as u32;
+        for i in 1..32 {
+            n ^= self.0[i] as u32;
+        }
+        n
+    }
+
+    pub fn to_u64(&self) -> u64 {
+        let mut n = self.0[0] as u64;
+        for i in 1..64 {
+            n ^= self.0[i] as u64;
+        }
+        n
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
@@ -54,5 +70,21 @@ impl YDigest64 {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
+    }
+
+    pub fn to_u32(&self) -> u32 {
+        let mut n = self.0[0] as u32;
+        for i in 1..32 {
+            n ^= self.0[i] as u32;
+        }
+        n
+    }
+
+    pub fn to_u64(&self) -> u64 {
+        let mut n = self.0[0] as u64;
+        for i in 1..64 {
+            n ^= self.0[i] as u64;
+        }
+        n
     }
 }
