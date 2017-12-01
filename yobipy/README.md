@@ -2,9 +2,26 @@
 
 This directory contains the python bindings for libyobicash, also known as yobipy.
 
-## Setting up
+## Installing - the easy way
 
-First, build both libyobicash and yobipy_ll:
+ 1 - Load the build tools: source ./buildsys/buildutils.sh
+ 2 - Install the dependencies using install_deps.sh, this will install rust, python and all other required tools+deps into your home directory.
+ 3 - Build everything using build_yobipy.sh - this script will also run the test suites for all components, upon error check build.log.
+ 4 - A python package will be built and a virtualenv configured for you, to use the virtualenv simply type "pipenv shell" and use python 3.6 to run your application code.
+
+In summary:
+```
+./install_deps.sh
+./build_yobipy.sh
+pipenv shell
+python3.6 /path/to/your/app/code.py
+```
+
+Or even simpler, just run ./build.sh
+
+## Manual installation
+
+First, build both libyobicash and yobipy_ll by running cargo in the root of this repo:
 
 ```
  cargo build --all
@@ -27,4 +44,5 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> 
 ```
 
-Now you can use the python libs to work with libyobicash from python.
+You can then either use pip+pipenv to setup the python module in a virtualenv, or add your checkout of yobipy to your PYTHONPATH and install the
+python modules listed in Pipfile manually.
