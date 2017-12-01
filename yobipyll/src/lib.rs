@@ -3,6 +3,12 @@
 extern crate libyobicash;
 extern crate pyo3;
 
+// include build metadata
+pub mod built_info {
+   include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+
+
 use pyo3::prelude::*;
 
 ///
@@ -13,6 +19,12 @@ use pyo3::prelude::*;
 #[py::modinit(libyobipyll)]
 fn init_mod(py: Python, m: &PyModule) -> PyResult<()> {
     
+    #[pyfn(m, "get_ll_version")]
+    fn get_ll_version_py() -> PyResult<String> {
+       let out = built_info::PKG_VERSION.to_string();
+       Ok(out)
+    }
+
     #[pyfn(m, "get_libyobicash_version")]
     fn get_libyobicash_version_py() -> PyResult<String> {
        let out = libyobicash::VERSION.to_string();
