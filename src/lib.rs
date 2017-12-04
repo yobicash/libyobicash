@@ -27,6 +27,7 @@ pub mod output;
 pub mod input;
 pub mod utxo;
 pub mod transaction;
+pub mod proof;
 pub mod coinbase;
 
 pub const VERSION: &str = "0.1.0";

@@ -10,4 +10,5 @@ mod input;
 mod output;
 mod utxo;
 mod transaction;
+mod proof;
 mod coinbase;
