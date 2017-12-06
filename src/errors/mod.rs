@@ -87,8 +87,28 @@ error_chain! {
         description("Invalid Balloon delta parameter")
     }
 
+    InvalidBalloonSCost {
+        description("Invalid Balloon s cost parameter")
+    }
+
     InvalidBalloonTCost {
         description("Invalid Balloon t cost parameter")
+    }
+
+    InvalidDifficulty {
+        description("Invalid difficulty")
+    }
+
+    PoWDigestNotFound {
+        description("PoW digest not found")
+    }
+
+    IncompletePoW {
+        description("Incomplete PoW")
+    }
+
+    InvalidPoWSolution {
+        description("Invalid PoW solution")
     }
   }
 }

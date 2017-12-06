@@ -3,27 +3,35 @@ use crypto::hash::digest::*;
 use crypto::hash::sha::*;
 use errors::*;
 
-pub type YBalloonBlockBuffer32 = Vec<YDigest32>;
-
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub struct YBalloon256 {
-    pub salt: YDigest32,
+pub struct YBalloonParams {
     pub s_cost: u32,
     pub t_cost: u32,
     pub delta: u32,
 }
 
-impl YBalloon256 {
-    pub fn new(
-        salt: YDigest32,
-        s_cost: u32,
-        t_cost: u32,
-        delta: u32) -> YResult<YBalloon256> {
+impl Default for YBalloonParams {
+    fn default() -> YBalloonParams {
+        YBalloonParams {
+            s_cost: 1,
+            t_cost: 1,
+            delta: 3,
+        }
+    }
+}
+
+impl YBalloonParams {
+    pub fn new(s_cost: u32, t_cost: u32, delta: u32) -> YResult<YBalloonParams> {
+        if s_cost == 0 {
+            return Err(YErrorKind::InvalidBalloonSCost.into());
+        }
+        if t_cost == 0 {
+            return Err(YErrorKind::InvalidBalloonTCost.into());
+        }
         if delta < 3 {
             return Err(YErrorKind::InvalidBalloonDelta.into());
         }
-        Ok(YBalloon256 {
-            salt: salt,
+        Ok(YBalloonParams {
             s_cost: s_cost,
             t_cost: t_cost,
             delta: delta,
@@ -31,6 +39,9 @@ impl YBalloon256 {
     }
 
     pub fn check(&self) -> YResult<()> {
+        if self.s_cost == 0 {
+            return Err(YErrorKind::InvalidBalloonSCost.into());
+        }
         if self.t_cost == 0 {
             return Err(YErrorKind::InvalidBalloonTCost.into());
         }
@@ -39,12 +50,35 @@ impl YBalloon256 {
         }
         Ok(())
     }
+}
+
+type YBalloonBlockBuffer32 = Vec<YDigest32>;
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct YBalloon256 {
+    pub salt: YDigest32,
+    pub params: YBalloonParams,
+}
+
+impl YBalloon256 {
+    pub fn new(
+        salt: YDigest32, params: YBalloonParams) -> YResult<YBalloon256> {
+        params.check()?;
+        Ok(YBalloon256 {
+            salt: salt,
+            params: params,
+        })
+    }
+
+    pub fn check(&self) -> YResult<()> {
+        self.params.check()
+    }
 
     // only counting the memory used for hashing
     pub fn memory(&self) -> u64 {
-        let a = self.s_cost as u64;
-        let b = self.t_cost as u64;
-        let c = self.delta as u64;
+        let a = self.params.s_cost as u64;
+        let b = self.params.t_cost as u64;
+        let c = self.params.delta as u64;
         32*(a + (b-1)*(1 + 2*(c-1)))
     }
 
@@ -54,7 +88,7 @@ impl YBalloon256 {
         let mut cnt = 0u32;
         let mut buf = YBalloonBlockBuffer32::new();
 
-        for _ in 0..self.s_cost {
+        for _ in 0..self.params.s_cost {
             buf.push(YDigest32::default())
         }
 
@@ -66,7 +100,7 @@ impl YBalloon256 {
 
         buf[0] = YSHA256::hash(buf_0.as_slice());
 
-        for m in 1..self.s_cost as usize {
+        for m in 1..self.params.s_cost as usize {
 
             let mut buf_m_1 = Vec::new();
             buf_m_1.write_u32::<LittleEndian>(cnt)?;
@@ -77,11 +111,11 @@ impl YBalloon256 {
         }
 
         // TODO: fix the algo online, contact the guys (t > 0)
-        for t in 0..(self.t_cost-1) as usize {
+        for t in 0..(self.params.t_cost-1) as usize {
             // TODO: fix the algo online, contact the guys
-            for m in 1..(self.s_cost-1) as usize {
+            for m in 1..(self.params.s_cost-1) as usize {
 
-                let prev = buf[(m-1 as usize) % self.s_cost as usize];
+                let prev = buf[(m-1 as usize) % self.params.s_cost as usize];
                 let mut buf_m_2 = Vec::new();
                 buf_m_2.write_u32::<LittleEndian>(cnt)?;
                 cnt = cnt + 1;
@@ -89,7 +123,7 @@ impl YBalloon256 {
                 buf_m_2.extend_from_slice(buf[m].to_bytes().as_slice());
                 buf[m] = YSHA256::hash(buf_m_2.as_slice());
 
-                for i in 0..(self.delta-1) as usize {
+                for i in 0..(self.params.delta-1) as usize {
                     // NB: block obtained by hashing: count it to get the actual spent memory
                     let mut buf_idx_block = Vec::new();
                     buf_idx_block.write_u32::<LittleEndian>(t as u32)?;
@@ -103,7 +137,7 @@ impl YBalloon256 {
                     buf_i_1.extend_from_slice(self.salt.to_bytes().as_slice());
                     buf_i_1.extend_from_slice(idx_block.to_bytes().as_slice());
                     // TODO: should we hear those guys even here?
-                    let mut other: u32 = YSHA256::hash(buf_i_1.as_slice()).to_u32() % self.s_cost;
+                    let mut other: u32 = YSHA256::hash(buf_i_1.as_slice()).to_u32() % self.params.s_cost;
                     let mut buf_i_2 = Vec::new();
                     buf_i_2.write_u32::<LittleEndian>(cnt)?;
                     cnt = cnt + 1;
@@ -114,52 +148,37 @@ impl YBalloon256 {
             }
         }
 
-        Ok(buf[(self.s_cost-1) as usize])
+        Ok(buf[(self.params.s_cost-1) as usize])
     }
 }
 
-pub type YBalloonBlockBuffer64 = Vec<YDigest64>;
+type YBalloonBlockBuffer64 = Vec<YDigest64>;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct YBalloon512 {
     pub salt: YDigest64,
-    pub s_cost: u32,
-    pub t_cost: u32,
-    pub delta: u32,
+    pub params: YBalloonParams,
 }
 
 impl YBalloon512 {
     pub fn new(
-        salt: YDigest64,
-        s_cost: u32,
-        t_cost: u32,
-        delta: u32) -> YResult<YBalloon512> {
-        if delta < 3 {
-            return Err(YErrorKind::InvalidBalloonDelta.into());
-        }
+        salt: YDigest64, params: YBalloonParams) -> YResult<YBalloon512> {
+        params.check()?;
         Ok(YBalloon512 {
             salt: salt,
-            s_cost: s_cost,
-            t_cost: t_cost,
-            delta: delta,
+            params: params,
         })
     }
 
     pub fn check(&self) -> YResult<()> {
-        if self.t_cost == 0 {
-            return Err(YErrorKind::InvalidBalloonTCost.into());
-        }
-        if self.delta < 3 {
-            return Err(YErrorKind::InvalidBalloonDelta.into());
-        }
-        Ok(())
+        self.params.check()
     }
 
     // only counting the memory used for hashing
     pub fn memory(&self) -> u64 {
-        let a = self.s_cost as u64;
-        let b = self.t_cost as u64;
-        let c = self.delta as u64;
+        let a = self.params.s_cost as u64;
+        let b = self.params.t_cost as u64;
+        let c = self.params.delta as u64;
         64*(a + (b-1)*(1 + 2*(c-1)))
     }
 
@@ -169,7 +188,7 @@ impl YBalloon512 {
         let mut cnt = 0u32;
         let mut buf = YBalloonBlockBuffer64::new();
 
-        for _ in 0..self.s_cost {
+        for _ in 0..self.params.s_cost {
             buf.push(YDigest64::default())
         }
 
@@ -181,7 +200,7 @@ impl YBalloon512 {
 
         buf[0] = YSHA512::hash(buf_0.as_slice());
 
-        for m in 1..self.s_cost as usize {
+        for m in 1..self.params.s_cost as usize {
 
             let mut buf_m_1 = Vec::new();
             buf_m_1.write_u32::<LittleEndian>(cnt)?;
@@ -192,11 +211,11 @@ impl YBalloon512 {
         }
 
         // TODO: fix the algo online, contact the guys (t > 0)
-        for t in 0..(self.t_cost-1) as usize {
+        for t in 0..(self.params.t_cost-1) as usize {
             // TODO: fix the algo online, contact the guys
-            for m in 1..(self.s_cost-1) as usize {
+            for m in 1..(self.params.s_cost-1) as usize {
 
-                let prev = buf[(m-1 as usize) % self.s_cost as usize];
+                let prev = buf[(m-1 as usize) % self.params.s_cost as usize];
                 let mut buf_m_2 = Vec::new();
                 buf_m_2.write_u32::<LittleEndian>(cnt)?;
                 cnt = cnt + 1;
@@ -204,7 +223,7 @@ impl YBalloon512 {
                 buf_m_2.extend_from_slice(buf[m].to_bytes().as_slice());
                 buf[m] = YSHA512::hash(buf_m_2.as_slice());
 
-                for i in 0..(self.delta-1) as usize {
+                for i in 0..(self.params.delta-1) as usize {
                     // NB: block obtained by hashing
                     let mut buf_idx_block = Vec::new();
                     buf_idx_block.write_u32::<LittleEndian>(t as u32)?;
@@ -218,7 +237,7 @@ impl YBalloon512 {
                     buf_i_1.extend_from_slice(self.salt.to_bytes().as_slice());
                     buf_i_1.extend_from_slice(idx_block.to_bytes().as_slice());
                     // TODO: should we hear those guys even here?
-                    let mut other: u32 = YSHA512::hash(buf_i_1.as_slice()).to_u32() % self.s_cost;
+                    let mut other: u32 = YSHA512::hash(buf_i_1.as_slice()).to_u32() % self.params.s_cost;
                     let mut buf_i_2 = Vec::new();
                     buf_i_2.write_u32::<LittleEndian>(cnt)?;
                     cnt = cnt + 1;
@@ -229,6 +248,6 @@ impl YBalloon512 {
             }
         }
 
-        Ok(buf[(self.s_cost-1) as usize])
+        Ok(buf[(self.params.s_cost-1) as usize])
     }
 }

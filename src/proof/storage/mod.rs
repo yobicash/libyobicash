@@ -2,6 +2,7 @@ use crypto::hash::digest::YDigest64;
 use crypto::hash::sha::YSHA512;
 use errors::*;
 
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct YPoSt {
     pub id_tx: YDigest64,
     pub difficulty: u32,
