@@ -5,9 +5,11 @@ use utils::version::YVersion;
 use utils::time::YTime;
 use crypto::hash::digest::YDigest64;
 use crypto::hash::sha::YSHA512;
+use crypto::elliptic::keys::*;
 use output::YOutput;
-//use proof::storage::*;
-//use proof::work::*;
+use proof::storage::*;
+use proof::work::*;
+use amount::*;
 use std::io::{Write, Cursor, Read};
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
@@ -16,8 +18,8 @@ pub struct YCoinbase {
     pub version: YVersion,
     pub time: YTime,
     pub height: u64,
-    //pub post: Option<YPoSt>,
-    //pub pow: Option<YPoW>,
+    pub post: Option<YPoSt>,
+    pub pow: Option<YPoW>,
     pub outputs: Vec<YOutput>,
 }
 
@@ -33,8 +35,8 @@ impl YCoinbase {
             version: version,
             height: 0,
             time: now,
-            //post: None,
-            //pow: None,
+            post: None,
+            pow: None,
             outputs: Vec::new(),
         };
 
@@ -54,23 +56,21 @@ impl YCoinbase {
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
-        /*
         if let Some(_post) = self.post.clone() {
-            let post_buf = _post.to_bytes();
-            buf.write_u32::<BigEndian>(post_buf.len())?;
+            let post_buf = _post.to_bytes()?;
+            buf.write_u32::<BigEndian>(post_buf.len() as u32)?;
             buf.write(&post_buf[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
         }
 
         if let Some(_pow) = self.pow.clone() {
-            let pow_buf = _pow.to_bytes();
-            buf.write_u32::<BigEndian>(post_buf.len())?;
+            let pow_buf = _pow.to_bytes()?;
+            buf.write_u32::<BigEndian>(pow_buf.len() as u32)?;
             buf.write(&pow_buf[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
         }
-        */
 
         let outputs = self.outputs.clone();
         let outputs_len = outputs.len();
@@ -83,6 +83,40 @@ impl YCoinbase {
             buf.write(output_buf.as_slice())?;
         }
         Ok(YSHA512::hash(buf.as_slice()))
+    }
+
+    pub fn to_pow_bytes(&self) -> YResult<Vec<u8>> {
+        self.pre_pow_check()?;
+
+        let mut buf = Vec::new();
+        buf.write(&self.id.to_bytes()[..])?;
+
+        let version_buf = self.version.to_bytes()?;
+        buf.write(&version_buf[..])?;
+
+        buf.write_u64::<BigEndian>(self.height)?;
+
+        let time_buf = self.time.to_bytes();
+        buf.write(&time_buf[..])?;
+
+        if let Some(_post) = self.post.clone() {
+            let post_buf = _post.to_bytes()?;
+            buf.write_u32::<BigEndian>(post_buf.len() as u32)?;
+            buf.write(&post_buf[..])?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+
+        let outputs = self.outputs.clone();
+        let outputs_len = outputs.len();
+        buf.write_u32::<BigEndian>(outputs_len as u32)?;
+        for i in 0..outputs_len {
+            let output_buf = outputs[i].to_bytes()?;
+            buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
+            buf.write(output_buf.as_slice())?;
+        }
+        
+        Ok(buf)
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
@@ -99,23 +133,21 @@ impl YCoinbase {
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
-        /*
         if let Some(_post) = self.post.clone() {
-            let post_buf = _post.to_bytes();
-            buf.write_u32::<BigEndian>(post_buf.len())?;
+            let post_buf = _post.to_bytes()?;
+            buf.write_u32::<BigEndian>(post_buf.len() as u32)?;
             buf.write(&post_buf[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
         }
 
         if let Some(_pow) = self.pow.clone() {
-            let pow_buf = _pow.to_bytes();
-            buf.write_u32::<BigEndian>(post_buf.len())?;
+            let pow_buf = _pow.to_bytes()?;
+            buf.write_u32::<BigEndian>(pow_buf.len() as u32)?;
             buf.write(&pow_buf[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
         }
-        */
 
         let outputs = self.outputs.clone();
         let outputs_len = outputs.len();
@@ -152,7 +184,6 @@ impl YCoinbase {
         reader.read_exact(&mut time_buf[..])?;
         cb.time = YTime::from_bytes(&time_buf[..])?;
 
-        /*
         let post_size = reader.read_u32::<BigEndian>()?;
         if post_size > 0 {
             let mut post = Vec::new();
@@ -172,7 +203,6 @@ impl YCoinbase {
             reader.read_exact(pow.as_mut_slice())?;
             cb.pow = Some(YPoW::from_bytes(pow.as_slice())?);
         }
-        */
 
         let outputs_len = reader.read_u32::<BigEndian>()? as usize;
 
@@ -201,26 +231,47 @@ impl YCoinbase {
         Ok(self.to_bytes()?.to_hex())
     }
 
-    /*
-    pub fn set_post(&mut self, id_tx: YDigest64, diff: u32, nonce: u32, chunks: &Vec<u8>) -> YResult<YPoSt> {
-        let post = YPoSt::new(id_tx, idff, chunks)?;
+    pub fn set_post(&mut self, id_tx: YDigest64, diff: u32, nonce: u32, chunks: &Vec<u8>) -> YResult<()> {
+        let post = YPoSt::new(id_tx, diff, nonce, chunks)?;
         self.post = Some(post);
+        self.id = self.calc_id()?;
         Ok(())
     }
-    
-    pub fn set_pow(&mut self, increment: u32) -> YResult<YPoSt> {
+
+    pub fn coinbase_amount(&self, increment: u32) -> YResult<YAmount> {
         if self.post.is_none() {
             return Err(YErrorKind::PoStNotFound.into());
         }
-        let pow = YPoW::new()?;
-        let msg = self.to_bytes(self.post.digest, self.post.difficulty, increment)?;
+        let post = self.post.clone().unwrap();
+        let pow = YPoW::new(post.digest, post.difficulty, increment)?;
+        YAmount::from_u64(pow.memory()?)
+    }
+    
+    pub fn set_pow(&mut self, increment: u32, miner_sk: YSecretKey, recipient_pk: YPublicKey, fee_pk: YPublicKey) -> YResult<()> {
+        if miner_sk.to_public() == recipient_pk {
+            return Err(YErrorKind::DuplicateItem.into());
+        }
+        if self.post.is_none() {
+            return Err(YErrorKind::PoStNotFound.into());
+        }
+        let post = self.post.clone().unwrap();
+        let mut pow = YPoW::new(post.digest, post.difficulty, increment)?;
+        let cb_amount = self.coinbase_amount(increment)?;
+        let mut fee_amount = YAmount::default();
+        let mut miner_amount = cb_amount.clone();
+        if cb_amount > YAmount::from_u64(100)? {
+            fee_amount = cb_amount / YAmount::from_u64(100)?;
+            miner_amount -= fee_amount.clone();
+        }
+        let miner_output = YOutput::new(&miner_sk, &recipient_pk, miner_amount, None)?;
+        let fee_output = YOutput::new(&miner_sk, &fee_pk, fee_amount, None)?;
+        self.outputs = vec![miner_output, fee_output];
+        let msg = self.clone().to_pow_bytes()?;
         pow.mine(msg.as_slice())?;
-        // TODO: create the outputs
         self.pow = Some(pow);
         self.id = self.calc_id()?;
         Ok(())
     }
-    */
 
     pub fn drop_output(mut self, idx: u32) -> YResult<YCoinbase> {
         let i = idx as usize;
@@ -267,34 +318,64 @@ impl YCoinbase {
             return Err(YErrorKind::InvalidTime.into())
         }
 
-        /*
-        if let Some(_post) = self.post {
-            verified &= _post.verify();
+        if let Some(_post) = self.post.clone() {
+            if !_post.verify() {
+                return Ok(false);
+            }
         } else {
             return Ok(false);
         }
 
         if let Some(_pow) = self.pow.clone() {
-            verified &= _pow.verify()?;
+            if !_pow.verify()? {
+                return Ok(false);
+            }
         } else {
             return Ok(false);
         }
-        */
 
-        //let mut tot_amount = YAmount::default();
+        let mut tot_amount = YAmount::default();
 
         for output in self.outputs.clone() {
             output.check()?;
-            //tot_amount += output.amount;
+            tot_amount += output.amount;
         }
 
-        /*
-        if tot_amount != self.pow.unwrap().memory()? {
+        let memory = YAmount::from_u64(self.pow.clone().unwrap().memory()?)?;
+        if tot_amount != memory {
             return Ok(false);
         }
-        */
 
         Ok(true)
+    }
+
+    pub fn pre_pow_check(&self) -> YResult<()> {
+        if self.version > YVersion::default() {
+            let v = self.version.to_string();
+            return Err(YErrorKind::InvalidVersion(v).into());
+        }
+        
+        if self.height != 0 {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        let time = self.time.clone();
+        let now = YTime::now();
+        if time > now {
+            return Err(YErrorKind::InvalidTime.into())
+        }
+
+        if let Some(_post) = self.post.clone() {
+            _post.check()?
+        } else {
+            return Err(YErrorKind::PoStNotFound.into())
+        }
+
+        for output in self.outputs.clone() {
+            output.check()?;
+        }
+
+        Ok(())
     }
 
     pub fn check(&self) -> YResult<()> {
@@ -316,8 +397,7 @@ impl YCoinbase {
             return Err(YErrorKind::InvalidTime.into())
         }
 
-        /*
-        if let Some(_post) = self.post {
+        if let Some(_post) = self.post.clone() {
             _post.check()?
         } else {
             return Err(YErrorKind::PoStNotFound.into())
@@ -328,20 +408,18 @@ impl YCoinbase {
         } else {
             return Err(YErrorKind::PoWNotFound.into())
         }
-        */
 
-        //let mut tot_amount = YAmount::default();
+        let mut tot_amount = YAmount::default();
 
         for output in self.outputs.clone() {
             output.check()?;
-            //tot_amount += output.amount;
+            tot_amount += output.amount;
         }
 
-        /*
-        if tot_amount != self.pow.unwrap().memory()? {
+        let memory = YAmount::from_u64(self.pow.clone().unwrap().memory()?)?;
+        if tot_amount != memory {
             return Err(YErrorKind::InvalidAmount.into());
         }
-        */
 
         Ok(())
     }

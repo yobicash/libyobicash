@@ -107,12 +107,20 @@ error_chain! {
         description("Invalid target bits")
     }
 
+    PoStNotFound {
+        description("PoSt not found")
+    }
+
     IncompletePoW {
         description("Incomplete PoW")
     }
 
     InvalidPoWSolution {
         description("Invalid PoW solution")
+    }
+
+    PoWNotFound {
+        description("PoW not found")
     }
   }
 }
