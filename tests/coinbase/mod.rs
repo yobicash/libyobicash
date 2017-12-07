@@ -1,6 +1,5 @@
 use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;
-use libyobicash::utils::time::YTime;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::coinbase::YCoinbase;
@@ -21,7 +20,7 @@ fn coinbase_new_succ() {
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let outputs = vec![output];
-    let res = YCoinbase::new(&outputs, None);
+    let res = YCoinbase::new(&outputs);
     assert!(res.is_ok())
 }
 
@@ -39,9 +38,8 @@ fn coinbase_new_fail() {
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
-    let outputs = vec![output];
-    let activation = YTime::new(1970, 1, 1, 0, 0, 0);
-    let res = YCoinbase::new(&outputs, Some(activation));
+    let outputs = vec![output.clone(), output];
+    let res = YCoinbase::new(&outputs);
     assert!(res.is_err())
 }
 
@@ -60,7 +58,7 @@ fn coinbase_bytes_succ() {
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let outputs = vec![output];
-    let cb_a = YCoinbase::new(&outputs, None).unwrap();
+    let cb_a = YCoinbase::new(&outputs).unwrap();
     let cb_buf = cb_a.to_bytes().unwrap();
     let cb_b = YCoinbase::from_bytes(cb_buf.as_slice()).unwrap();
     assert_eq!(cb_a.to_bytes().unwrap(), cb_b.to_bytes().unwrap())

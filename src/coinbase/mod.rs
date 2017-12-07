@@ -16,7 +16,6 @@ pub struct YCoinbase {
     pub version: YVersion,
     pub time: YTime,
     pub height: u64,
-    pub activation: Option<YTime>,
     //pub post: Option<YPoSt>,
     //pub pow: Option<YPoW>,
     pub outputs: Vec<YOutput>,
@@ -24,7 +23,7 @@ pub struct YCoinbase {
 
 impl YCoinbase {
     // TODO: create the outputs after pow
-    pub fn new(outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YCoinbase> {
+    pub fn new(outputs: &Vec<YOutput>) -> YResult<YCoinbase> {
         let outputs_len = outputs.len();
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
@@ -39,11 +38,6 @@ impl YCoinbase {
         }
         
         let now = YTime::now();
-        if let Some(_activation) = activation.clone() {
-            if _activation <= now {
-                return Err(YErrorKind::InvalidTime.into());
-            }
-        }
 
         let version = YVersion::default();
         let id = YDigest64::default();
@@ -53,7 +47,6 @@ impl YCoinbase {
             version: version,
             height: 0,
             time: now,
-            activation: activation,
             //post: None,
             //pow: None,
             outputs: outputs.clone(),
@@ -74,14 +67,6 @@ impl YCoinbase {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         /*
         if let Some(_post) = self.post.clone() {
@@ -127,14 +112,6 @@ impl YCoinbase {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         /*
         if let Some(_post) = self.post.clone() {
@@ -188,13 +165,6 @@ impl YCoinbase {
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
         cb.time = YTime::from_bytes(&time_buf[..])?;
-
-        let has_activation = reader.read_u32::<BigEndian>()?;
-        if has_activation == 1 {
-            let mut activation_buf = [0u8; 8];
-            reader.read_exact(&mut activation_buf[..])?;
-            cb.activation = Some(YTime::from_bytes(&activation_buf[..])?);
-        }
 
         /*
         let post_size = reader.read_u32::<BigEndian>()?;
@@ -291,14 +261,6 @@ impl YCoinbase {
         dropped
     }
 
-    pub fn is_active(&self) -> bool {
-        if let Some(_activation) = self.activation.clone() {
-            _activation <= YTime::now()
-        } else {
-            false
-        }
-    }
-
     pub fn verify(&self) -> YResult<bool> {
         if self.id != self.calc_id()? {
             return Err(YErrorKind::InvalidChecksum.into());
@@ -316,12 +278,6 @@ impl YCoinbase {
         let now = YTime::now();
         if time > now {
             return Err(YErrorKind::InvalidTime.into())
-        }
-
-        if let Some(_activation) = self.activation.clone() {
-            if _activation <= time {
-                return Err(YErrorKind::InvalidTime.into())
-            }
         }
 
         /*
@@ -371,12 +327,6 @@ impl YCoinbase {
         let now = YTime::now();
         if time > now {
             return Err(YErrorKind::InvalidTime.into())
-        }
-
-        if let Some(_activation) = self.activation.clone() {
-            if _activation <= time {
-                return Err(YErrorKind::InvalidTime.into())
-            }
         }
 
         /*
