@@ -1,6 +1,6 @@
 [package]
 name = "libyobicash"
-version = "0.1.0"
+version = "0.9.0"
 authors = ["Christian Nyumbayire <chritchens@gmail.com>"]
 links = "ctaes"
 build = "build.rs"
