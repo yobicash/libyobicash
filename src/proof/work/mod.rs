@@ -1,9 +1,10 @@
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use crypto::hash::digest::YDigest64;
 use crypto::hash::sha::YSHA512;
 use crypto::hash::balloon::{YBalloonParams, YBalloon512};
 use errors::*;
-use std::io::Cursor;
+use std::io::{Write, Cursor, Read};
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YTarget(pub YDigest64);
@@ -84,15 +85,42 @@ impl YPoW {
         Ok(pow)
     }
 
-    /*
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
-        unreachable!() // TODO
+        self.check()?;
+        let mut buf = Vec::new();
+        buf.write(&self.post_digest.to_bytes()[..])?;
+        buf.write_u32::<BigEndian>(self.post_difficulty)?;
+        buf.write_u32::<BigEndian>(self.nonce)?;
+        if let Some(params) = self.params {
+            buf.write_u32::<BigEndian>(1)?;
+            buf.write(params.to_bytes()?.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+        buf.write_u64::<BigEndian>(self.memory)?;
+        buf.write_u32::<BigEndian>(self.seed.len() as u32)?;
+        buf.write(&self.seed.as_slice())?;
+        if let Some(digest) = self.digest {
+            buf.write_u32::<BigEndian>(1);
+            buf.write(&digest.to_bytes()[..])?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+        Ok(buf)
     }
 
     pub fn from_bytes(buf: &[u8]) -> YResult<YPoW> {
         unreachable!() // TODO
     }
-    */
+
+    pub fn from_hex(s: &str) -> YResult<YPoW> {
+        let buf = s.from_hex()?;
+        YPoW::from_bytes(buf.as_slice())
+    }
+
+    pub fn to_hex(&self) -> YResult<String> {
+        Ok(self.to_bytes()?.to_hex())
+    }
 
     pub fn post_params(&self) -> YResult<YBalloonParams> {
         if self.post_difficulty < 3 || self.post_difficulty > 63 {

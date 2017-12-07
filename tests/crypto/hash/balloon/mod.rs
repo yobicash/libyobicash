@@ -42,6 +42,25 @@ fn balloon_params_check_fail() {
 }
 
 #[test]
+fn balloon_params_bytes_succ() {
+    let s_cost = YRandom::u32_range(1, 10);
+    let t_cost = YRandom::u32_range(1, 10);
+    let delta = YRandom::u32_range(3, 10);
+    let params_a = YBalloonParams::new(s_cost, t_cost, delta).unwrap();
+    let params_buf = params_a.to_bytes().unwrap();
+    let params_b = YBalloonParams::from_bytes(params_buf.as_slice()).unwrap();
+    assert_eq!(params_a, params_b)
+}
+
+#[test]
+fn balloon_params_bytes_fail() {
+    let mut b = [0u8; 11];
+    YRandom::bytes_mut(&mut b);
+    let res = YBalloonParams::from_bytes(&b[..]);
+    assert!(res.is_err())
+}
+
+#[test]
 fn balloon256_new_succ() {
     let salt_buf = YRandom::bytes(32);
     let salt = YDigest32::from_bytes(salt_buf.as_slice()).unwrap();

@@ -1,7 +1,9 @@
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use serialize::hex::{FromHex, ToHex};
 use crypto::hash::digest::*;
 use crypto::hash::sha::*;
 use errors::*;
+use std::io::Cursor;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct YBalloonParams {
@@ -36,6 +38,36 @@ impl YBalloonParams {
             t_cost: t_cost,
             delta: delta,
         })
+    }
+
+    pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        self.check()?;
+        let mut buf = Vec::new();
+        buf.write_u32::<BigEndian>(self.s_cost)?;
+        buf.write_u32::<BigEndian>(self.t_cost)?;
+        buf.write_u32::<BigEndian>(self.delta)?;
+        Ok(buf)
+    }
+
+    pub fn from_bytes(b: &[u8]) -> YResult<YBalloonParams> {
+        if b.len() != 12 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        let mut reader = Cursor::new(b);
+        let mut params = YBalloonParams::default();
+        params.s_cost = reader.read_u32::<BigEndian>()?;
+        params.t_cost = reader.read_u32::<BigEndian>()?;
+        params.delta = reader.read_u32::<BigEndian>()?;
+        Ok(params)
+    }
+
+    pub fn from_hex(s: &str) -> YResult<YBalloonParams> {
+        let buf = s.from_hex()?;
+        YBalloonParams::from_bytes(buf.as_slice())
+    }
+
+    pub fn to_hex(&self) -> YResult<String> {
+        Ok(self.to_bytes()?.to_hex())
     }
 
     pub fn check(&self) -> YResult<()> {
@@ -93,7 +125,7 @@ impl YBalloon256 {
         }
 
         let mut buf_0 = Vec::new();
-        buf_0.write_u32::<LittleEndian>(cnt)?;
+        buf_0.write_u32::<BigEndian>(cnt)?;
         cnt = cnt + 1;
         buf_0.extend_from_slice(msg);
         buf_0.extend_from_slice(self.salt.to_bytes().as_slice());
@@ -103,7 +135,7 @@ impl YBalloon256 {
         for m in 1..self.params.s_cost as usize {
 
             let mut buf_m_1 = Vec::new();
-            buf_m_1.write_u32::<LittleEndian>(cnt)?;
+            buf_m_1.write_u32::<BigEndian>(cnt)?;
             cnt = cnt + 1;
             buf_m_1.extend_from_slice(buf[m-1].to_bytes().as_slice());
 
@@ -117,7 +149,7 @@ impl YBalloon256 {
 
                 let prev = buf[(m-1 as usize) % self.params.s_cost as usize];
                 let mut buf_m_2 = Vec::new();
-                buf_m_2.write_u32::<LittleEndian>(cnt)?;
+                buf_m_2.write_u32::<BigEndian>(cnt)?;
                 cnt = cnt + 1;
                 buf_m_2.extend_from_slice(prev.to_bytes().as_slice());
                 buf_m_2.extend_from_slice(buf[m].to_bytes().as_slice());
@@ -126,20 +158,20 @@ impl YBalloon256 {
                 for i in 0..(self.params.delta-1) as usize {
                     // NB: block obtained by hashing: count it to get the actual spent memory
                     let mut buf_idx_block = Vec::new();
-                    buf_idx_block.write_u32::<LittleEndian>(t as u32)?;
-                    buf_idx_block.write_u32::<LittleEndian>(m as u32)?;
-                    buf_idx_block.write_u32::<LittleEndian>(i as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(t as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(m as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(i as u32)?;
                     let idx_block = YSHA256::hash(buf_idx_block.as_slice());
 
                     let mut buf_i_1 = Vec::new();
-                    buf_i_1.write_u32::<LittleEndian>(cnt)?;
+                    buf_i_1.write_u32::<BigEndian>(cnt)?;
                     cnt = cnt + 1;
                     buf_i_1.extend_from_slice(self.salt.to_bytes().as_slice());
                     buf_i_1.extend_from_slice(idx_block.to_bytes().as_slice());
                     // TODO: should we hear those guys even here?
                     let mut other: u32 = YSHA256::hash(buf_i_1.as_slice()).to_u32() % self.params.s_cost;
                     let mut buf_i_2 = Vec::new();
-                    buf_i_2.write_u32::<LittleEndian>(cnt)?;
+                    buf_i_2.write_u32::<BigEndian>(cnt)?;
                     cnt = cnt + 1;
                     buf_i_2.extend_from_slice(buf[m].to_bytes().as_slice());
                     buf_i_2.extend_from_slice(buf[other as usize].to_bytes().as_slice());
@@ -193,7 +225,7 @@ impl YBalloon512 {
         }
 
         let mut buf_0 = Vec::new();
-        buf_0.write_u32::<LittleEndian>(cnt)?;
+        buf_0.write_u32::<BigEndian>(cnt)?;
         cnt = cnt + 1;
         buf_0.extend_from_slice(msg);
         buf_0.extend_from_slice(self.salt.to_bytes().as_slice());
@@ -203,7 +235,7 @@ impl YBalloon512 {
         for m in 1..self.params.s_cost as usize {
 
             let mut buf_m_1 = Vec::new();
-            buf_m_1.write_u32::<LittleEndian>(cnt)?;
+            buf_m_1.write_u32::<BigEndian>(cnt)?;
             cnt = cnt + 1;
             buf_m_1.extend_from_slice(buf[m-1].to_bytes().as_slice());
 
@@ -217,7 +249,7 @@ impl YBalloon512 {
 
                 let prev = buf[(m-1 as usize) % self.params.s_cost as usize];
                 let mut buf_m_2 = Vec::new();
-                buf_m_2.write_u32::<LittleEndian>(cnt)?;
+                buf_m_2.write_u32::<BigEndian>(cnt)?;
                 cnt = cnt + 1;
                 buf_m_2.extend_from_slice(prev.to_bytes().as_slice());
                 buf_m_2.extend_from_slice(buf[m].to_bytes().as_slice());
@@ -226,20 +258,20 @@ impl YBalloon512 {
                 for i in 0..(self.params.delta-1) as usize {
                     // NB: block obtained by hashing
                     let mut buf_idx_block = Vec::new();
-                    buf_idx_block.write_u32::<LittleEndian>(t as u32)?;
-                    buf_idx_block.write_u32::<LittleEndian>(m as u32)?;
-                    buf_idx_block.write_u32::<LittleEndian>(i as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(t as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(m as u32)?;
+                    buf_idx_block.write_u32::<BigEndian>(i as u32)?;
                     let idx_block = YSHA512::hash(buf_idx_block.as_slice());
 
                     let mut buf_i_1 = Vec::new();
-                    buf_i_1.write_u32::<LittleEndian>(cnt)?;
+                    buf_i_1.write_u32::<BigEndian>(cnt)?;
                     cnt = cnt + 1;
                     buf_i_1.extend_from_slice(self.salt.to_bytes().as_slice());
                     buf_i_1.extend_from_slice(idx_block.to_bytes().as_slice());
                     // TODO: should we hear those guys even here?
                     let mut other: u32 = YSHA512::hash(buf_i_1.as_slice()).to_u32() % self.params.s_cost;
                     let mut buf_i_2 = Vec::new();
-                    buf_i_2.write_u32::<LittleEndian>(cnt)?;
+                    buf_i_2.write_u32::<BigEndian>(cnt)?;
                     cnt = cnt + 1;
                     buf_i_2.extend_from_slice(buf[m].to_bytes().as_slice());
                     buf_i_2.extend_from_slice(buf[other as usize].to_bytes().as_slice());
