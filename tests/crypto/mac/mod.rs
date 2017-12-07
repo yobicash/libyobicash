@@ -1,12 +1,12 @@
 use serialize::hex::FromHex;
 use libyobicash::crypto::key::YKey64;
 use libyobicash::crypto::mac::{YMAC, YMACCode};
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn mac_from_bytes_succ() {
     let mut b = [0u8; 64];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YMACCode::from_bytes(&b[..]);
     assert!(res.is_ok())
 }
@@ -14,7 +14,7 @@ fn mac_from_bytes_succ() {
 #[test]
 fn mac_from_bytes_fail() {
     let mut b = [0u8; 32];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YMACCode::from_bytes(&b[..]);
     assert!(res.is_err())
 }

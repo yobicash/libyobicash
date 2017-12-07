@@ -1,8 +1,8 @@
 use rand::{random, thread_rng, sample};
 
-pub struct Random;
+pub struct YRandom;
 
-impl Random {
+impl YRandom {
     pub fn u32() -> u32 {
         random::<u32>()
     }

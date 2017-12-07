@@ -2,7 +2,7 @@ use libyobicash::crypto::elliptic::point::YPoint;
 use libyobicash::crypto::elliptic::keys::*;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn output_new_succ() {
@@ -65,7 +65,7 @@ fn output_bytes_succ() {
 #[test]
 fn output_bytes_fail() {
     let mut b = [0u8; 139];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YOutput::from_bytes(&b[..]);
     assert!(res.is_err())
 }

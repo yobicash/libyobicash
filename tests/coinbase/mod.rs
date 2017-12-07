@@ -4,12 +4,12 @@ use libyobicash::utils::time::YTime;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::coinbase::YCoinbase;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn coinbase_new_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -19,7 +19,7 @@ fn coinbase_new_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let outputs = vec![output];
     let res = YCoinbase::new(&outputs, None);
     assert!(res.is_ok())
@@ -28,7 +28,7 @@ fn coinbase_new_succ() {
 #[test]
 fn coinbase_new_fail() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -38,7 +38,7 @@ fn coinbase_new_fail() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let outputs = vec![output];
     let activation = YTime::new(1970, 1, 1, 0, 0, 0);
     let res = YCoinbase::new(&outputs, Some(activation));
@@ -48,7 +48,7 @@ fn coinbase_new_fail() {
 #[test]
 fn coinbase_bytes_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -58,7 +58,7 @@ fn coinbase_bytes_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let outputs = vec![output];
     let cb_a = YCoinbase::new(&outputs, None).unwrap();
     let cb_buf = cb_a.to_bytes().unwrap();
@@ -69,7 +69,7 @@ fn coinbase_bytes_succ() {
 #[test]
 fn coinbase_bytes_fail() {
     let mut b = [0u8; 103];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YCoinbase::from_bytes(&b[..]);
     assert!(res.is_err())
 }

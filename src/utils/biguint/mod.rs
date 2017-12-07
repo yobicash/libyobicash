@@ -11,7 +11,7 @@ use std::ops::{Rem, RemAssign};
 use std::fmt::{Debug, Display, Formatter};
 use std::fmt::Error as FmtError;
 use errors::*;
-use utils::random::Random;
+use utils::random::YRandom;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct YBigUint(pub BigUint);
@@ -19,7 +19,7 @@ pub struct YBigUint(pub BigUint);
 impl YBigUint {
     pub fn random() -> YBigUint {
         let mut b = [0u8; 32];
-        Random::bytes_mut(&mut b);
+        YRandom::bytes_mut(&mut b);
         YBigUint::from_bytes(&b[..])
     }
 

@@ -1,7 +1,7 @@
 use libyobicash::crypto::elliptic::scalar::*;
 use libyobicash::crypto::elliptic::point::*;
 use libyobicash::crypto::elliptic::keys::*;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn public_key_from_bytes_succ() {
@@ -16,7 +16,7 @@ fn public_key_from_bytes_succ() {
 #[test]
 fn public_key_from_bytes_fail() {
     let mut b = [0u8; 32];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YPublicKey::from_bytes(&b[..]);
     assert!(res.is_err())
 }
@@ -55,7 +55,7 @@ fn secret_key_from_bytes_succ() {
 #[test]
 fn secret_key_from_bytes_fail() {
     let mut b = [0u8; 32];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YSecretKey::from_bytes(&b[..]);
     assert!(res.is_err())
 }

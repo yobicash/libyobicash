@@ -7,12 +7,12 @@ use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::utxo::YUTXO;
 use libyobicash::transaction::YTransaction;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn transaction_new_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -22,7 +22,7 @@ fn transaction_new_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -37,7 +37,7 @@ fn transaction_new_succ() {
 #[test]
 fn transaction_new_fail() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -47,7 +47,7 @@ fn transaction_new_fail() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -63,7 +63,7 @@ fn transaction_new_fail() {
 #[test]
 fn transaction_bytes_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -73,7 +73,7 @@ fn transaction_bytes_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -90,7 +90,7 @@ fn transaction_bytes_succ() {
 #[test]
 fn transaction_bytes_fail() {
     let mut b = [0u8; 103];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YTransaction::from_bytes(&b[..]);
     assert!(res.is_err())
 }
@@ -98,7 +98,7 @@ fn transaction_bytes_fail() {
 #[test]
 fn transaction_verify_input_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -107,7 +107,7 @@ fn transaction_verify_input_succ() {
     let sender_sk = YSecretKey::from_g(g);
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -126,7 +126,7 @@ fn transaction_verify_input_succ() {
 #[test]
 fn transaction_verify_input_fail() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -136,7 +136,7 @@ fn transaction_verify_input_fail() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -157,7 +157,7 @@ fn transaction_verify_input_fail() {
 #[test]
 fn transaction_verify_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -167,7 +167,7 @@ fn transaction_verify_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();
@@ -183,7 +183,7 @@ fn transaction_verify_succ() {
 #[test]
 fn transaction_verify_fail() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let secret_prot = YSchnorrProtocol::random();
     let public_prot = secret_prot.to_public();
     let g = public_prot.g;
@@ -193,7 +193,7 @@ fn transaction_verify_fail() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx).unwrap();

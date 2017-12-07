@@ -103,6 +103,10 @@ error_chain! {
         description("PoW digest not found")
     }
 
+    InvalidTargetBits {
+        description("Invalid target bits")
+    }
+
     IncompletePoW {
         description("Incomplete PoW")
     }

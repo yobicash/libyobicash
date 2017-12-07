@@ -10,19 +10,24 @@ pub struct YTarget(pub YDigest64);
 
 impl YTarget {
     pub fn new(bits: u32) -> YResult<YTarget> {
+        if bits > 63 {
+            return Err(YErrorKind::InvalidTargetBits.into())
+        }
         let n = u64::max_value() >> (bits as usize);
-        let _b = [1u8; 64];
         let mut b = Vec::new();
-        b.extend_from_slice(&_b[..]);
         b.write_u64::<BigEndian>(n)?;
+        for _ in 0..56 {
+            b.push(255u8);
+        }
         let target = YTarget(YDigest64::from_bytes(&b[..])?);
         Ok(target)
     }
 
     pub fn bits(&self) -> YResult<u32> {
         let mut reader = Cursor::new(self.0.to_bytes());
-        let n = reader.read_u32::<BigEndian>()?;
-        Ok(n.leading_zeros() as u32)
+        let n = reader.read_u64::<BigEndian>()?;
+        let bits = n.leading_zeros() as u32;
+        Ok(bits)
     }
 
     pub fn digest(&self) -> YDigest64 {
@@ -31,66 +36,77 @@ impl YTarget {
 }
 
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct YPoW {
-    pub digest_post: YDigest64,
-    pub difficulty_post: u32,
+    pub post_digest: YDigest64,
+    pub post_difficulty: u32,
     pub nonce: u32,
     pub params: Option<YBalloonParams>,
     pub memory: u64,
+    pub seed: Vec<u8>,
     pub digest: Option<YDigest64>,
 }
 
 impl YPoW {
     pub fn new(
-        digest_post: YDigest64,
-        difficulty_post: u32,
+        post_digest: YDigest64,
+        post_difficulty: u32,
         increment: u32) -> YResult<YPoW> {
-        if difficulty_post < 3 {
+        if post_difficulty < 3 || post_difficulty > 63 {
             return Err(YErrorKind::InvalidDifficulty.into());
         }
-        let params_post = YBalloonParams::new(difficulty_post, difficulty_post, difficulty_post)?;
-        let balloon_post = YBalloon512::new(digest_post, params_post)?;
+        if increment + post_difficulty > 63 {
+            return Err(YErrorKind::InvalidDifficulty.into());
+        }
+        let post_params = YBalloonParams::new(post_difficulty, post_difficulty, post_difficulty)?;
+        let post_balloon = YBalloon512::new(post_digest, post_params)?;
         let mut memory = 0;
+        let mut params = None;
         if increment > 0 {
-            let mut params = params_post.clone();
-            params.s_cost = params.s_cost + increment;
-            params.t_cost = params.t_cost + increment;
-            params.delta = params.delta + increment;
-            params.check()?;
-            let balloon_extra = YBalloon512::new(digest_post, params)?;
-            memory = balloon_extra.memory() - balloon_post.memory();
+            let mut extra_params = post_params.clone();
+            extra_params.s_cost = extra_params.s_cost + increment;
+            extra_params.t_cost = extra_params.t_cost + increment;
+            extra_params.delta = extra_params.delta + increment;
+            extra_params.check()?;
+            let extra_balloon = YBalloon512::new(post_digest, extra_params)?;
+            memory = extra_balloon.memory() - post_balloon.memory();
+            params = Some(extra_params);
         }
         let pow = YPoW {
-            digest_post: digest_post,
-            difficulty_post: difficulty_post,
+            post_digest: post_digest,
+            post_difficulty: post_difficulty,
             nonce: 0,
-            params: None,
+            params: params,
             memory: memory,
+            seed: Vec::new(),
             digest: None,
         };
         Ok(pow)
     }
 
-    pub fn params_post(&self) -> YResult<YBalloonParams> {
-        if self.difficulty_post < 3 {
+    pub fn post_params(&self) -> YResult<YBalloonParams> {
+        if self.post_difficulty < 3 || self.post_difficulty > 63 {
             return Err(YErrorKind::InvalidDifficulty.into());
         }
-        let diff = self.difficulty_post;
+        let diff = self.post_difficulty;
         YBalloonParams::new(diff, diff, diff)
     }
 
-    pub fn balloon_post(&self) -> YResult<YBalloon512> {
-        let params_post = self.params_post()?;
-        YBalloon512::new(self.digest_post, params_post)
+    pub fn post_balloon(&self) -> YResult<YBalloon512> {
+        let post_params = self.post_params()?;
+        YBalloon512::new(self.post_digest, post_params)
     }
 
     pub fn memory(&self) -> YResult<u64> {
-        let balloon_post = self.balloon_post()?;
+        let post_balloon = self.post_balloon()?;
         let mut memory = 0;
         if let Some(params) = self.params {
-            let balloon_extra = YBalloon512::new(self.digest_post, params)?;
-            memory = balloon_extra.memory() - balloon_post.memory();
+            params.check()?;
+            if params.s_cost > 63 || params.t_cost > 63 || params.delta > 63 {
+                return Err(YErrorKind::InvalidDifficulty.into());
+            }
+            let extra_balloon = YBalloon512::new(self.post_digest, params)?;
+            memory = extra_balloon.memory() - post_balloon.memory();
         }
         Ok(memory)
     }
@@ -100,7 +116,7 @@ impl YPoW {
     }
 
     pub fn target_bits(&self) -> u32 {
-        self.difficulty_post
+        self.post_difficulty
     }
 
     pub fn params(&self) -> YResult<YBalloonParams> {
@@ -108,10 +124,14 @@ impl YPoW {
         #[allow(unused_assignments)]
         let mut params = YBalloonParams::default();
 
-        if let Some(params_extra) = self.params {
-            params = params_extra;
+        if let Some(extra_params) = self.params {
+            extra_params.check()?;
+            if extra_params.s_cost > 63 || extra_params.t_cost > 63 || extra_params.delta > 63 {
+                return Err(YErrorKind::InvalidDifficulty.into());
+            }
+            params = extra_params;
         } else {
-            params = self.params_post()?;
+            params = self.post_params()?;
         }
 
         Ok(params)
@@ -121,23 +141,24 @@ impl YPoW {
         let params = self.params()?;
         let target = self.target()?.digest();
         let mut nonce = 0;
-        let mut not_found = true; 
 
-        while not_found {
-            let mut seed_buf = Vec::new();
-            seed_buf.extend_from_slice(self.digest_post.to_bytes().as_slice());
-            let mut nonce_buf = Vec::new();
-            nonce_buf.write_u32::<BigEndian>(nonce)?;
-            seed_buf.extend_from_slice(nonce_buf.as_slice());
-            let seed = YSHA512::hash(seed_buf.as_slice());
-            let balloon = YBalloon512::new(seed, params)?;
-            let digest = balloon.hash(msg)?;
+        'mining: loop {
+            let salt = YSHA512::hash(self.post_digest.to_bytes().as_slice());
+            let balloon = YBalloon512::new(salt, params)?;
+            let mut digest_buf = Vec::new();
+            digest_buf.extend_from_slice(msg);
+            digest_buf.write_u32::<BigEndian>(nonce)?;
+            let digest = balloon.hash(digest_buf.as_slice())?;
             if digest < target {
+                let mut seed = Vec::new();
+                seed.extend_from_slice(msg);
+                self.seed = seed;
+                self.nonce = nonce;
                 self.digest = Some(digest);
-                not_found = false;
+                break 'mining;
             } else {
                 if nonce == u32::max_value() {
-                    return Err(YErrorKind::PoWDigestNotFound.into());
+                    break 'mining;
                 }
                 nonce = nonce + 1;
             }
@@ -146,27 +167,22 @@ impl YPoW {
         return Ok(())
     }
 
-    pub fn verify(&self, msg: &[u8]) -> YResult<bool> {
-        if self.difficulty_post < 3 {
-            return Ok(false);
-        }
+    pub fn verify(&self) -> YResult<bool> {
+        let params = self.params()?;
         if self.memory != self.memory()? {
-            return Ok(false);
+            return Err(YErrorKind::InvalidAmount.into());
         }
         if let Some(digest) = self.digest {
             let target = self.target()?.digest();
             if digest >= target {
                 return Ok(false)
             }
-            let mut seed_buf = Vec::new();
-            seed_buf.extend_from_slice(self.digest_post.to_bytes().as_slice());
-            let mut nonce_buf = Vec::new();
-            nonce_buf.write_u32::<BigEndian>(self.nonce)?;
-            seed_buf.extend_from_slice(nonce_buf.as_slice());
-            let seed = YSHA512::hash(seed_buf.as_slice());
-            let params = self.params()?;
-            let balloon = YBalloon512::new(seed, params)?;
-            let _digest = balloon.hash(msg)?;
+            let salt = YSHA512::hash(self.post_digest.to_bytes().as_slice());
+            let balloon = YBalloon512::new(salt, params)?;
+            let mut digest_buf = Vec::new();
+            digest_buf.extend_from_slice(self.seed.as_slice());
+            digest_buf.write_u32::<BigEndian>(self.nonce)?;
+            let _digest = balloon.hash(digest_buf.as_slice())?;
             if digest != _digest {
                 return Ok(false);
             }
@@ -176,10 +192,8 @@ impl YPoW {
         }
     }
 
-    pub fn check(&self, msg: &[u8]) -> YResult<()> {
-        if self.difficulty_post < 3 {
-            return Err(YErrorKind::InvalidDifficulty.into());
-        }
+    pub fn check(&self) -> YResult<()> {
+        let params = self.params()?;
         if self.memory != self.memory()? {
             return Err(YErrorKind::InvalidAmount.into());
         }
@@ -188,15 +202,12 @@ impl YPoW {
             if digest >= target {
                 return Err(YErrorKind::InvalidPoWSolution.into());
             }
-            let mut seed_buf = Vec::new();
-            seed_buf.extend_from_slice(self.digest_post.to_bytes().as_slice());
-            let mut nonce_buf = Vec::new();
-            nonce_buf.write_u32::<BigEndian>(self.nonce)?;
-            seed_buf.extend_from_slice(nonce_buf.as_slice());
-            let seed = YSHA512::hash(seed_buf.as_slice());
-            let params = self.params()?;
-            let balloon = YBalloon512::new(seed, params)?;
-            let _digest = balloon.hash(msg)?;
+            let salt = YSHA512::hash(self.post_digest.to_bytes().as_slice());
+            let balloon = YBalloon512::new(salt, params)?;
+            let mut digest_buf = Vec::new();
+            digest_buf.extend_from_slice(self.seed.as_slice());
+            digest_buf.write_u32::<BigEndian>(self.nonce)?;
+            let _digest = balloon.hash(digest_buf.as_slice())?;
             if digest != _digest {
                 return Err(YErrorKind::InvalidPoWSolution.into());
             }

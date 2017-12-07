@@ -5,12 +5,12 @@ use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::input::YInput;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn input_bytes_succ() {
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let prot = YSchnorrProtocol::random().to_public();
@@ -23,7 +23,7 @@ fn input_bytes_succ() {
 #[test]
 fn input_bytes_fail() {
     let mut b = [0u8; 195];
-    Random::bytes_mut(&mut b);
+    YRandom::bytes_mut(&mut b);
     let res = YInput::from_bytes(&b[..]);
     assert!(res.is_err())
 }
@@ -39,7 +39,7 @@ fn input_verify_succ() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let input = YInput::new(id, idx, public_prot);
@@ -58,7 +58,7 @@ fn input_verify_fail() {
     let amount = YAmount::one();
     let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
     let mut _id = [0u8; 64];
-    Random::bytes_mut(&mut _id);
+    YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let mut input = YInput::new(id, idx, public_prot);

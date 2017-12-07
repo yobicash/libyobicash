@@ -11,7 +11,7 @@ use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
-use utils::random::Random;
+use utils::random::YRandom;
 use crypto::elliptic::scalar::YScalar;
 
 #[derive(Copy, Clone, Debug)]
@@ -26,10 +26,10 @@ impl Default for YPoint {
 impl YPoint {
     pub fn random() -> YPoint {
         let mut b = [0u8; 32];
-        Random::bytes_mut(&mut b);
+        YRandom::bytes_mut(&mut b);
         let mut p = YPoint::from_bytes(&b);
         while p.is_err() {
-            Random::bytes_mut(&mut b);
+            YRandom::bytes_mut(&mut b);
             p = YPoint::from_bytes(&b);
         }
         p.unwrap()

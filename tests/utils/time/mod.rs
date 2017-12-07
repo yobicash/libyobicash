@@ -1,5 +1,5 @@
 use libyobicash::utils::time::YTime;
-use libyobicash::utils::random::Random;
+use libyobicash::utils::random::YRandom;
 
 #[test]
 fn time_now_succ() {
@@ -10,12 +10,12 @@ fn time_now_succ() {
 
 #[test]
 fn time_parts_succ() {
-    let years = Random::u64() % 3000;
-    let months = Random::u64() % 11 + 1;
-    let days = Random::u64() % 27 + 1;
-    let hours = Random::u64() % 24;
-    let minutes = Random::u64() % 60;
-    let seconds = Random::u64() % 60;
+    let years = YRandom::u64() % 3000;
+    let months = YRandom::u64() % 11 + 1;
+    let days = YRandom::u64() % 27 + 1;
+    let hours = YRandom::u64() % 24;
+    let minutes = YRandom::u64() % 60;
+    let seconds = YRandom::u64() % 60;
     let t = YTime::new(years, months, days, hours, minutes, seconds);
     assert_eq!(t.years(), years);
     assert_eq!(t.months(), months);
@@ -27,7 +27,7 @@ fn time_parts_succ() {
 
 #[test]
 fn time_to_timestamp_succ() {
-    let timestamp: u64 = Random::u32() as u64;
+    let timestamp: u64 = YRandom::u32() as u64;
     let t = YTime::from_timestamp(timestamp);
     assert_eq!(t.to_timestamp(), timestamp)
 }
