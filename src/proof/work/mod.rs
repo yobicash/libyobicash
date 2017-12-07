@@ -84,6 +84,16 @@ impl YPoW {
         Ok(pow)
     }
 
+    /*
+    pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        unreachable!() // TODO
+    }
+
+    pub fn from_bytes(buf: &[u8]) -> YResult<YPoW> {
+        unreachable!() // TODO
+    }
+    */
+
     pub fn post_params(&self) -> YResult<YBalloonParams> {
         if self.post_difficulty < 3 || self.post_difficulty > 63 {
             return Err(YErrorKind::InvalidDifficulty.into());

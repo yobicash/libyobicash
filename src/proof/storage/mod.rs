@@ -26,6 +26,16 @@ impl YPoSt {
         Ok(post)
     }
 
+    /*
+    pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+        unreachable!() // TODO
+    }
+
+    pub fn from_bytes(buf: &[u8]) -> YResult<YPoSt> {
+        unreachable!() // TODO
+    }
+    */
+
     pub fn verify(&self) -> bool {
         if self.chunks.len() != self.difficulty as usize {
             return false;
