@@ -22,21 +22,7 @@ pub struct YCoinbase {
 }
 
 impl YCoinbase {
-    // TODO: create the outputs after pow
-    pub fn new(outputs: &Vec<YOutput>) -> YResult<YCoinbase> {
-        let outputs_len = outputs.len();
-        let mut outputs_refs = Vec::new();
-        for i in 0..outputs_len {
-            let out = outputs[i].clone();
-            let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
-            outputs_refs.push(refs);
-        }
-        outputs_refs.sort();
-        outputs_refs.dedup();
-        if outputs_refs.len() != outputs_len {
-            return Err(YErrorKind::DuplicateItem.into());
-        }
-        
+    pub fn new() -> YResult<YCoinbase> {
         let now = YTime::now();
 
         let version = YVersion::default();
@@ -49,7 +35,7 @@ impl YCoinbase {
             time: now,
             //post: None,
             //pow: None,
-            outputs: outputs.clone(),
+            outputs: Vec::new(),
         };
 
         cb.id = cb.calc_id()?;
@@ -231,6 +217,7 @@ impl YCoinbase {
         pow.mine(msg.as_slice())?;
         // TODO: create the outputs
         self.pow = Some(pow);
+        self.id = self.calc_id()?;
         Ok(())
     }
     */
