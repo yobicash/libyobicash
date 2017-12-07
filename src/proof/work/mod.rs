@@ -37,7 +37,7 @@ impl YTarget {
 }
 
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YPoW {
     pub post_digest: YDigest64,
     pub post_difficulty: u32,
@@ -101,7 +101,7 @@ impl YPoW {
         buf.write_u32::<BigEndian>(self.seed.len() as u32)?;
         buf.write(&self.seed.as_slice())?;
         if let Some(digest) = self.digest {
-            buf.write_u32::<BigEndian>(1);
+            buf.write_u32::<BigEndian>(1)?;
             buf.write(&digest.to_bytes()[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
@@ -110,7 +110,41 @@ impl YPoW {
     }
 
     pub fn from_bytes(buf: &[u8]) -> YResult<YPoW> {
-        unreachable!() // TODO
+        if buf.len() < 196 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        let mut reader = Cursor::new(buf);
+        let mut pow = YPoW::default();
+        let mut post_digest_buf = [0u8; 64];
+        reader.read_exact(&mut post_digest_buf[..])?;
+        pow.post_digest = YDigest64::from_bytes(&post_digest_buf[..])?;
+        pow.post_difficulty = reader.read_u32::<BigEndian>()?;
+        pow.nonce = reader.read_u32::<BigEndian>()?;
+        let has_params = reader.read_u32::<BigEndian>()?;
+        if has_params == 1 {
+            let mut params_buf = [0u8; 12];
+            reader.read_exact(&mut params_buf[..])?;
+            pow.params = Some(YBalloonParams::from_bytes(&params_buf[..])?);
+        } else {
+            pow.params = None;
+        }
+        pow.memory = reader.read_u64::<BigEndian>()?;
+        let seed_size = reader.read_u32::<BigEndian>()?;
+        let mut seed = Vec::new();
+        for _ in 0..seed_size {
+            seed.push(0);
+        }
+        reader.read_exact(&mut seed[..])?;
+        pow.seed = seed;
+        let has_digest = reader.read_u32::<BigEndian>()?;
+        if has_digest == 1 {
+            let mut digest_buf = [0u8; 64];
+            reader.read_exact(&mut digest_buf[..])?;
+            pow.digest = Some(YDigest64::from_bytes(&digest_buf[..])?);
+        } else {
+            pow.digest = None;
+        }
+        Ok(pow)
     }
 
     pub fn from_hex(s: &str) -> YResult<YPoW> {

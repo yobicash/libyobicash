@@ -5,7 +5,7 @@ use crypto::hash::sha::YSHA512;
 use errors::*;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct YPoSt {
     pub id_tx: YDigest64,
     pub difficulty: u32,
@@ -41,7 +41,26 @@ impl YPoSt {
     }
 
     pub fn from_bytes(buf: &[u8]) -> YResult<YPoSt> {
-        unreachable!() // TODO
+        if buf.len() < 136 {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+        let mut reader = Cursor::new(buf);
+        let mut post = YPoSt::default();
+        let mut id_tx_buf = [0u8; 64];
+        reader.read_exact(&mut id_tx_buf[..])?;
+        post.id_tx = YDigest64::from_bytes(&id_tx_buf[..])?;
+        post.difficulty = reader.read_u32::<BigEndian>()?;
+        post.nonce = reader.read_u32::<BigEndian>()?;
+        let mut chunks = Vec::new();
+        for _ in 0..post.difficulty {
+            chunks.push(0);
+        }
+        reader.read_exact(&mut chunks.as_mut_slice())?;
+        post.chunks = chunks;
+        let mut digest_buf = [0u8; 64];
+        reader.read_exact(&mut digest_buf[..])?;
+        post.digest = YDigest64::from_bytes(&digest_buf[..])?;
+        Ok(post)
     }
 
     pub fn from_hex(s: &str) -> YResult<YPoSt> {

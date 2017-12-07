@@ -47,6 +47,28 @@ fn pow_new_fail() {
 }
 
 #[test]
+fn pow_bytes_succ() {
+    let post_digest_buf = YRandom::bytes(64);
+    let post_digest = YDigest64::from_bytes(post_digest_buf.as_slice()).unwrap(); 
+    let post_difficulty = 3;
+    let increment = 1;
+    let mut pow_a = YPoW::new(post_digest, post_difficulty, increment).unwrap();
+    let seed = YRandom::bytes(32);
+    pow_a.mine(seed.as_slice()).unwrap();
+    let pow_buf = pow_a.to_bytes().unwrap();
+    let pow_b = YPoW::from_bytes(pow_buf.as_slice()).unwrap();
+    assert_eq!(pow_a, pow_b)
+}
+
+#[test]
+fn pow_bytes_fail() {
+    let mut b = [0u8; 195];
+    YRandom::bytes_mut(&mut b);
+    let res = YPoW::from_bytes(&b[..]);
+    assert!(res.is_err())
+}
+
+#[test]
 fn post_pow_params_succ() {
     let post_digest_buf = YRandom::bytes(64);
     let post_digest = YDigest64::from_bytes(post_digest_buf.as_slice()).unwrap(); 

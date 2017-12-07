@@ -23,6 +23,26 @@ fn post_new_fail() {
 }
 
 #[test]
+fn post_bytes_succ() {
+    let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
+    let difficulty = YRandom::u32_range(3, 10);
+    let nonce = YRandom::u32();
+    let chunks = YRandom::bytes(difficulty);
+    let post_a = YPoSt::new(id_tx, difficulty, nonce, &chunks).unwrap();
+    let post_buf = post_a.to_bytes().unwrap();
+    let post_b = YPoSt::from_bytes(post_buf.as_slice()).unwrap();
+    assert_eq!(post_a, post_b)
+}
+
+#[test]
+fn post_bytes_fail() {
+    let mut b = [0u8; 135];
+    YRandom::bytes_mut(&mut b);
+    let res = YPoSt::from_bytes(&b[..]);
+    assert!(res.is_err())
+}
+
+#[test]
 fn post_verify_succ() {
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
     let diff = 10;
