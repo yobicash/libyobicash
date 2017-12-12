@@ -122,5 +122,9 @@ error_chain! {
     PoWNotFound {
         description("PoW not found")
     }
+
+    Other(desc: String) {
+        description(desc.as_str())
+    }
   }
 }
