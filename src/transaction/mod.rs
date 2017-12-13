@@ -25,6 +25,20 @@ pub struct YTransaction {
 impl YTransaction {
     pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, height: u64, activation: Option<YTime>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
+        let outputs_len = outputs.len();
+
+        if height == 0 &&
+            (outputs_len != 0 ||
+            utxos_len != 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        if height != 0 && 
+            (outputs_len == 0 ||
+            utxos_len == 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
         if xs.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
         }
@@ -47,7 +61,6 @@ impl YTransaction {
             return Err(YErrorKind::DuplicateItem.into());
         }
         
-        let outputs_len = outputs.len();
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
             let out = outputs[i].clone();
@@ -58,10 +71,6 @@ impl YTransaction {
         outputs_refs.dedup();
         if outputs_refs.len() != outputs_len {
             return Err(YErrorKind::DuplicateItem.into());
-        }
-        
-        if height == 0 {
-            return Err(YErrorKind::InvalidHeight.into());
         }
         
         let now = YTime::now();
@@ -383,7 +392,15 @@ impl YTransaction {
             return Err(YErrorKind::InvalidVersion(v).into());
         }
         
-        if self.height == 0 {
+        if self.height == 0 &&
+            (self.outputs.len() != 0 ||
+            self.inputs.len() != 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        if self.height != 0 && 
+            (self.outputs.len() == 0 ||
+            self.inputs.len() == 0) {
             return Err(YErrorKind::InvalidHeight.into());
         }
 
