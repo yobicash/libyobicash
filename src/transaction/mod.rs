@@ -387,7 +387,7 @@ impl YTransaction {
         if self.id != self.calc_id()? {
             return Err(YErrorKind::InvalidChecksum.into());
         }
-        if self.version > YVersion::default() {
+        if self.version.major() > YVersion::default().major() {
             let v = self.version.to_string();
             return Err(YErrorKind::InvalidVersion(v).into());
         }

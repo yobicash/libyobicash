@@ -18,6 +18,18 @@ impl YVersion {
         YVersion(Version::new(major, minor, patch))
     }
 
+    pub fn major(&self) -> u64 {
+        self.0.major
+    }
+
+    pub fn minor(&self) -> u64 {
+        self.0.minor
+    }
+
+    pub fn patch(&self) -> u64 {
+        self.0.patch
+    }
+
     pub fn parse(s: &str) -> YResult<YVersion> {
         let version = Version::parse(s)?;
         Ok(YVersion(version))
