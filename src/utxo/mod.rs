@@ -20,25 +20,22 @@ pub amount: YAmount,
 }
 
 impl YUTXO {
-    pub fn new(id: YDigest64, idx: u32, recipient: YPublicKey, amount: YAmount) -> YResult<YUTXO> {
-        amount.check()?;
-        Ok(YUTXO {
+    pub fn new(id: YDigest64, idx: u32, recipient: YPublicKey, amount: YAmount) -> YUTXO {
+        YUTXO {
             id: id,
             idx: idx,
             recipient: recipient,
             amount: amount,
-        })
+        }
     }
 
-    pub fn from_output(out: &YOutput, id: YDigest64, idx: u32) -> YResult<YUTXO> {
-        let amount = out.amount.clone();
-        amount.check()?;
-        Ok(YUTXO {
+    pub fn from_output(out: &YOutput, id: YDigest64, idx: u32) -> YUTXO {
+        YUTXO {
             id: id,
             idx: idx,
             recipient: out.recipient,
-            amount: amount,
-        })
+            amount: out.amount.clone(),
+        }
     }
 
     pub fn to_input(&self, x: YScalar, u: YScalar, c: YScalar) -> YResult<YInput> {
@@ -63,12 +60,11 @@ impl YUTXO {
     }
 
     pub fn to_bytes(&self) -> YResult<Vec<u8>> {
-        self.check()?;
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
         buf.write_u32::<BigEndian>(self.idx)?;
         buf.write(&self.recipient.to_bytes()[..])?;
-        let amount_buf = self.amount.to_bytes()?;
+        let amount_buf = self.amount.to_bytes();
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
         buf.write(amount_buf.as_slice())?;
         Ok(buf)
@@ -100,10 +96,8 @@ impl YUTXO {
                 amount.push(0);
             }
             reader.read_exact(amount.as_mut_slice())?;
-            utxo.amount = YAmount::from_bytes(amount.as_slice())?;
+            utxo.amount = YAmount::from_bytes(amount.as_slice());
         }
-
-        utxo.check()?;
 
         Ok(utxo)
     }
@@ -115,9 +109,5 @@ impl YUTXO {
 
     pub fn to_hex(&self) -> YResult<String> {
         Ok(self.to_bytes()?.to_hex())
-    }
-
-    pub fn check(&self) -> YResult<()> {
-        self.amount.check()
     }
 }

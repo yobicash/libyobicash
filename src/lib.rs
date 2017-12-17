@@ -16,6 +16,10 @@ extern crate byteorder;
 #[macro_use]
 extern crate error_chain;
 extern crate rustc_serialize as serialize;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 extern crate libc;
 
 pub mod errors;
@@ -31,5 +35,3 @@ pub mod proof;
 pub mod coinbase;
 
 pub const VERSION: &str = "0.9.0";
-
-pub const MAX_AMOUNT: &str = "2048000000000000000000000";

@@ -27,7 +27,6 @@ impl YOutput {
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
         let sender = sk.to_public();
-        amount.check()?;
         if let Some(_custom) = custom.clone() {
             if _custom.len() != 256 {
                 return Err(YErrorKind::InvalidLength.into());
@@ -73,7 +72,7 @@ impl YOutput {
 
         buf.write(&self.recipient.to_bytes()[..])?;
 
-        let amount_buf = self.amount.to_bytes()?;
+        let amount_buf = self.amount.to_bytes();
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
         buf.write(amount_buf.as_slice())?;
 
@@ -119,7 +118,7 @@ impl YOutput {
                 amount.push(0);
             }
             reader.read_exact(amount.as_mut_slice())?;
-            out.amount = YAmount::from_bytes(amount.as_slice())?;
+            out.amount = YAmount::from_bytes(amount.as_slice());
         }
 
         let data_size = reader.read_u32::<BigEndian>()?;
@@ -176,7 +175,6 @@ impl YOutput {
             let msg = String::from("Invalid generator");
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
-        self.amount.check()?;
         if let Some(_custom) = self.custom.clone() {
             if _custom.len() != 256 {
                 return Err(YErrorKind::InvalidLength.into());

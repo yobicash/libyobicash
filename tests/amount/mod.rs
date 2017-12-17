@@ -18,38 +18,31 @@ fn amount_parse_fail() {
 #[test]
 fn amount_little_endian_succ() {
     let bu_a = YAmount::parse("1000").unwrap();
-    let bu_a_le = bu_a.to_little_endian().unwrap();
-    let bu_b = YAmount::from_little_endian(bu_a_le.as_slice()).unwrap();
+    let bu_a_le = bu_a.to_little_endian();
+    let bu_b = YAmount::from_little_endian(bu_a_le.as_slice());
     assert_eq!(bu_a, bu_b)
 }
 
 #[test]
 fn amount_big_endian_succ() {
     let bu_a = YAmount::parse("1000").unwrap();
-    let bu_a_ge = bu_a.to_big_endian().unwrap();
-    let bu_b = YAmount::from_big_endian(bu_a_ge.as_slice()).unwrap();
+    let bu_a_ge = bu_a.to_big_endian();
+    let bu_b = YAmount::from_big_endian(bu_a_ge.as_slice());
     assert_eq!(bu_a, bu_b)
 }
 
 #[test]
 fn amount_hex_succ() {
     let amount_a = YAmount::max_value();
-    let amount_buf = amount_a.to_bytes().unwrap();
-    let amount_b = YAmount::from_bytes(amount_buf.as_slice()).unwrap();
+    let amount_buf = amount_a.to_bytes();
+    let amount_b = YAmount::from_bytes(amount_buf.as_slice());
     assert_eq!(amount_a, amount_b)
-}
-
-#[test]
-fn amount_max_value_fail() {
-    let amount = YAmount::max_value() + YAmount::one();
-    let res = amount.check();
-    assert!(res.is_err())
 }
 
 #[test]
 fn amount_to_hex_succ() {
     let bu_a = YAmount::parse("1000").unwrap();
-    let bu_a_hex = bu_a.to_hex().unwrap();
+    let bu_a_hex = bu_a.to_hex();
     let bu_b = YAmount::from_hex(bu_a_hex.as_str()).unwrap();
     assert_eq!(bu_a, bu_b)
 }

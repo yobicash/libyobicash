@@ -1,6 +1,5 @@
 use serialize::hex::{FromHex, ToHex};
 use utils::biguint::YBigUint;
-use MAX_AMOUNT;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
@@ -14,12 +13,8 @@ use errors::*;
 pub struct YAmount(pub YBigUint);
 
 impl YAmount {
-    pub fn new(amount: &YBigUint) -> YResult<YAmount> {
-        let max_amount = YBigUint::parse(MAX_AMOUNT).unwrap();
-        if *amount > max_amount {
-            return Err(YErrorKind::AmountOutOfBound.into());
-        }
-        Ok(YAmount(amount.clone()))
+    pub fn new(amount: &YBigUint) -> YAmount {
+        YAmount(amount.clone())
     }
 
     pub fn parse(s: &str) -> YResult<YAmount> {
@@ -51,58 +46,37 @@ impl YAmount {
         YAmount(YBigUint::one())
     }
 
-    pub fn max_value() -> YAmount {
-        let m = YBigUint::parse(MAX_AMOUNT).unwrap();
-        YAmount(m)
+    pub fn to_big_endian(&self) -> Vec<u8> {
+        self.0.to_big_endian()
     }
 
-    pub fn to_big_endian(&self) -> YResult<Vec<u8>> {
-        self.check()?;
-        let buf = self.0.to_big_endian();
-        Ok(buf)
+    pub fn from_big_endian(b: &[u8]) -> YAmount {
+        YAmount(YBigUint::from_big_endian(b))
     }
 
-    pub fn from_big_endian(b: &[u8]) -> YResult<YAmount> {
-        let amount = YAmount(YBigUint::from_big_endian(b));
-        amount.check()?;
-        Ok(amount)
+    pub fn to_little_endian(&self) -> Vec<u8> {
+        self.0.to_little_endian()
     }
 
-    pub fn to_little_endian(&self) -> YResult<Vec<u8>> {
-        self.check()?;
-        let buf = self.0.to_little_endian();
-        Ok(buf)
+    pub fn from_little_endian(b: &[u8]) -> YAmount {
+        YAmount(YBigUint::from_little_endian(b))
     }
 
-    pub fn from_little_endian(b: &[u8]) -> YResult<YAmount> {
-        let amount = YAmount(YBigUint::from_little_endian(b));
-        amount.check()?;
-        Ok(amount)
-    }
-
-    pub fn from_bytes(b: &[u8]) -> YResult<YAmount> {
+    pub fn from_bytes(b: &[u8]) -> YAmount {
         YAmount::from_big_endian(b)
     }
 
-    pub fn to_bytes(&self) -> YResult<Vec<u8>> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.to_big_endian()
     }
 
     pub fn from_hex(s: &str) -> YResult<YAmount> {
         let buf = s.from_hex()?;
-        YAmount::from_bytes(buf.as_slice())
+        Ok(YAmount::from_bytes(buf.as_slice()))
     }
 
-    pub fn to_hex(&self) -> YResult<String> {
-        Ok(self.to_bytes()?[..].to_hex())
-    }
-
-    pub fn check(&self) -> YResult<()> {
-        let max_amount = YBigUint::parse(MAX_AMOUNT).unwrap();
-        if self.0 > max_amount {
-            return Err(YErrorKind::AmountOutOfBound.into());
-        }
-        Ok(())
+    pub fn to_hex(&self) -> String {
+        self.to_bytes()[..].to_hex()
     }
 }
 
