@@ -36,6 +36,10 @@ error_chain! {
         description("BigUint out ouf bound")
     }
 
+    InvalidScalar {
+        description("Invalid scalar")
+    }
+
     InvalidPoint(reason: String) {
       description("Invalid point")
       display("Invalid point: {}", reason)

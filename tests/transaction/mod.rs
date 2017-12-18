@@ -25,7 +25,7 @@ fn transaction_new_succ() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output];
@@ -50,7 +50,7 @@ fn transaction_new_fail() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output];
@@ -76,7 +76,7 @@ fn transaction_bytes_succ() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output];
@@ -110,7 +110,7 @@ fn transaction_verify_input_succ() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output.clone()];
@@ -139,7 +139,7 @@ fn transaction_verify_input_fail() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output.clone()];
@@ -170,7 +170,7 @@ fn transaction_verify_succ() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let outputs = vec![output.clone()];
@@ -196,7 +196,7 @@ fn transaction_verify_fail() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let utxo = YUTXO::from_output(&output, id, idx).unwrap();
+    let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     let mut outputs = vec![output.clone()];

@@ -6,7 +6,7 @@ use hmac::{Mac, Hmac};
 use serialize::hex::{FromHex, ToHex};
 use crypto::key::YKey64;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YMACCode(pub GenericArray<u8, U64>);
 
 impl YMACCode {
@@ -45,7 +45,7 @@ impl YMAC {
     }
 
     pub fn result(self) -> YMACCode {
-        YMACCode::from_bytes(self.0.result().code()).unwrap()
+        YMACCode::from_bytes(&self.0.result().code()).unwrap()
     }
 
     pub fn mac(key: YKey64, msg: &[u8]) -> YMACCode {

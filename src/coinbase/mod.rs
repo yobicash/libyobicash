@@ -12,7 +12,7 @@ use proof::work::*;
 use amount::*;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YCoinbase {
     pub id: YDigest64,
     pub version: YVersion,

@@ -4,7 +4,7 @@ use std::io::Cursor;
 use VERSION;
 use errors::*;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct YVersion(pub Version);
 
 impl Default for YVersion {

@@ -5,7 +5,7 @@ use crypto::hash::sha::YSHA512;
 use errors::*;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YPoSt {
     pub id_tx: YDigest64,
     pub difficulty: u32,

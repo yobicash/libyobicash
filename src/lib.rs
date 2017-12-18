@@ -19,7 +19,6 @@ extern crate rustc_serialize as serialize;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 extern crate libc;
 
 pub mod errors;

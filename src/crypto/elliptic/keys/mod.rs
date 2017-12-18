@@ -4,7 +4,7 @@ use crypto::key::YKey32;
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct YPublicKey {
     pub g: YPoint,
     pub pk: YPoint,
@@ -48,7 +48,7 @@ impl YPublicKey {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct YSecretKey {
     pub g: YPoint,
     pub sk: YScalar,

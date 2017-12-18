@@ -5,11 +5,11 @@ use subtle::Equal;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
-use std::ops::{Index, IndexMut};
+use std::ops::Index;
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct YScalar(pub Scalar);
 
 impl Default for YScalar {
@@ -40,16 +40,17 @@ impl YScalar {
         if b.len() != 32 {
             return Err(YErrorKind::InvalidLength.into());
         }
-        let mut scalar = Scalar::zero();
+        let mut buf = [0u8; 32];
         for i in 0..32 {
-            scalar.0[i] = b[i];
+            buf[i] = b[i];
         }
+        let scalar = Scalar::from_bytes_mod_order(buf);
         Ok(YScalar(scalar))
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut b = Vec::new();
-        b.extend_from_slice(&self.0.as_bytes()[..]);
+        b.extend_from_slice(&self.0.to_bytes()[..]);
         b
     }
 
@@ -68,10 +69,6 @@ impl YScalar {
 
     pub fn invert(&self) -> YScalar {
         YScalar(self.0.invert())
-    }
-
-    pub fn multiply_add(a: &YScalar, b: &YScalar, c: &YScalar) -> YScalar {
-        YScalar(Scalar::multiply_add(&a.0, &b.0, &c.0))
     }
 }
 
@@ -131,11 +128,5 @@ impl Index<usize> for YScalar {
 
     fn index(&self, idx: usize) -> &u8 {
         self.0.index(idx)
-    }
-}
-
-impl IndexMut<usize> for YScalar {
-    fn index_mut(&mut self, idx: usize) -> &mut u8 {
-        self.0.index_mut(idx)
     }
 }

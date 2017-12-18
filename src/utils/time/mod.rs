@@ -3,7 +3,7 @@ use chrono::{Timelike, Datelike};
 use byteorder::{ByteOrder, LittleEndian, BigEndian};
 use errors::*;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct YTime(pub DateTime<Utc>);
 
 impl Default for YTime {

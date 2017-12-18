@@ -48,15 +48,6 @@ fn point_to_hex_succ() {
 }
 
 #[test]
-fn point_fields_succ() {
-    let p_a = YPoint::random();
-    let x = p_a.x_field();
-    let y = p_a.y_field();
-    let p_b = YPoint::from_fields(x.as_slice(), y.as_slice()).unwrap();
-    assert_eq!(p_a, p_b)
-}
-
-#[test]
 fn diffie_hellman_succ() {
     let g = YPoint::default();
     let sk_1 = YScalar::random();

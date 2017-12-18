@@ -19,15 +19,10 @@ fn scalar_from_bytes_fail() {
 
 #[test]
 fn scalar_to_bytes_succ() {
-    let mut b = [0u8; 32];
-    YRandom::bytes_mut(&mut b);
-    let scalar = YScalar::from_bytes(&b[..]).unwrap();
-    let mut c = [0u8; 32];
-    let scalar_buf = scalar.to_bytes();
-    for i in 0..32 {
-        c[i] = scalar_buf[i];
-    }
-    assert_eq!(b, c)
+    let scalar_a = YScalar::random();
+    let scalar_buf = scalar_a.to_bytes();
+    let scalar_b = YScalar::from_bytes(&scalar_buf).unwrap();
+    assert_eq!(scalar_a, scalar_b)
 }
 
 #[test]
@@ -50,16 +45,6 @@ fn scalar_to_hex_succ() {
     let scalar_a_hex = scalar_a.to_hex();
     let scalar_b = YScalar::from_hex(scalar_a_hex.as_str()).unwrap();
     assert_eq!(scalar_a, scalar_b)
-}
-
-#[test]
-fn scalar_multiply_add_succ() {
-    let a = YScalar::from_u64(1);
-    let b = YScalar::from_u64(2);
-    let c = YScalar::from_u64(3);
-    let d = YScalar::from_u64(5);
-    let e = YScalar::multiply_add(&a, &b, &c);
-    assert_eq!(e, d)
 }
 
 #[test]

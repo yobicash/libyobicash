@@ -1,9 +1,5 @@
-#![allow(non_snake_case)]
-
 use curve25519_dalek::edwards::{ExtendedPoint, CompressedEdwardsY};
-use curve25519_dalek::edwards::{Identity, IsIdentity};
-use curve25519_dalek::edwards::ValidityCheck;
-use curve25519_dalek::field::FieldElement32;
+use curve25519_dalek::traits::{Identity, IsIdentity};
 use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 use subtle::Equal;
 use std::ops::{Add, AddAssign};
@@ -14,7 +10,7 @@ use errors::*;
 use utils::random::YRandom;
 use crypto::elliptic::scalar::YScalar;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct YPoint(pub ExtendedPoint);
 
 impl Default for YPoint {
@@ -65,46 +61,6 @@ impl YPoint {
 
     pub fn to_hex(&self) -> String {
         self.to_bytes()[..].to_hex()
-    }
-
-    pub fn x_field(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&self.0.X.to_bytes()[..]);
-        buf
-    }
-
-    pub fn y_field(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&self.0.Y.to_bytes()[..]);
-        buf
-    }
-
-    pub fn from_fields(x: &[u8], y: &[u8]) -> YResult<YPoint> {
-        if x.len() != 32 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        if y.len() != 32 {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-        let mut x_buf = [0u8; 32];
-        for i in 0..32 {
-            x_buf[i] = x[i];
-        }
-        let mut y_buf = [0u8; 32];
-        for i in 0..32 {
-            y_buf[i] = y[i];
-        }
-        let X = FieldElement32::from_bytes(&x_buf);
-        let Y = FieldElement32::from_bytes(&y_buf);
-        let Z = FieldElement32::one();
-        let T = &X*&Y;
-        let p = YPoint(ExtendedPoint {
-            X: X,
-            Y: Y,
-            Z: Z,
-            T: T,
-        });
-        Ok(p)
     }
 }
 
@@ -172,12 +128,5 @@ impl Identity for YPoint {
 impl IsIdentity for YPoint {
     fn is_identity(&self) -> bool {
         self.0.is_identity()
-    }
-}
-
-// NB: not CT
-impl ValidityCheck for YPoint {
-    fn is_valid(&self) -> bool {
-        self.0.is_valid()
     }
 }

@@ -33,7 +33,7 @@ fn amount_big_endian_succ() {
 
 #[test]
 fn amount_hex_succ() {
-    let amount_a = YAmount::max_value();
+    let amount_a = YAmount::parse("100000").unwrap();
     let amount_buf = amount_a.to_bytes();
     let amount_b = YAmount::from_bytes(amount_buf.as_slice());
     assert_eq!(amount_a, amount_b)

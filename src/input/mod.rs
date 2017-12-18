@@ -8,7 +8,7 @@ use crypto::zkp::schnorr_protocol::YSchnorrProtocolPublic;
 use output::YOutput;
 use std::io::{Write, Read, Cursor};
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YInput {
     pub id: YDigest64,
     pub idx: u32,

@@ -6,7 +6,7 @@ use crypto::hash::balloon::{YBalloonParams, YBalloon512};
 use errors::*;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YTarget(pub YDigest64);
 
 impl YTarget {
@@ -37,7 +37,7 @@ impl YTarget {
 }
 
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YPoW {
     pub post_digest: YDigest64,
     pub post_difficulty: u32,

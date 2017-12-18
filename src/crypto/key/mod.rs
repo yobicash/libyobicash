@@ -4,7 +4,7 @@ use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use crypto::hash::sha::YSHA256;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YKey32(pub GenericArray<u8, U32>);
 
 impl YKey32 {
@@ -31,7 +31,7 @@ impl YKey32 {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YKey64(pub GenericArray<u8, U64>);
 
 impl YKey64 {

@@ -2,14 +2,15 @@ use num_traits::{ToPrimitive, FromPrimitive};
 use num_traits::identities::{Zero, One};
 use num_bigint::BigUint;
 use serialize::hex::{FromHex, ToHex};
+use serde::ser;
+use serde::de;
 use std::str::FromStr;
 use std::ops::{Add, AddAssign};
 use std::ops::{Sub, SubAssign};
 use std::ops::{Mul, MulAssign};
 use std::ops::{Div, DivAssign};
 use std::ops::{Rem, RemAssign};
-use std::fmt::{Debug, Display, Formatter};
-use std::fmt::Error as FmtError;
+use std::fmt;
 use errors::*;
 use utils::random::YRandom;
 
@@ -95,14 +96,14 @@ impl YBigUint {
     }
 }
 
-impl Debug for YBigUint {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+impl fmt::Debug for YBigUint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_string())
     }
 }
 
-impl Display for YBigUint {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+impl fmt::Display for YBigUint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_string())
     }
 }
@@ -174,5 +175,46 @@ impl Rem for YBigUint {
 impl RemAssign for YBigUint {
     fn rem_assign(&mut self, other: YBigUint) {
         *self = self.clone().rem(other);
+    }
+}
+
+impl ser::Serialize for YBigUint {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: ser::Serializer
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+struct YBigUintVisitor;
+
+impl <'a> de::Visitor<'a> for YBigUintVisitor {
+    type Value = YBigUint;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("A string representing a numerical value")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where E: de::Error
+    {
+        YBigUint::parse(value)
+            .map_err(de::Error::custom)
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where E: de::Error
+    {
+        YBigUint::parse(value.as_str())
+            .map_err(de::Error::custom)
+    }
+}
+
+
+impl<'a> de::Deserialize<'a> for YBigUint {
+    fn deserialize<D>(deserializer: D) -> Result<YBigUint, D::Error>
+        where D: de::Deserializer<'a>
+    {
+        deserializer.deserialize_bytes(YBigUintVisitor)
     }
 }

@@ -9,7 +9,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::fmt::Error as FmtError;
 use errors::*;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Default, Serialize, Deserialize)]
 pub struct YAmount(pub YBigUint);
 
 impl YAmount {

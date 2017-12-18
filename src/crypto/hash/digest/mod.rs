@@ -3,7 +3,7 @@ use generic_array::GenericArray;
 use serialize::hex::{FromHex, ToHex};
 use errors::*;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YDigest32(pub GenericArray<u8, U32>);
 
 impl YDigest32 {
@@ -46,7 +46,7 @@ impl YDigest32 {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YDigest64(pub GenericArray<u8, U64>);
 
 impl YDigest64 {

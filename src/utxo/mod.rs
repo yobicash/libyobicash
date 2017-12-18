@@ -11,7 +11,7 @@ use input::YInput;
 use output::YOutput;
 use std::io::{Write, Read, Cursor};
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YUTXO {
 pub id: YDigest64,
 pub idx: u32,

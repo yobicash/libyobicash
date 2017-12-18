@@ -11,7 +11,7 @@ use output::YOutput;
 use utxo::YUTXO;
 use std::io::{Write, Cursor, Read};
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,

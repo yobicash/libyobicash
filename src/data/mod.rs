@@ -9,7 +9,7 @@ use crypto::encryption::ecies::YECIES;
 use amount::YAmount;
 use std::io::{Write, Read, Cursor};
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct YData {
     pub data: Vec<u8>,
     pub checksum: YDigest64,

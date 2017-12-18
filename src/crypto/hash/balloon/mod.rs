@@ -5,7 +5,7 @@ use crypto::hash::sha::*;
 use errors::*;
 use std::io::Cursor;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct YBalloonParams {
     pub s_cost: u32,
     pub t_cost: u32,
@@ -86,7 +86,7 @@ impl YBalloonParams {
 
 type YBalloonBlockBuffer32 = Vec<YDigest32>;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct YBalloon256 {
     pub salt: YDigest32,
     pub params: YBalloonParams,
@@ -186,7 +186,7 @@ impl YBalloon256 {
 
 type YBalloonBlockBuffer64 = Vec<YDigest64>;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct YBalloon512 {
     pub salt: YDigest64,
     pub params: YBalloonParams,
