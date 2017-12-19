@@ -6,6 +6,8 @@ use utils::time::YTime;
 use crypto::hash::digest::YDigest64;
 use crypto::hash::sha::YSHA512;
 use crypto::elliptic::scalar::YScalar;
+use crypto::elliptic::keys::*;
+use amount::YAmount;
 use input::YInput;
 use output::YOutput;
 use utxo::YUTXO;
@@ -86,20 +88,14 @@ impl YTransaction {
             inputs.push(utxo.to_input(x, u, c)?);
         }
 
-        if max_height == 0 &&
-            (outputs_len != 0 ||
-            utxos_len != 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
-        if max_height != 0 && 
-            (outputs_len == 0 ||
-            utxos_len == 0) {
-            return Err(YErrorKind::InvalidHeight.into());
+        if (outputs.len() == 0) ^ (inputs.len() == 0) {
+            return Err(YErrorKind::InvalidLength.into());
         }
 
         for i in 0..outputs_len {
-            outputs[i].height = max_height;
+            if outputs[i].height != max_height + 1 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
         }
         
         let mut tx = YTransaction {
@@ -124,6 +120,102 @@ impl YTransaction {
         tx.id = tx.calc_id()?;
 
         Ok(tx)
+    }
+
+    pub fn new_coins(
+        main_sk: &YSecretKey,
+        change_sk: &YSecretKey,
+        main_pk: &YPublicKey,
+        change_pk: &YPublicKey,
+        amount: YAmount,
+        utxos: &Vec<YUTXO>,
+        xs: &Vec<YScalar>,
+        activation: Option<YTime>,
+        message: Option<Vec<u8>>) -> YResult<YTransaction> {
+        
+        let mut max_amount = YAmount::zero();
+        for i in 0..utxos.len() {
+            max_amount += utxos[i].amount.clone();
+        }
+
+        if amount > max_amount {
+            return Err(YErrorKind::InvalidAmount.into());
+        }
+
+        let mut max_height = 0;
+
+        for i in 0..utxos.len() {
+            if max_height < utxos[i].height {
+                max_height = utxos[i].height;
+            }
+        }
+
+        max_height += 1;
+
+        let coin_out = YOutput::new(main_sk, main_pk, max_height, amount.clone(), message)?;
+
+        let mut outputs = vec![coin_out];
+
+        let change_amount = max_amount - amount;
+
+        if change_amount != YAmount::zero() {
+            let change_out = YOutput::new(change_sk, change_pk, max_height, change_amount, None)?;
+            outputs.push(change_out);
+        }
+
+        YTransaction::new(utxos, xs, &mut outputs, activation)
+    }
+
+    pub fn new_data(data_sk: &YSecretKey,
+                    change_sk: &YSecretKey,
+                    data_pk: &YPublicKey,
+                    change_pk: &YPublicKey,
+                    data_buf: &[u8],
+                    utxos: &Vec<YUTXO>,
+                    xs: &Vec<YScalar>,
+                    activation: Option<YTime>,
+                    message: Option<Vec<u8>>) -> YResult<YTransaction> {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(data_buf);
+
+        let padding = data_buf.len() % 16;
+        if padding != 0 {
+            for _ in 0..padding {
+                buf.push(0);
+            }
+        }
+
+        let mut amount = YAmount::zero();
+        for i in 0..utxos.len() {
+            amount += utxos[i].amount.clone();
+        }
+
+        let mut max_height = 0;
+
+        for i in 0..utxos.len() {
+            if max_height < utxos[i].height {
+                max_height = utxos[i].height;
+            }
+        }
+
+        max_height += 1;
+
+        let data_out = YOutput::with_data(&data_sk, data_pk, max_height, &buf, message)?;
+        let data_amount = data_out.amount.clone();
+        if data_amount > amount {
+            return Err(YErrorKind::InvalidAmount.into());
+        }
+
+        let mut outputs = vec![data_out];
+        
+        let change_amount = amount - data_amount;
+
+        if change_amount != YAmount::zero() {
+            let change_out = YOutput::new(&change_sk, change_pk, max_height, change_amount, None)?;
+            outputs.push(change_out);
+        }
+
+        YTransaction::new(utxos, xs, &mut outputs, activation)
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
@@ -417,24 +509,16 @@ impl YTransaction {
             }
             let input_height = input.height;
             if max_height < input_height {
-                max_height = input_height
+                max_height = input_height;
             }
         }
-        
-        if max_height == 0 &&
-            (self.outputs.len() != 0 ||
-            self.inputs.len() != 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
 
-        if max_height != 0 && 
-            (self.outputs.len() == 0 ||
-            self.inputs.len() == 0) {
-            return Err(YErrorKind::InvalidHeight.into());
+        if (self.outputs.len() == 0) ^ (self.inputs.len() == 0) {
+            return Err(YErrorKind::InvalidLength.into());
         }
 
         for output in self.outputs.clone() {
-            if output.height != max_height {
+            if output.height != max_height + 1 {
                 return Err(YErrorKind::InvalidHeight.into()); 
             }
             output.check()?;

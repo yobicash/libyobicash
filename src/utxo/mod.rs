@@ -21,7 +21,11 @@ pub struct YUTXO {
 }
 
 impl YUTXO {
-    pub fn new(id: YDigest64, idx: u32, height: u32, recipient: YPublicKey, amount: YAmount) -> YUTXO {
+    pub fn new(id: YDigest64,
+               idx: u32,
+               height: u32,
+               recipient: YPublicKey,
+               amount: YAmount) -> YUTXO {
         YUTXO {
             id: id,
             idx: idx,

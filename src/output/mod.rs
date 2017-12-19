@@ -13,7 +13,7 @@ pub struct YOutput {
     pub height: u32,
     pub amount: YAmount,
     pub data: Option<YData>,
-    pub custom: Option<Vec<u8>>,
+    pub message: Option<Vec<u8>>,
 }
 
 impl YOutput {
@@ -22,15 +22,15 @@ impl YOutput {
         recipient: &YPublicKey,
         height: u32,
         amount: YAmount,
-        custom: Option<Vec<u8>>,
+        message: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
         if sk.g != recipient.g {
             let msg = String::from("Invalid generator");
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
         let sender = sk.to_public();
-        if let Some(_custom) = custom.clone() {
-            if _custom.len() != 256 {
+        if let Some(_message) = message.clone() {
+            if _message.len() != 256 {
                 return Err(YErrorKind::InvalidLength.into());
             }
         }
@@ -40,7 +40,7 @@ impl YOutput {
             height: height,
             amount: amount.clone(),
             data: None,
-            custom: custom,
+            message: message,
         })
     }
 
@@ -49,10 +49,10 @@ impl YOutput {
         recipient: &YPublicKey,
         height: u32,
         plain: &[u8],
-        custom: Option<Vec<u8>>,
+        message: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
-        if let Some(_custom) = custom.clone() {
-            if _custom.len() != 256 {
+        if let Some(_message) = message.clone() {
+            if _message.len() != 256 {
                 return Err(YErrorKind::InvalidLength.into());
             }
         }
@@ -64,7 +64,7 @@ impl YOutput {
             height: height,
             amount: data.amount()?,
             data: Some(data),
-            custom: custom,
+            message: message,
         })
     }
 
@@ -91,9 +91,9 @@ impl YOutput {
             buf.write_u32::<BigEndian>(0)?;
         }
 
-        if let Some(_custom) = self.custom.clone() {
+        if let Some(_message) = self.message.clone() {
             buf.write_u32::<BigEndian>(1)?;
-            buf.write(&_custom[..])?;
+            buf.write(&_message[..])?;
         } else {
             buf.write_u32::<BigEndian>(0)?;
         }
@@ -140,14 +140,14 @@ impl YOutput {
             out.data = Some(YData::from_bytes(data.as_slice())?);
         }
 
-        let has_custom = reader.read_u32::<BigEndian>()?;
-        if has_custom == 1 {
-            let mut custom = Vec::new();
+        let has_message = reader.read_u32::<BigEndian>()?;
+        if has_message == 1 {
+            let mut message = Vec::new();
             for _ in 0..256 {
-                custom.push(0);
+                message.push(0);
             }
-            reader.read_exact(&mut custom.as_mut_slice())?;
-            out.custom = Some(custom);
+            reader.read_exact(&mut message.as_mut_slice())?;
+            out.message = Some(message);
         }
 
         out.check()?;
@@ -184,8 +184,8 @@ impl YOutput {
             let msg = String::from("Invalid generator");
             return Err(YErrorKind::InvalidPoint(msg).into());
         }
-        if let Some(_custom) = self.custom.clone() {
-            if _custom.len() != 256 {
+        if let Some(_message) = self.message.clone() {
+            if _message.len() != 256 {
                 return Err(YErrorKind::InvalidLength.into());
             }
         }

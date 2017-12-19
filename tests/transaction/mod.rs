@@ -1,4 +1,6 @@
+use libyobicash::utils::random::YRandom;
 use libyobicash::crypto::hash::digest::YDigest64;
+use libyobicash::crypto::elliptic::scalar::YScalar;
 use libyobicash::crypto::elliptic::point::YPoint;
 use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;
@@ -7,7 +9,6 @@ use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::utxo::YUTXO;
 use libyobicash::transaction::YTransaction;
-use libyobicash::utils::random::YRandom;
 
 #[test]
 fn transaction_new_succ() {
@@ -21,7 +22,7 @@ fn transaction_new_succ() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
@@ -29,6 +30,7 @@ fn transaction_new_succ() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output];
     let res = YTransaction::new(&utxos, &xs, &mut outputs, None);
     assert!(res.is_ok())
@@ -72,7 +74,7 @@ fn transaction_bytes_succ() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
@@ -80,6 +82,7 @@ fn transaction_bytes_succ() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output];
     let tx_a = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
     let tx_buf = tx_a.to_bytes().unwrap();
@@ -107,17 +110,19 @@ fn transaction_verify_input_succ() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output.clone()];
     let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
+        outputs[i].height -= 1;
         verified &= tx.verify_input(i as u32, &outputs[i]).unwrap();
     }
     assert!(verified)
@@ -135,7 +140,7 @@ fn transaction_verify_input_fail() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
@@ -143,11 +148,13 @@ fn transaction_verify_input_fail() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output.clone()];
     let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         let mut output = outputs[i].clone();
+        output.height -= 1;
         output.recipient.pk = YPoint::random();
         verified &= tx.verify_input(i as u32, &output).unwrap();
     }
@@ -166,7 +173,7 @@ fn transaction_verify_succ() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
@@ -174,8 +181,10 @@ fn transaction_verify_succ() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output.clone()];
     let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    outputs[0].height -= 1;
     let verified = tx.verify(&outputs).unwrap();
     assert!(verified)
 }
@@ -192,7 +201,7 @@ fn transaction_verify_fail() {
     let sender_sk = YSecretKey::from_g(g);
     let height = 1;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
+    let mut output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
@@ -200,9 +209,11 @@ fn transaction_verify_fail() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
+    output.height += 1;
     let mut outputs = vec![output.clone()];
     let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
     for i in 0..outputs.len() {
+        outputs[i].height -= 1;
         outputs[i].recipient.pk = YPoint::random();
     }
     let verified = tx.verify(&outputs).unwrap();
@@ -210,7 +221,99 @@ fn transaction_verify_fail() {
 }
 
 #[test]
-fn transaction_genesys_check_succ() {
+fn transaction_new_coins_succ() {
+    let g = YPoint::default();
+    let main_sk = YSecretKey::from_g(g);
+    let main_pk = main_sk.to_public();
+    let change_sk = YSecretKey::from_g(g);
+    let change_pk = change_sk.to_public();
+    let amount = YAmount::from_u64(1000).unwrap();
+    let utxo_x = YScalar::random();
+    let xs = vec![main_sk.sk];
+    let utxo_sk = YSecretKey::new(g, utxo_x);
+    let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
+    let utxo_amount = YAmount::from_u64(10000).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
+    let utxos = vec![utxo];
+    let res = YTransaction::new_coins(&main_sk, &change_sk,
+                                      &main_pk, &change_pk,
+                                      amount, &utxos, &xs,
+                                      None, None);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn transaction_new_coins_fail() {
+    let g = YPoint::default();
+    let main_sk = YSecretKey::from_g(g);
+    let main_pk = main_sk.to_public();
+    let change_sk = YSecretKey::from_g(g);
+    let change_pk = change_sk.to_public();
+    let amount = YAmount::from_u64(1000).unwrap();
+    let utxo_x = YScalar::random();
+    let xs = vec![main_sk.sk];
+    let utxo_sk = YSecretKey::new(g, utxo_x);
+    let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
+    let utxo_amount = YAmount::from_u64(100).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
+    let utxos = vec![utxo];
+    let res = YTransaction::new_coins(&main_sk, &change_sk,
+                                      &main_pk, &change_pk,
+                                      amount, &utxos, &xs,
+                                      None, None);
+    assert!(res.is_err())
+}
+
+#[test]
+fn transaction_new_data_succ() {
+    let g = YPoint::default();
+    let main_sk = YSecretKey::from_g(g);
+    let main_pk = main_sk.to_public();
+    let change_sk = YSecretKey::from_g(g);
+    let change_pk = change_sk.to_public();
+    let data_buf = YRandom::bytes(1000);
+    let utxo_x = YScalar::random();
+    let xs = vec![main_sk.sk];
+    let utxo_sk = YSecretKey::new(g, utxo_x);
+    let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
+    let utxo_amount = YAmount::from_u64(10000).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
+    let utxos = vec![utxo];
+    let res = YTransaction::new_data(&main_sk, &change_sk,
+                                     &main_pk, &change_pk,
+                                     &data_buf, &utxos, &xs,
+                                     None, None);
+    assert!(res.is_ok())
+}
+
+#[test]
+fn transaction_new_data_fail() {
+    let g = YPoint::default();
+    let main_sk = YSecretKey::from_g(g);
+    let main_pk = main_sk.to_public();
+    let change_sk = YSecretKey::from_g(g);
+    let change_pk = change_sk.to_public();
+    let data_buf = YRandom::bytes(1000);
+    let utxo_x = YScalar::random();
+    let xs = vec![main_sk.sk];
+    let utxo_sk = YSecretKey::new(g, utxo_x);
+    let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
+    let utxo_amount = YAmount::from_u64(100).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
+    let utxos = vec![utxo];
+    let res = YTransaction::new_data(&main_sk, &change_sk,
+                                     &main_pk, &change_pk,
+                                     &data_buf, &utxos, &xs,
+                                     None, None);
+    assert!(res.is_err())
+}
+
+#[test]
+fn transaction_genesys_succ() {
     let tx = YTransaction::new_genesys().unwrap();
     let res = tx.check();
     assert!(res.is_ok())
