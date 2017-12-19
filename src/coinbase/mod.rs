@@ -10,6 +10,7 @@ use output::YOutput;
 use proof::storage::*;
 use proof::work::*;
 use amount::*;
+use transaction::*;
 use std::io::{Write, Cursor, Read};
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
@@ -244,8 +245,10 @@ impl YCoinbase {
         if self.post.is_none() {
             return Err(YErrorKind::PoStNotFound.into());
         }
+        
         let post = self.post.clone().unwrap();
         let mut pow = YPoW::new(post.digest, post.difficulty, increment)?;
+        
         let cb_amount = self.coinbase_amount(increment)?;
         let mut fee_amount = YAmount::default();
         let mut miner_amount = cb_amount.clone();
@@ -253,12 +256,19 @@ impl YCoinbase {
             fee_amount = cb_amount / YAmount::from_u64(100)?;
             miner_amount -= fee_amount.clone();
         }
+        
         let height = 0;
         let miner_output = YOutput::new(&miner_sk, &recipient_pk, height, miner_amount, None)?;
         let fee_output = YOutput::new(&miner_sk, &fee_pk, height, fee_amount, None)?;
         self.outputs = vec![miner_output, fee_output];
+        
         let msg = self.clone().to_pow_bytes()?;
         pow.mine(msg.as_slice())?;
+
+        if pow.digest.is_none() {
+            return Err(YErrorKind::PoWDigestNotFound.into());
+        }
+        
         self.pow = Some(pow);
         self.id = self.calc_id()?;
         Ok(())
@@ -412,4 +422,22 @@ impl YCoinbase {
 
         Ok(())
     }
+
+    pub fn mine_genesys(
+        diff: u32,
+        nonce: u32,
+        chunks: &Vec<u8>,
+        miner_sk: YSecretKey,
+        recipient_pk: YPublicKey,
+        fee_pk: YPublicKey) -> YResult<(YCoinbase, YTransaction)> {
+
+        let genesys_tx = YTransaction::new_genesys()?;
+        let gen_tx_id = genesys_tx.id;
+        
+        let mut genesys_cb = YCoinbase::new()?;
+        genesys_cb.set_post(gen_tx_id, diff, nonce, chunks)?;
+        genesys_cb.set_pow(0, miner_sk, recipient_pk, fee_pk)?;
+        
+        Ok((genesys_cb, genesys_tx))
+    } 
 }

@@ -211,3 +211,46 @@ fn coinbase_check_fail() {
     let res = cb.check();
     assert!(res.is_err())
 }
+
+#[test]
+fn coinbase_genesys_succ() {
+    let diff = 3;
+    let nonce = 0;
+    let chunks = YRandom::bytes(diff);
+    let g = YPoint::default();
+    let miner_sk = YSecretKey::from_g(g);
+    let recipient_sk = YSecretKey::from_g(g);
+    let recipient_pk = recipient_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
+    let (gen_cb, gen_tx) = YCoinbase::mine_genesys(diff,
+                                                    nonce,
+                                                    &chunks,
+                                                    miner_sk,
+                                                    recipient_pk,
+                                                    fee_pk).unwrap();
+    let mut res = gen_cb.check();
+    assert!(res.is_ok());
+    res = gen_tx.check();
+    assert!(res.is_ok())
+}
+
+#[test]
+fn coinbase_genesys_fail() {
+    let diff = 3;
+    let nonce = 0;
+    let chunks = YRandom::bytes(diff-1);
+    let g = YPoint::default();
+    let miner_sk = YSecretKey::from_g(g);
+    let recipient_sk = YSecretKey::from_g(g);
+    let recipient_pk = recipient_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
+    let res = YCoinbase::mine_genesys(diff,
+                                      nonce,
+                                      &chunks,
+                                      miner_sk,
+                                      recipient_pk,
+                                      fee_pk);
+    assert!(res.is_err())
+}

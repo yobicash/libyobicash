@@ -208,3 +208,10 @@ fn transaction_verify_fail() {
     let verified = tx.verify(&outputs).unwrap();
     assert!(!verified)
 }
+
+#[test]
+fn transaction_genesys_check_succ() {
+    let tx = YTransaction::new_genesys().unwrap();
+    let res = tx.check();
+    assert!(res.is_ok())
+}

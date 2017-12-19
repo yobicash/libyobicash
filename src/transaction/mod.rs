@@ -126,6 +126,10 @@ impl YTransaction {
         Ok(tx)
     }
 
+    pub fn new_genesys() -> YResult<YTransaction> {
+        YTransaction::new(&vec![], &vec![], &mut vec![], None)
+    }
+
     pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {
         // a) the idx input is substituted with a default YInput
         // b) all the non-idx inputs' challenges are substituted with the default YScalar
