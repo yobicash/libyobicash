@@ -24,7 +24,7 @@ pub struct YTransaction {
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &mut Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
 
@@ -163,7 +163,7 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &mut outputs, activation)
+        YTransaction::new(utxos, xs, &outputs, activation)
     }
 
     pub fn new_data(data_sk: &YSecretKey,
@@ -215,11 +215,11 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &mut outputs, activation)
+        YTransaction::new(utxos, xs, &outputs, activation)
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
-        YTransaction::new(&vec![], &vec![], &mut vec![], None)
+        YTransaction::new(&vec![], &vec![], &vec![], None)
     }
 
     pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {

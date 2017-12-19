@@ -31,8 +31,8 @@ fn transaction_new_succ() {
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     output.height += 1;
-    let mut outputs = vec![output];
-    let res = YTransaction::new(&utxos, &xs, &mut outputs, None);
+    let outputs = vec![output];
+    let res = YTransaction::new(&utxos, &xs, &outputs, None);
     assert!(res.is_ok())
 }
 
@@ -56,9 +56,9 @@ fn transaction_new_fail() {
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
-    let mut outputs = vec![output];
+    let outputs = vec![output];
     let activation = YTime::new(1970, 1, 1, 0, 0, 0);
-    let res = YTransaction::new(&utxos, &xs, &mut outputs, Some(activation));
+    let res = YTransaction::new(&utxos, &xs, &outputs, Some(activation));
     assert!(res.is_err())
 }
 
@@ -83,8 +83,8 @@ fn transaction_bytes_succ() {
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     output.height += 1;
-    let mut outputs = vec![output];
-    let tx_a = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    let outputs = vec![output];
+    let tx_a = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
     let tx_buf = tx_a.to_bytes().unwrap();
     let tx_b = YTransaction::from_bytes(tx_buf.as_slice()).unwrap();
     assert_eq!(tx_a.to_bytes().unwrap(), tx_b.to_bytes().unwrap())
@@ -119,7 +119,7 @@ fn transaction_verify_input_succ() {
     let xs = vec![recipient_sk.sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         outputs[i].height -= 1;
@@ -149,8 +149,8 @@ fn transaction_verify_input_fail() {
     let utxos = vec![utxo];
     let xs = vec![recipient_sk.sk];
     output.height += 1;
-    let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    let outputs = vec![output.clone()];
+    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         let mut output = outputs[i].clone();
@@ -183,7 +183,7 @@ fn transaction_verify_succ() {
     let xs = vec![recipient_sk.sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
     outputs[0].height -= 1;
     let verified = tx.verify(&outputs).unwrap();
     assert!(verified)
@@ -211,7 +211,7 @@ fn transaction_verify_fail() {
     let xs = vec![recipient_sk.sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &mut outputs, None).unwrap();
+    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
     for i in 0..outputs.len() {
         outputs[i].height -= 1;
         outputs[i].recipient.pk = YPoint::random();
