@@ -13,8 +13,9 @@ fn input_bytes_succ() {
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
+    let height = 0;
     let prot = YSchnorrProtocol::random().to_public();
-    let inp_a = YInput::new(id, idx, prot);
+    let inp_a = YInput::new(id, idx, height, prot);
     let inp_buf = inp_a.to_bytes().unwrap();
     let inp_b = YInput::from_bytes(inp_buf.as_slice()).unwrap();
     assert_eq!(inp_a, inp_b)
@@ -36,13 +37,14 @@ fn input_verify_succ() {
     let recipient_sk = YSecretKey::new(g, secret_prot.x);
     let recipient_pk = recipient_sk.to_public();
     let sender_sk = YSecretKey::from_g(g);
+    let height = 0;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let input = YInput::new(id, idx, public_prot);
+    let input = YInput::new(id, idx, height, public_prot);
     let verified = input.verify(&output);
     assert!(verified)
 }
@@ -55,13 +57,14 @@ fn input_verify_fail() {
     let recipient_sk = YSecretKey::new(g, secret_prot.x);
     let recipient_pk = recipient_sk.to_public();
     let sender_sk = YSecretKey::from_g(g);
+    let height = 0;
     let amount = YAmount::one();
-    let output = YOutput::new(&sender_sk, &recipient_pk, amount, None).unwrap();
+    let output = YOutput::new(&sender_sk, &recipient_pk, height, amount, None).unwrap();
     let mut _id = [0u8; 64];
     YRandom::bytes_mut(&mut _id);
     let id = YDigest64::from_bytes(&_id[..]).unwrap();
     let idx = 0;
-    let mut input = YInput::new(id, idx, public_prot);
+    let mut input = YInput::new(id, idx, height, public_prot);
     input.c = YScalar::random();
     let verified = input.verify(&output);
     assert!(!verified)

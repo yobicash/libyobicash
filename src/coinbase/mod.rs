@@ -17,7 +17,6 @@ pub struct YCoinbase {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
-    pub height: u64,
     pub post: Option<YPoSt>,
     pub pow: Option<YPoW>,
     pub outputs: Vec<YOutput>,
@@ -33,7 +32,6 @@ impl YCoinbase {
         let mut cb = YCoinbase {
             id: id,
             version: version,
-            height: 0,
             time: now,
             post: None,
             pow: None,
@@ -50,8 +48,6 @@ impl YCoinbase {
 
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
-
-        buf.write_u64::<BigEndian>(self.height)?;
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
@@ -94,8 +90,6 @@ impl YCoinbase {
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
 
-        buf.write_u64::<BigEndian>(self.height)?;
-
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
@@ -127,8 +121,6 @@ impl YCoinbase {
 
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
-
-        buf.write_u64::<BigEndian>(self.height)?;
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
@@ -162,7 +154,7 @@ impl YCoinbase {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YCoinbase> {
-        if b.len() < 104 {
+        if b.len() < 100 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -177,8 +169,6 @@ impl YCoinbase {
         let mut ver_buf = [0u8; 24];
         reader.read_exact(&mut ver_buf[..])?;
         cb.version = YVersion::from_bytes(&ver_buf[..])?;
-
-        cb.height = reader.read_u64::<BigEndian>()?;
 
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
@@ -263,8 +253,9 @@ impl YCoinbase {
             fee_amount = cb_amount / YAmount::from_u64(100)?;
             miner_amount -= fee_amount.clone();
         }
-        let miner_output = YOutput::new(&miner_sk, &recipient_pk, miner_amount, None)?;
-        let fee_output = YOutput::new(&miner_sk, &fee_pk, fee_amount, None)?;
+        let height = 0;
+        let miner_output = YOutput::new(&miner_sk, &recipient_pk, height, miner_amount, None)?;
+        let fee_output = YOutput::new(&miner_sk, &fee_pk, height, fee_amount, None)?;
         self.outputs = vec![miner_output, fee_output];
         let msg = self.clone().to_pow_bytes()?;
         pow.mine(msg.as_slice())?;
@@ -309,10 +300,6 @@ impl YCoinbase {
             return Err(YErrorKind::InvalidVersion(v).into());
         }
         
-        if self.height != 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
         let time = self.time.clone();
         let now = YTime::now();
         if time > now {
@@ -338,6 +325,9 @@ impl YCoinbase {
         let mut tot_amount = YAmount::default();
 
         for output in self.outputs.clone() {
+            if output.height != 0 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
             output.check()?;
             tot_amount += output.amount;
         }
@@ -356,10 +346,6 @@ impl YCoinbase {
             return Err(YErrorKind::InvalidVersion(v).into());
         }
         
-        if self.height != 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
         let time = self.time.clone();
         let now = YTime::now();
         if time > now {
@@ -373,6 +359,9 @@ impl YCoinbase {
         }
 
         for output in self.outputs.clone() {
+            if output.height != 0 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
             output.check()?;
         }
 
@@ -388,10 +377,6 @@ impl YCoinbase {
             return Err(YErrorKind::InvalidVersion(v).into());
         }
         
-        if self.height != 0 {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
         let time = self.time.clone();
         let now = YTime::now();
         if time > now {
@@ -413,6 +398,9 @@ impl YCoinbase {
         let mut tot_amount = YAmount::default();
 
         for output in self.outputs.clone() {
+            if output.height != 0 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
             output.check()?;
             tot_amount += output.amount;
         }

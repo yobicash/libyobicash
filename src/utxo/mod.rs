@@ -13,17 +13,19 @@ use std::io::{Write, Read, Cursor};
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct YUTXO {
-pub id: YDigest64,
-pub idx: u32,
-pub recipient: YPublicKey,
-pub amount: YAmount,
+    pub id: YDigest64,
+    pub idx: u32,
+    pub height: u32,
+    pub recipient: YPublicKey,
+    pub amount: YAmount,
 }
 
 impl YUTXO {
-    pub fn new(id: YDigest64, idx: u32, recipient: YPublicKey, amount: YAmount) -> YUTXO {
+    pub fn new(id: YDigest64, idx: u32, height: u32, recipient: YPublicKey, amount: YAmount) -> YUTXO {
         YUTXO {
             id: id,
             idx: idx,
+            height: height,
             recipient: recipient,
             amount: amount,
         }
@@ -33,6 +35,7 @@ impl YUTXO {
         YUTXO {
             id: id,
             idx: idx,
+            height: out.height,
             recipient: out.recipient,
             amount: out.amount.clone(),
         }
@@ -55,7 +58,7 @@ impl YUTXO {
             r: &u + &(&x*&c),
         };
         let prot = secret_prot.to_public();
-        let input = YInput::new(self.id, self.idx, prot);
+        let input = YInput::new(self.id, self.idx, self.height, prot);
         Ok(input)
     }
 
@@ -63,6 +66,7 @@ impl YUTXO {
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
         buf.write_u32::<BigEndian>(self.idx)?;
+        buf.write_u32::<BigEndian>(self.height)?;
         buf.write(&self.recipient.to_bytes()[..])?;
         let amount_buf = self.amount.to_bytes();
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
@@ -71,7 +75,7 @@ impl YUTXO {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YUTXO> {
-        if b.len() < 136 {
+        if b.len() < 140 {
             return Err(YErrorKind::InvalidLength.into());
         }
         
@@ -84,6 +88,8 @@ impl YUTXO {
         utxo.id = YDigest64::from_bytes(&id_buf[..])?;
 
         utxo.idx = reader.read_u32::<BigEndian>()?;
+
+        utxo.height = reader.read_u32::<BigEndian>()?;
 
         let mut recipient_buf = [0u8; 64];
         reader.read_exact(&mut recipient_buf[..])?;

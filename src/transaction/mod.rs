@@ -16,28 +16,15 @@ pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
-    pub height: u64,
     pub activation: Option<YTime>,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, height: u64, activation: Option<YTime>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &mut Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
-
-        if height == 0 &&
-            (outputs_len != 0 ||
-            utxos_len != 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
-        if height != 0 && 
-            (outputs_len == 0 ||
-            utxos_len == 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
 
         if xs.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
@@ -81,22 +68,43 @@ impl YTransaction {
         }
 
         let version = YVersion::default();
+
         let id = YDigest64::default();
+       
         let mut inputs = Vec::new();
         let mut uxs = Vec::new();
+        let mut max_height = 0;
         for i in 0..utxos_len {
             let x = xs[i];
             let u = YScalar::random();
             uxs.push(u);
             let c = YScalar::zero();
             let utxo = utxos[i].clone();
+            if max_height < utxo.height {
+                max_height = utxo.height;
+            }
             inputs.push(utxo.to_input(x, u, c)?);
+        }
+
+        if max_height == 0 &&
+            (outputs_len != 0 ||
+            utxos_len != 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        if max_height != 0 && 
+            (outputs_len == 0 ||
+            utxos_len == 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        for i in 0..outputs_len {
+            outputs[i].height = max_height;
         }
         
         let mut tx = YTransaction {
             id: id,
             version: version,
-            height: height,
             time: now,
             activation: activation,
             inputs: inputs.clone(),
@@ -126,8 +134,6 @@ impl YTransaction {
 
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
-
-        buf.write_u64::<BigEndian>(self.height)?;
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
@@ -178,8 +184,6 @@ impl YTransaction {
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
 
-        buf.write_u64::<BigEndian>(self.height)?;
-
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
@@ -224,8 +228,6 @@ impl YTransaction {
         let version_buf = self.version.to_bytes()?;
         buf.write(&version_buf[..])?;
 
-        buf.write_u64::<BigEndian>(self.height)?;
-
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
@@ -259,7 +261,7 @@ impl YTransaction {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
-        if b.len() < 104 {
+        if b.len() < 96 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -274,8 +276,6 @@ impl YTransaction {
         let mut ver_buf = [0u8; 24];
         reader.read_exact(&mut ver_buf[..])?;
         tx.version = YVersion::from_bytes(&ver_buf[..])?;
-
-        tx.height = reader.read_u64::<BigEndian>()?;
 
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
@@ -328,20 +328,20 @@ impl YTransaction {
         Ok(self.to_bytes()?.to_hex())
     }
 
-    pub fn verify_input(&self, idx: u32, output: &YOutput) -> YResult<bool> {
+    pub fn verify_input(&self, idx: u32, prev_output: &YOutput) -> YResult<bool> {
         if self.inputs.len() < 1 + idx as usize {
             return Err(YErrorKind::InvalidLength.into());
         }
-        Ok(self.inputs[idx as usize].verify(output))
+        Ok(self.inputs[idx as usize].verify(prev_output))
     }
 
-    pub fn verify(&self, outputs: &Vec<YOutput>) -> YResult<bool> {
+    pub fn verify(&self, prev_outputs: &Vec<YOutput>) -> YResult<bool> {
         let len = self.inputs.len();
-        if outputs.len() != len {
+        if prev_outputs.len() != len {
             return Err(YErrorKind::InvalidLength.into());
         }
         for idx in 0..len {
-            let verified = self.verify_input(idx as u32, &outputs[idx as usize])?;
+            let verified = self.verify_input(idx as u32, &prev_outputs[idx as usize])?;
             if !verified {
                 return Ok(false);
             }
@@ -391,18 +391,6 @@ impl YTransaction {
             let v = self.version.to_string();
             return Err(YErrorKind::InvalidVersion(v).into());
         }
-        
-        if self.height == 0 &&
-            (self.outputs.len() != 0 ||
-            self.inputs.len() != 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
-
-        if self.height != 0 && 
-            (self.outputs.len() == 0 ||
-            self.inputs.len() == 0) {
-            return Err(YErrorKind::InvalidHeight.into());
-        }
 
         let time = self.time.clone();
         let now = YTime::now();
@@ -416,14 +404,35 @@ impl YTransaction {
             }
         }
 
+        let mut max_height = 0;
+
         for i in 0..self.inputs.len() {
             let input = self.inputs[i].clone();
             if input.c != self.calc_challenge(i as u32)? {
                 return Err(YErrorKind::InvalidChallenge(i).into());
             }
+            let input_height = input.height;
+            if max_height < input_height {
+                max_height = input_height
+            }
+        }
+        
+        if max_height == 0 &&
+            (self.outputs.len() != 0 ||
+            self.inputs.len() != 0) {
+            return Err(YErrorKind::InvalidHeight.into());
+        }
+
+        if max_height != 0 && 
+            (self.outputs.len() == 0 ||
+            self.inputs.len() == 0) {
+            return Err(YErrorKind::InvalidHeight.into());
         }
 
         for output in self.outputs.clone() {
+            if output.height != max_height {
+                return Err(YErrorKind::InvalidHeight.into()); 
+            }
             output.check()?;
         }
 

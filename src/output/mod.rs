@@ -10,6 +10,7 @@ use std::io::{Write, Read, Cursor};
 pub struct YOutput {
     pub sender: YPublicKey,
     pub recipient: YPublicKey,
+    pub height: u32,
     pub amount: YAmount,
     pub data: Option<YData>,
     pub custom: Option<Vec<u8>>,
@@ -19,6 +20,7 @@ impl YOutput {
     pub fn new(
         sk: &YSecretKey,
         recipient: &YPublicKey,
+        height: u32,
         amount: YAmount,
         custom: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
@@ -35,6 +37,7 @@ impl YOutput {
         Ok(YOutput {
             sender: sender.clone(),
             recipient: recipient.clone(),
+            height: height,
             amount: amount.clone(),
             data: None,
             custom: custom,
@@ -44,6 +47,7 @@ impl YOutput {
     pub fn with_data(
         sk: &YSecretKey,
         recipient: &YPublicKey,
+        height: u32,
         plain: &[u8],
         custom: Option<Vec<u8>>,
     ) -> YResult<YOutput> {
@@ -57,6 +61,7 @@ impl YOutput {
         Ok(YOutput {
             sender: sender.clone(),
             recipient: recipient.clone(),
+            height: height,
             amount: data.amount()?,
             data: Some(data),
             custom: custom,
@@ -71,6 +76,8 @@ impl YOutput {
         buf.write(&self.sender.to_bytes()[..])?;
 
         buf.write(&self.recipient.to_bytes()[..])?;
+
+        buf.write_u32::<BigEndian>(self.height)?;
 
         let amount_buf = self.amount.to_bytes();
         buf.write_u32::<BigEndian>(amount_buf.len() as u32)?;
@@ -95,7 +102,7 @@ impl YOutput {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YOutput> {
-        if b.len() < 140 {
+        if b.len() < 144 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -110,6 +117,8 @@ impl YOutput {
         let mut recipient_buf = [0u8; 64];
         reader.read_exact(&mut recipient_buf[..])?;
         out.recipient = YPublicKey::from_bytes(&recipient_buf[..])?;
+
+        out.height = reader.read_u32::<BigEndian>()?;
 
         let amount_size = reader.read_u32::<BigEndian>()?;
         if amount_size > 0 {

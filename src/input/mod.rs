@@ -12,6 +12,7 @@ use std::io::{Write, Read, Cursor};
 pub struct YInput {
     pub id: YDigest64,
     pub idx: u32,
+    pub height: u32,
     pub g: YPoint,
     pub t: YPoint,
     pub c: YScalar,
@@ -22,11 +23,13 @@ impl YInput {
     pub fn new(
         id: YDigest64,
         idx: u32,
+        height: u32,
         prot: YSchnorrProtocolPublic,
     ) -> YInput {
         YInput {
             id: id,
             idx: idx,
+            height: height,
             g: prot.g,
             t: prot.t,
             c: prot.c,
@@ -38,6 +41,7 @@ impl YInput {
         let mut buf = Vec::new();
         buf.write(&self.id.to_bytes()[..])?;
         buf.write_u32::<BigEndian>(self.idx)?;
+        buf.write_u32::<BigEndian>(self.height)?;
         buf.write(&self.g.to_bytes()[..])?;
         buf.write(&self.t.to_bytes()[..])?;
         buf.write(&self.c.to_bytes()[..])?;
@@ -46,7 +50,7 @@ impl YInput {
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YInput> {
-        if b.len() != 196 {
+        if b.len() != 200 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -59,6 +63,8 @@ impl YInput {
         input.id = YDigest64::from_bytes(&id_buf[..])?;
 
         input.idx = reader.read_u32::<BigEndian>()?;
+
+        input.height = reader.read_u32::<BigEndian>()?;
 
         let mut g_buf = [0u8; 32];
         reader.read_exact(&mut g_buf[..])?;
@@ -88,14 +94,14 @@ impl YInput {
         Ok(self.to_bytes()?.to_hex())
     }
 
-    pub fn verify(&self, out: &YOutput) -> bool {
+    pub fn verify(&self, prev_out: &YOutput) -> bool {
         let prot = YSchnorrProtocolPublic {
             g: self.g,
-            w: out.recipient.pk,
+            w: prev_out.recipient.pk,
             t: self.t,
             c: self.c,
             r: self.r,
         };
-        prot.verify()
+        prot.verify() && self.height == prev_out.height
     }
 }

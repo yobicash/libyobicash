@@ -34,7 +34,7 @@ fn coinbase_bytes_succ() {
 
 #[test]
 fn coinbase_bytes_fail() {
-    let mut b = [0u8; 103];
+    let mut b = [0u8; 99];
     YRandom::bytes_mut(&mut b);
     let res = YCoinbase::from_bytes(&b[..]);
     assert!(res.is_err())
