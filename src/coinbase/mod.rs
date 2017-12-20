@@ -423,21 +423,52 @@ impl YCoinbase {
         Ok(())
     }
 
+    pub fn mine(
+        tx_id: YDigest64,
+        diff: u32,
+        nonce: u32,
+        chunks: &Vec<u8>,
+        increment: u32,
+        miner_sk: YSecretKey,
+        recipient_pk: YPublicKey,
+        fee_pk: YPublicKey) -> YResult<(YCoinbase, u32)> {
+       
+        let mut tries = 0;
+
+        loop {
+            let mut cb = YCoinbase::new()?;
+            cb.set_post(tx_id, diff, nonce, chunks)?;
+            tries += 1;
+            match cb.set_pow(increment, miner_sk, recipient_pk, fee_pk) {
+                Ok(_) => {
+                    return Ok((cb, tries));
+                },
+                Err(YError(YErrorKind::PoWNotFound, _)) => {
+                    continue; 
+                },
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+    } 
+
     pub fn mine_genesys(
         diff: u32,
         nonce: u32,
         chunks: &Vec<u8>,
         miner_sk: YSecretKey,
         recipient_pk: YPublicKey,
-        fee_pk: YPublicKey) -> YResult<(YCoinbase, YTransaction)> {
+        fee_pk: YPublicKey) -> YResult<((YCoinbase, YTransaction), u32)> {
 
         let genesys_tx = YTransaction::new_genesys()?;
         let gen_tx_id = genesys_tx.id;
         
-        let mut genesys_cb = YCoinbase::new()?;
-        genesys_cb.set_post(gen_tx_id, diff, nonce, chunks)?;
-        genesys_cb.set_pow(0, miner_sk, recipient_pk, fee_pk)?;
-        
-        Ok((genesys_cb, genesys_tx))
+        let (genesys_cb, tries) = YCoinbase::mine(gen_tx_id, diff,
+                                         nonce, chunks, 0,
+                                         miner_sk, recipient_pk,
+                                         fee_pk)?;
+
+        Ok(((genesys_cb, genesys_tx), tries))
     } 
 }
