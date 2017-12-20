@@ -89,12 +89,3 @@ fn shared_key_succ() {
     let key_2 = sk_b.shared_key(&pk_a).unwrap();
     assert_eq!(key_1, key_2)
 }
-
-#[test]
-fn shared_key_fail() {
-    let sk_a = YSecretKey::random();
-    let sk_b = YSecretKey::random();
-    let pk_b = sk_b.to_public();
-    let res = sk_a.shared_key(&pk_b);
-    assert!(res.is_err())
-}

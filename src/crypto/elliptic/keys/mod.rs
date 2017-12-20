@@ -61,7 +61,7 @@ impl YSecretKey {
 
     pub fn random() -> YSecretKey {
         YSecretKey {
-            g: YPoint::random(),
+            g: YPoint::default(),
             sk: YScalar::random(),
         }
     }
