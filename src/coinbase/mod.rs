@@ -3,6 +3,7 @@ use serialize::hex::{FromHex, ToHex};
 use errors::*;
 use utils::version::YVersion;
 use utils::time::YTime;
+use utils::random::YRandom;
 use crypto::hash::digest::YDigest64;
 use crypto::hash::sha::YSHA512;
 use crypto::elliptic::keys::*;
@@ -426,7 +427,6 @@ impl YCoinbase {
     pub fn mine(
         tx_id: YDigest64,
         diff: u32,
-        nonce: u32,
         chunks: &Vec<u8>,
         increment: u32,
         miner_sk: YSecretKey,
@@ -437,6 +437,7 @@ impl YCoinbase {
 
         loop {
             let mut cb = YCoinbase::new()?;
+            let nonce = YRandom::u32();
             cb.set_post(tx_id, diff, nonce, chunks)?;
             tries += 1;
             match cb.set_pow(increment, miner_sk, recipient_pk, fee_pk) {
@@ -455,7 +456,6 @@ impl YCoinbase {
 
     pub fn mine_genesys(
         diff: u32,
-        nonce: u32,
         chunks: &Vec<u8>,
         miner_sk: YSecretKey,
         recipient_pk: YPublicKey,
@@ -465,9 +465,9 @@ impl YCoinbase {
         let gen_tx_id = genesys_tx.id;
         
         let (genesys_cb, tries) = YCoinbase::mine(gen_tx_id, diff,
-                                         nonce, chunks, 0,
-                                         miner_sk, recipient_pk,
-                                         fee_pk)?;
+                                                  chunks, 0,
+                                                  miner_sk, recipient_pk,
+                                                  fee_pk)?;
 
         Ok(((genesys_cb, genesys_tx), tries))
     } 
