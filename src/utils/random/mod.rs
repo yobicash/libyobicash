@@ -16,9 +16,19 @@ impl YRandom {
         sample(&mut rng, from..to, 1)[0]
     }
 
+    pub fn u32_sample(from: u32, to: u32, n: u32) -> Vec<u32> {
+        let mut rng = thread_rng();
+        sample(&mut rng, from..to, n as usize)
+    }
+
     pub fn u64_range(from: u64, to: u64) -> u64 {
         let mut rng = thread_rng();
         sample(&mut rng, from..to, 1)[0]
+    }
+
+    pub fn u64_sample(from: u64, to: u64, n: u64) -> Vec<u64> {
+        let mut rng = thread_rng();
+        sample(&mut rng, from..to, n as usize)
     }
 
     pub fn bytes_mut(sl: &mut [u8]) {
