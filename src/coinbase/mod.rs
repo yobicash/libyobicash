@@ -223,7 +223,12 @@ impl YCoinbase {
         Ok(self.to_bytes()?.to_hex())
     }
 
-    pub fn set_post(&mut self, id_tx: YDigest64, diff: u32, nonce: u32, chunks: &Vec<u8>) -> YResult<()> {
+    pub fn difficulty(height: u32) -> u32 {
+        ((height*63)/u32::max_value() + 3) % 63
+    }
+
+    pub fn set_post(&mut self, id_tx: YDigest64, height: u32, nonce: u32, chunks: &Vec<u8>) -> YResult<()> {
+        let diff = YCoinbase::difficulty(height);
         let post = YPoSt::new(id_tx, diff, nonce, chunks)?;
         self.post = Some(post);
         self.id = self.calc_id()?;
@@ -455,7 +460,7 @@ impl YCoinbase {
     } 
 
     pub fn mine_genesys(
-        diff: u32,
+        incr: u32,
         chunks: &Vec<u8>,
         miner_sk: YSecretKey,
         recipient_pk: YPublicKey,
@@ -464,8 +469,8 @@ impl YCoinbase {
         let genesys_tx = YTransaction::new_genesys()?;
         let gen_tx_id = genesys_tx.id;
         
-        let (genesys_cb, tries) = YCoinbase::mine(gen_tx_id, diff,
-                                                  chunks, 0,
+        let (genesys_cb, tries) = YCoinbase::mine(gen_tx_id, 3,
+                                                  chunks, incr,
                                                   miner_sk, recipient_pk,
                                                   fee_pk)?;
 

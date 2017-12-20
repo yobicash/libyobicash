@@ -15,7 +15,8 @@ fn coinbase_new_succ() {
 fn coinbase_bytes_succ() {
     let mut cb_a = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb_a.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -44,7 +45,8 @@ fn coinbase_bytes_fail() {
 fn coinbase_set_post_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     let res = cb.set_post(id_tx, diff, nonce, &chunks);
@@ -55,7 +57,8 @@ fn coinbase_set_post_succ() {
 fn coinbase_set_post_fail() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff-1);
     let res = cb.set_post(id_tx, diff, nonce, &chunks);
@@ -66,7 +69,8 @@ fn coinbase_set_post_fail() {
 fn coinbase_amount_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -87,7 +91,8 @@ fn coinbase_amount_fail() {
 fn coinbase_set_pow_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -107,7 +112,8 @@ fn coinbase_set_pow_succ() {
 fn coinbase_set_pow_fail() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -127,7 +133,8 @@ fn coinbase_set_pow_fail() {
 fn coinbase_verify_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -147,7 +154,8 @@ fn coinbase_verify_succ() {
 fn coinbase_verify_fail() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -159,7 +167,8 @@ fn coinbase_verify_fail() {
 fn coinbase_pre_pow_check_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -171,7 +180,8 @@ fn coinbase_pre_pow_check_succ() {
 fn coinbase_pre_pow_check_fail() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -184,7 +194,8 @@ fn coinbase_pre_pow_check_fail() {
 fn coinbase_check_succ() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -204,7 +215,8 @@ fn coinbase_check_succ() {
 fn coinbase_check_fail() {
     let mut cb = YCoinbase::new().unwrap();
     let id_tx = YDigest64::from_bytes(YRandom::bytes(64).as_slice()).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let nonce = 0;
     let chunks = YRandom::bytes(diff);
     cb.set_post(id_tx, diff, nonce, &chunks).unwrap();
@@ -215,7 +227,8 @@ fn coinbase_check_fail() {
 #[test]
 fn coinbase_mine_succ() {
     let tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let chunks = YRandom::bytes(diff);
     let g = YPoint::default();
     let increment = 1;
@@ -238,7 +251,8 @@ fn coinbase_mine_succ() {
 #[test]
 fn coinbase_mine_fail() {
     let tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
-    let diff = 3;
+    let height = 3;
+    let diff = YCoinbase::difficulty(height);
     let chunks = YRandom::bytes(diff-1);
     let increment = 1;
     let g = YPoint::default();
@@ -259,6 +273,7 @@ fn coinbase_mine_fail() {
 
 #[test]
 fn coinbase_mine_genesys_succ() {
+    let incr = 1;
     let diff = 3;
     let chunks = YRandom::bytes(diff);
     let g = YPoint::default();
@@ -267,7 +282,7 @@ fn coinbase_mine_genesys_succ() {
     let recipient_pk = recipient_sk.to_public();
     let fee_sk = YSecretKey::from_g(g);
     let fee_pk = fee_sk.to_public();
-    let ((gen_cb, gen_tx), _) = YCoinbase::mine_genesys(diff,
+    let ((gen_cb, gen_tx), _) = YCoinbase::mine_genesys(incr,
                                                         &chunks,
                                                         miner_sk,
                                                         recipient_pk,
@@ -280,15 +295,16 @@ fn coinbase_mine_genesys_succ() {
 
 #[test]
 fn coinbase_mine_genesys_fail() {
-    let diff = 3;
-    let chunks = YRandom::bytes(diff-1);
+    let incr = 1;
+    let diff = 2;
+    let chunks = YRandom::bytes(diff);
     let g = YPoint::default();
     let miner_sk = YSecretKey::from_g(g);
     let recipient_sk = YSecretKey::from_g(g);
     let recipient_pk = recipient_sk.to_public();
     let fee_sk = YSecretKey::from_g(g);
     let fee_pk = fee_sk.to_public();
-    let res = YCoinbase::mine_genesys(diff,
+    let res = YCoinbase::mine_genesys(incr,
                                       &chunks,
                                       miner_sk,
                                       recipient_pk,
