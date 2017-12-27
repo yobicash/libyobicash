@@ -18,13 +18,12 @@ pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
-    pub activation: Option<YTime>,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
 
@@ -61,13 +60,6 @@ impl YTransaction {
         if outputs_refs.len() != outputs_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
-        
-        let now = YTime::now();
-        if let Some(_activation) = activation.clone() {
-            if _activation <= now {
-                return Err(YErrorKind::InvalidTime.into());
-            }
-        }
 
         let version = YVersion::default();
 
@@ -101,8 +93,7 @@ impl YTransaction {
         let mut tx = YTransaction {
             id: id,
             version: version,
-            time: now,
-            activation: activation,
+            time: YTime::now(),
             inputs: inputs.clone(),
             outputs: outputs.clone(),
         };
@@ -130,7 +121,6 @@ impl YTransaction {
         amount: YAmount,
         utxos: &Vec<YUTXO>,
         xs: &Vec<YScalar>,
-        activation: Option<YTime>,
         message: Option<Vec<u8>>) -> YResult<YTransaction> {
         
         let mut max_amount = YAmount::zero();
@@ -163,7 +153,7 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs, activation)
+        YTransaction::new(utxos, xs, &outputs)
     }
 
     pub fn new_data(data_sk: &YSecretKey,
@@ -173,7 +163,6 @@ impl YTransaction {
                     data_buf: &[u8],
                     utxos: &Vec<YUTXO>,
                     xs: &Vec<YScalar>,
-                    activation: Option<YTime>,
                     message: Option<Vec<u8>>) -> YResult<YTransaction> {
         let mut buf = Vec::new();
         buf.extend_from_slice(data_buf);
@@ -215,11 +204,11 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs, activation)
+        YTransaction::new(utxos, xs, &outputs)
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
-        YTransaction::new(&vec![], &vec![], &vec![], None)
+        YTransaction::new(&vec![], &vec![], &vec![])
     }
 
     pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {
@@ -233,14 +222,6 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -283,14 +264,6 @@ impl YTransaction {
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
-
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
 
@@ -326,14 +299,6 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -376,13 +341,6 @@ impl YTransaction {
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
         tx.time = YTime::from_bytes(&time_buf[..])?;
-
-        let has_activation = reader.read_u32::<BigEndian>()?;
-        if has_activation == 1 {
-            let mut activation_buf = [0u8; 8];
-            reader.read_exact(&mut activation_buf[..])?;
-            tx.activation = Some(YTime::from_bytes(&activation_buf[..])?);
-        }
 
         let inputs_len = reader.read_u32::<BigEndian>()? as usize;
 
@@ -471,14 +429,6 @@ impl YTransaction {
         dropped
     }
 
-    pub fn is_active(&self) -> bool {
-        if let Some(_activation) = self.activation.clone() {
-            _activation <= YTime::now()
-        } else {
-            false
-        }
-    }
-
     pub fn check(&self) -> YResult<()> {
         if self.id != self.calc_id()? {
             return Err(YErrorKind::InvalidChecksum.into());
@@ -492,12 +442,6 @@ impl YTransaction {
         let now = YTime::now();
         if time > now {
             return Err(YErrorKind::InvalidTime.into())
-        }
-
-        if let Some(_activation) = self.activation.clone() {
-            if _activation <= time {
-                return Err(YErrorKind::InvalidTime.into())
-            }
         }
 
         let mut max_height = 0;
