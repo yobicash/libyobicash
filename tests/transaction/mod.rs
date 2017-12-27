@@ -28,10 +28,10 @@ fn transaction_new_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output];
-    let res = YTransaction::new(&utxos, &xs, &outputs);
+    let res = YTransaction::new(&utxos, &sks, &outputs);
     assert!(res.is_ok())
 }
 
@@ -54,9 +54,9 @@ fn transaction_new_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     let outputs = vec![output];
-    let res = YTransaction::new(&utxos, &xs, &outputs);
+    let res = YTransaction::new(&utxos, &sks, &outputs);
     assert!(res.is_err())
 }
 
@@ -79,10 +79,10 @@ fn transaction_bytes_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output];
-    let tx_a = YTransaction::new(&utxos, &xs, &outputs).unwrap();
+    let tx_a = YTransaction::new(&utxos, &sks, &outputs).unwrap();
     let tx_buf = tx_a.to_bytes().unwrap();
     let tx_b = YTransaction::from_bytes(tx_buf.as_slice()).unwrap();
     assert_eq!(tx_a.to_bytes().unwrap(), tx_b.to_bytes().unwrap())
@@ -114,10 +114,10 @@ fn transaction_verify_input_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         outputs[i].height -= 1;
@@ -145,10 +145,10 @@ fn transaction_verify_input_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         let mut output = outputs[i].clone();
@@ -178,10 +178,10 @@ fn transaction_verify_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs).unwrap();
     outputs[0].height -= 1;
     let verified = tx.verify(&outputs).unwrap();
     assert!(verified)
@@ -206,10 +206,10 @@ fn transaction_verify_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs).unwrap();
     for i in 0..outputs.len() {
         outputs[i].height -= 1;
         outputs[i].recipient.pk = YPoint::random();
@@ -227,7 +227,7 @@ fn transaction_new_coins_succ() {
     let change_pk = change_sk.to_public();
     let amount = YAmount::from_u64(1000).unwrap();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![main_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(10000).unwrap();
@@ -236,7 +236,7 @@ fn transaction_new_coins_succ() {
     let utxos = vec![utxo];
     let res = YTransaction::new_coins(&main_sk, &change_sk,
                                       &main_pk, &change_pk,
-                                      amount, &utxos, &xs,
+                                      amount, &utxos, &sks,
                                       None);
     assert!(res.is_ok())
 }
@@ -250,7 +250,7 @@ fn transaction_new_coins_fail() {
     let change_pk = change_sk.to_public();
     let amount = YAmount::from_u64(1000).unwrap();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![main_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(100).unwrap();
@@ -259,7 +259,7 @@ fn transaction_new_coins_fail() {
     let utxos = vec![utxo];
     let res = YTransaction::new_coins(&main_sk, &change_sk,
                                       &main_pk, &change_pk,
-                                      amount, &utxos, &xs,
+                                      amount, &utxos, &sks,
                                       None);
     assert!(res.is_err())
 }
@@ -273,7 +273,7 @@ fn transaction_new_data_succ() {
     let change_pk = change_sk.to_public();
     let data_buf = YRandom::bytes(1000);
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![main_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(10000).unwrap();
@@ -282,7 +282,7 @@ fn transaction_new_data_succ() {
     let utxos = vec![utxo];
     let res = YTransaction::new_data(&main_sk, &change_sk,
                                      &main_pk, &change_pk,
-                                     &data_buf, &utxos, &xs,
+                                     &data_buf, &utxos, &sks,
                                      None);
     assert!(res.is_ok())
 }
@@ -296,7 +296,7 @@ fn transaction_new_data_fail() {
     let change_pk = change_sk.to_public();
     let data_buf = YRandom::bytes(1000);
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![main_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(100).unwrap();
@@ -305,7 +305,7 @@ fn transaction_new_data_fail() {
     let utxos = vec![utxo];
     let res = YTransaction::new_data(&main_sk, &change_sk,
                                      &main_pk, &change_pk,
-                                     &data_buf, &utxos, &xs,
+                                     &data_buf, &utxos, &sks,
                                      None);
     assert!(res.is_err())
 }

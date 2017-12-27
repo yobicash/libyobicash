@@ -23,12 +23,17 @@ pub struct YTransaction {
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, sks: &Vec<YSecretKey>, outputs: &Vec<YOutput>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
 
-        if xs.len() != utxos_len {
+        if sks.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
+        }
+
+        let mut xs = Vec::new();
+        for sk in sks {
+            xs.push(sk.sk);
         }
         
         let mut xs_copy = xs.clone();
@@ -120,7 +125,7 @@ impl YTransaction {
         change_pk: &YPublicKey,
         amount: YAmount,
         utxos: &Vec<YUTXO>,
-        xs: &Vec<YScalar>,
+        sks: &Vec<YSecretKey>,
         message: Option<Vec<u8>>) -> YResult<YTransaction> {
         
         let mut max_amount = YAmount::zero();
@@ -153,7 +158,7 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs)
+        YTransaction::new(utxos, sks, &outputs)
     }
 
     pub fn new_data(data_sk: &YSecretKey,
@@ -162,7 +167,7 @@ impl YTransaction {
                     change_pk: &YPublicKey,
                     data_buf: &[u8],
                     utxos: &Vec<YUTXO>,
-                    xs: &Vec<YScalar>,
+                    sks: &Vec<YSecretKey>,
                     message: Option<Vec<u8>>) -> YResult<YTransaction> {
         let mut buf = Vec::new();
         buf.extend_from_slice(data_buf);
@@ -204,7 +209,7 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs)
+        YTransaction::new(utxos, sks, &outputs)
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
