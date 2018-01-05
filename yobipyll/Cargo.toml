@@ -1,6 +1,6 @@
 [package]
 name = "yobipyll"
-version = "0.1.0"
+version = "0.9.3"
 authors = ["Gareth Nelson <gareth@yobicash.org>"]
 build = "build.rs"
 

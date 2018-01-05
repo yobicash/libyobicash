@@ -1,13 +1,13 @@
 import libyobipyll
 
 # the version of yobipy
-YOBIPY_VERSION = '0.1.0'
+YOBIPY_VERSION = '0.9.3'
 
 # the oldest supported version of libyobipyll
-OLDEST_SUPPORTED_LL = '0.1.0'
+OLDEST_SUPPORTED_LL = '0.9.3'
 
 # this is so we can optionally drop support for intermediate versions if required
-SUPPORTED_LL_VERSIONS = set(['0.1'])
+SUPPORTED_LL_VERSIONS = set(['0.9'])
 
 # the below 2 functions seem redundant, but they're included here for a reason
 # specifically, so that documentation can be generated from JUST the python code, with the low-level driver mocked out
