@@ -20,12 +20,21 @@ pub struct YTransaction {
     pub time: YTime,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
+    pub fee: Option<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, sks: &Vec<YSecretKey>, outputs: &Vec<YOutput>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, sks: &Vec<YSecretKey>, outputs: &Vec<YOutput>, fee: Option<YOutput>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
+
+        if (outputs_len == 0) ^ (utxos_len == 0) {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+
+        if fee.is_none() && utxos_len != 0 {
+            return Err(YErrorKind::FeeMissing.into());
+        }
 
         if sks.len() != utxos_len {
             return Err(YErrorKind::InvalidLength.into());
@@ -48,8 +57,10 @@ impl YTransaction {
             let refs = (utxo.id, utxo.idx);
             utxos_refs.push(refs);
         }
+
         utxos_refs.sort();
         utxos_refs.dedup();
+        
         if utxos_refs.len() != utxos_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
@@ -57,13 +68,23 @@ impl YTransaction {
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
             let out = outputs[i].clone();
+            out.check()?;
             let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
             outputs_refs.push(refs);
         }
+
         outputs_refs.sort();
         outputs_refs.dedup();
+        
         if outputs_refs.len() != outputs_len {
             return Err(YErrorKind::DuplicateItem.into());
+        }
+
+        if let Some(fee) = fee.clone() {
+            let refs = YSHA512::hash(&fee.sender.to_bytes()[..]);
+            if outputs_refs.contains(&refs) {
+                return Err(YErrorKind::DuplicateItem.into());
+            }
         }
 
         let version = YVersion::default();
@@ -85,12 +106,14 @@ impl YTransaction {
             inputs.push(utxo.to_input(x, u, c)?);
         }
 
-        if (outputs.len() == 0) ^ (inputs.len() == 0) {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-
         for i in 0..outputs_len {
             if outputs[i].height != max_height + 1 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
+        }
+
+        if let Some(fee) = fee.clone() {
+            if fee.height != max_height + 1 {
                 return Err(YErrorKind::InvalidHeight.into());
             }
         }
@@ -101,6 +124,7 @@ impl YTransaction {
             time: YTime::now(),
             inputs: inputs.clone(),
             outputs: outputs.clone(),
+            fee: fee,
         };
         
         let inputs_len = inputs.len();
@@ -119,11 +143,14 @@ impl YTransaction {
     }
 
     pub fn new_coins(
-        main_sk: &YSecretKey,
+        coins_sk: &YSecretKey,
+        coins_pk: &YPublicKey,
         change_sk: &YSecretKey,
-        main_pk: &YPublicKey,
         change_pk: &YPublicKey,
+        fee_sk: &YSecretKey,
+        fee_pk: &YPublicKey,
         amount: YAmount,
+        fee_amount: YAmount,
         utxos: &Vec<YUTXO>,
         sks: &Vec<YSecretKey>,
         message: Option<Vec<u8>>) -> YResult<YTransaction> {
@@ -147,7 +174,7 @@ impl YTransaction {
 
         max_height += 1;
 
-        let coin_out = YOutput::new(main_sk, main_pk, max_height, amount.clone(), message)?;
+        let coin_out = YOutput::new(coins_sk, coins_pk, max_height, amount.clone(), message)?;
 
         let mut outputs = vec![coin_out];
 
@@ -158,14 +185,19 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, sks, &outputs)
+        let fee_out = YOutput::new(fee_sk, fee_pk, max_height, fee_amount, None)?;
+
+        YTransaction::new(utxos, sks, &outputs, Some(fee_out))
     }
 
     pub fn new_data(data_sk: &YSecretKey,
-                    change_sk: &YSecretKey,
                     data_pk: &YPublicKey,
+                    change_sk: &YSecretKey,
                     change_pk: &YPublicKey,
+                    fee_sk: &YSecretKey,
+                    fee_pk: &YPublicKey,
                     data_buf: &[u8],
+                    fee_amount: YAmount,
                     utxos: &Vec<YUTXO>,
                     sks: &Vec<YSecretKey>,
                     message: Option<Vec<u8>>) -> YResult<YTransaction> {
@@ -209,11 +241,13 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, sks, &outputs)
+        let fee_out = YOutput::new(fee_sk, fee_pk, max_height, fee_amount, None)?;
+
+        YTransaction::new(utxos, sks, &outputs, Some(fee_out))
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
-        YTransaction::new(&vec![], &vec![], &vec![])
+        YTransaction::new(&vec![], &vec![], &vec![], None)
     }
 
     pub fn calc_challenge(&self, idx: u32) -> YResult<YScalar> {
@@ -255,6 +289,14 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
         
         let c = YScalar::hash_from_bytes(buf.as_slice());
         Ok(c)
@@ -290,6 +332,15 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+
         Ok(YSHA512::hash(buf.as_slice()))
     }
 
@@ -322,12 +373,20 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
         
         Ok(buf)
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
-        if b.len() < 96 {
+        if b.len() < 100 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -371,6 +430,16 @@ impl YTransaction {
             reader.read_exact(&mut output_buf.as_mut_slice())?;
             let output = YOutput::from_bytes(output_buf.as_slice())?;
             tx.outputs.push(output);
+        }
+
+        let fee_size = reader.read_u32::<BigEndian>()?;
+        if fee_size > 0 {
+            let mut fee = Vec::new();
+            for _ in 0..fee_size as usize {
+                fee.push(0);
+            }
+            reader.read_exact(fee.as_mut_slice())?;
+            tx.fee = Some(YOutput::from_bytes(fee.as_slice())?);
         }
 
         tx.check()?;
@@ -449,6 +518,9 @@ impl YTransaction {
             return Err(YErrorKind::InvalidTime.into())
         }
 
+        let inputs_len = self.inputs.len();
+        let outputs_len = self.outputs.len();
+
         let mut max_height = 0;
 
         for i in 0..self.inputs.len() {
@@ -462,8 +534,12 @@ impl YTransaction {
             }
         }
 
-        if (self.outputs.len() == 0) ^ (self.inputs.len() == 0) {
+        if (outputs_len == 0) ^ (inputs_len == 0) {
             return Err(YErrorKind::InvalidLength.into());
+        }
+
+        if self.fee.is_none() && inputs_len != 0 {
+            return Err(YErrorKind::FeeMissing.into());
         }
 
         for output in self.outputs.clone() {
@@ -471,6 +547,48 @@ impl YTransaction {
                 return Err(YErrorKind::InvalidHeight.into()); 
             }
             output.check()?;
+        }
+
+        if let Some(fee) = self.fee.clone() {
+            if fee.height != max_height + 1 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
+        }
+        
+        let mut inputs_refs = Vec::new();
+        for i in 0..inputs_len {
+            let inp = self.inputs[i].clone();
+            let refs = (inp.id, inp.idx);
+            inputs_refs.push(refs);
+        }
+
+        inputs_refs.sort();
+        inputs_refs.dedup();
+        
+        if inputs_refs.len() != inputs_len {
+            return Err(YErrorKind::DuplicateItem.into());
+        }
+        
+        let mut outputs_refs = Vec::new();
+        for i in 0..outputs_len {
+            let out = self.outputs[i].clone();
+            out.check()?;
+            let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
+            outputs_refs.push(refs);
+        }
+
+        outputs_refs.sort();
+        outputs_refs.dedup();
+        
+        if outputs_refs.len() != outputs_len {
+            return Err(YErrorKind::DuplicateItem.into());
+        }
+
+        if let Some(fee) = self.fee.clone() {
+            let refs = YSHA512::hash(&fee.sender.to_bytes()[..]);
+            if outputs_refs.contains(&refs) {
+                return Err(YErrorKind::DuplicateItem.into());
+            }
         }
 
         Ok(())
