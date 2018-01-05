@@ -49,6 +49,10 @@ error_chain! {
       description("Invalid cyphertext")
     }
 
+    FeeMissing {
+        description("Fee missing")
+    }
+
     InvalidHeight {
       description("Invalid height")
     }

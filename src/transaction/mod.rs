@@ -18,18 +18,31 @@ pub struct YTransaction {
     pub id: YDigest64,
     pub version: YVersion,
     pub time: YTime,
-    pub activation: Option<YTime>,
     pub inputs: Vec<YInput>,
     pub outputs: Vec<YOutput>,
+    pub fee: Option<YOutput>,
 }
 
 impl YTransaction {
-    pub fn new(utxos: &Vec<YUTXO>, xs: &Vec<YScalar>, outputs: &Vec<YOutput>, activation: Option<YTime>) -> YResult<YTransaction> {
+    pub fn new(utxos: &Vec<YUTXO>, sks: &Vec<YSecretKey>, outputs: &Vec<YOutput>, fee: Option<YOutput>) -> YResult<YTransaction> {
         let utxos_len = utxos.len();
         let outputs_len = outputs.len();
 
-        if xs.len() != utxos_len {
+        if (outputs_len == 0) ^ (utxos_len == 0) {
             return Err(YErrorKind::InvalidLength.into());
+        }
+
+        if fee.is_none() && utxos_len != 0 {
+            return Err(YErrorKind::FeeMissing.into());
+        }
+
+        if sks.len() != utxos_len {
+            return Err(YErrorKind::InvalidLength.into());
+        }
+
+        let mut xs = Vec::new();
+        for sk in sks {
+            xs.push(sk.sk);
         }
         
         let mut xs_copy = xs.clone();
@@ -44,8 +57,10 @@ impl YTransaction {
             let refs = (utxo.id, utxo.idx);
             utxos_refs.push(refs);
         }
+
         utxos_refs.sort();
         utxos_refs.dedup();
+        
         if utxos_refs.len() != utxos_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
@@ -53,19 +68,22 @@ impl YTransaction {
         let mut outputs_refs = Vec::new();
         for i in 0..outputs_len {
             let out = outputs[i].clone();
+            out.check()?;
             let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
             outputs_refs.push(refs);
         }
+
         outputs_refs.sort();
         outputs_refs.dedup();
+        
         if outputs_refs.len() != outputs_len {
             return Err(YErrorKind::DuplicateItem.into());
         }
-        
-        let now = YTime::now();
-        if let Some(_activation) = activation.clone() {
-            if _activation <= now {
-                return Err(YErrorKind::InvalidTime.into());
+
+        if let Some(fee) = fee.clone() {
+            let refs = YSHA512::hash(&fee.sender.to_bytes()[..]);
+            if outputs_refs.contains(&refs) {
+                return Err(YErrorKind::DuplicateItem.into());
             }
         }
 
@@ -88,12 +106,14 @@ impl YTransaction {
             inputs.push(utxo.to_input(x, u, c)?);
         }
 
-        if (outputs.len() == 0) ^ (inputs.len() == 0) {
-            return Err(YErrorKind::InvalidLength.into());
-        }
-
         for i in 0..outputs_len {
             if outputs[i].height != max_height + 1 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
+        }
+
+        if let Some(fee) = fee.clone() {
+            if fee.height != max_height + 1 {
                 return Err(YErrorKind::InvalidHeight.into());
             }
         }
@@ -101,10 +121,10 @@ impl YTransaction {
         let mut tx = YTransaction {
             id: id,
             version: version,
-            time: now,
-            activation: activation,
+            time: YTime::now(),
             inputs: inputs.clone(),
             outputs: outputs.clone(),
+            fee: fee,
         };
         
         let inputs_len = inputs.len();
@@ -123,14 +143,16 @@ impl YTransaction {
     }
 
     pub fn new_coins(
-        main_sk: &YSecretKey,
+        coins_sk: &YSecretKey,
+        coins_pk: &YPublicKey,
         change_sk: &YSecretKey,
-        main_pk: &YPublicKey,
         change_pk: &YPublicKey,
+        fee_sk: &YSecretKey,
+        fee_pk: &YPublicKey,
         amount: YAmount,
+        fee_amount: YAmount,
         utxos: &Vec<YUTXO>,
-        xs: &Vec<YScalar>,
-        activation: Option<YTime>,
+        sks: &Vec<YSecretKey>,
         message: Option<Vec<u8>>) -> YResult<YTransaction> {
         
         let mut max_amount = YAmount::zero();
@@ -152,7 +174,7 @@ impl YTransaction {
 
         max_height += 1;
 
-        let coin_out = YOutput::new(main_sk, main_pk, max_height, amount.clone(), message)?;
+        let coin_out = YOutput::new(coins_sk, coins_pk, max_height, amount.clone(), message)?;
 
         let mut outputs = vec![coin_out];
 
@@ -163,17 +185,21 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs, activation)
+        let fee_out = YOutput::new(fee_sk, fee_pk, max_height, fee_amount, None)?;
+
+        YTransaction::new(utxos, sks, &outputs, Some(fee_out))
     }
 
     pub fn new_data(data_sk: &YSecretKey,
-                    change_sk: &YSecretKey,
                     data_pk: &YPublicKey,
+                    change_sk: &YSecretKey,
                     change_pk: &YPublicKey,
+                    fee_sk: &YSecretKey,
+                    fee_pk: &YPublicKey,
                     data_buf: &[u8],
+                    fee_amount: YAmount,
                     utxos: &Vec<YUTXO>,
-                    xs: &Vec<YScalar>,
-                    activation: Option<YTime>,
+                    sks: &Vec<YSecretKey>,
                     message: Option<Vec<u8>>) -> YResult<YTransaction> {
         let mut buf = Vec::new();
         buf.extend_from_slice(data_buf);
@@ -215,7 +241,9 @@ impl YTransaction {
             outputs.push(change_out);
         }
 
-        YTransaction::new(utxos, xs, &outputs, activation)
+        let fee_out = YOutput::new(fee_sk, fee_pk, max_height, fee_amount, None)?;
+
+        YTransaction::new(utxos, sks, &outputs, Some(fee_out))
     }
 
     pub fn new_genesys() -> YResult<YTransaction> {
@@ -233,14 +261,6 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -269,6 +289,14 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
         
         let c = YScalar::hash_from_bytes(buf.as_slice());
         Ok(c)
@@ -282,14 +310,6 @@ impl YTransaction {
 
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
-
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
 
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
@@ -312,6 +332,15 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
+
         Ok(YSHA512::hash(buf.as_slice()))
     }
 
@@ -327,14 +356,6 @@ impl YTransaction {
         let time_buf = self.time.to_bytes();
         buf.write(&time_buf[..])?;
 
-        if let Some(_activation) = self.activation.clone() {
-            buf.write_u32::<BigEndian>(1)?;
-            let activation_buf = _activation.to_bytes();
-            buf.write(&activation_buf[..])?;
-        } else {
-            buf.write_u32::<BigEndian>(0)?;
-        }
-
         let inputs = self.inputs.clone();
         let inputs_len = inputs.len();
         buf.write_u32::<BigEndian>(inputs_len as u32)?;
@@ -352,12 +373,20 @@ impl YTransaction {
             buf.write_u32::<BigEndian>(output_buf.len() as u32)?;
             buf.write(output_buf.as_slice())?;
         }
+
+        if let Some(_fee) = self.fee.clone() {
+            let _fee_buf = _fee.to_bytes()?;
+            buf.write_u32::<BigEndian>(_fee_buf.len() as u32)?;
+            buf.write(_fee_buf.as_slice())?;
+        } else {
+            buf.write_u32::<BigEndian>(0)?;
+        }
         
         Ok(buf)
     }
 
     pub fn from_bytes(b: &[u8]) -> YResult<YTransaction> {
-        if b.len() < 96 {
+        if b.len() < 100 {
             return Err(YErrorKind::InvalidLength.into());
         }
 
@@ -376,13 +405,6 @@ impl YTransaction {
         let mut time_buf = [0u8; 8];
         reader.read_exact(&mut time_buf[..])?;
         tx.time = YTime::from_bytes(&time_buf[..])?;
-
-        let has_activation = reader.read_u32::<BigEndian>()?;
-        if has_activation == 1 {
-            let mut activation_buf = [0u8; 8];
-            reader.read_exact(&mut activation_buf[..])?;
-            tx.activation = Some(YTime::from_bytes(&activation_buf[..])?);
-        }
 
         let inputs_len = reader.read_u32::<BigEndian>()? as usize;
 
@@ -408,6 +430,16 @@ impl YTransaction {
             reader.read_exact(&mut output_buf.as_mut_slice())?;
             let output = YOutput::from_bytes(output_buf.as_slice())?;
             tx.outputs.push(output);
+        }
+
+        let fee_size = reader.read_u32::<BigEndian>()?;
+        if fee_size > 0 {
+            let mut fee = Vec::new();
+            for _ in 0..fee_size as usize {
+                fee.push(0);
+            }
+            reader.read_exact(fee.as_mut_slice())?;
+            tx.fee = Some(YOutput::from_bytes(fee.as_slice())?);
         }
 
         tx.check()?;
@@ -471,14 +503,6 @@ impl YTransaction {
         dropped
     }
 
-    pub fn is_active(&self) -> bool {
-        if let Some(_activation) = self.activation.clone() {
-            _activation <= YTime::now()
-        } else {
-            false
-        }
-    }
-
     pub fn check(&self) -> YResult<()> {
         if self.id != self.calc_id()? {
             return Err(YErrorKind::InvalidChecksum.into());
@@ -494,11 +518,8 @@ impl YTransaction {
             return Err(YErrorKind::InvalidTime.into())
         }
 
-        if let Some(_activation) = self.activation.clone() {
-            if _activation <= time {
-                return Err(YErrorKind::InvalidTime.into())
-            }
-        }
+        let inputs_len = self.inputs.len();
+        let outputs_len = self.outputs.len();
 
         let mut max_height = 0;
 
@@ -513,8 +534,12 @@ impl YTransaction {
             }
         }
 
-        if (self.outputs.len() == 0) ^ (self.inputs.len() == 0) {
+        if (outputs_len == 0) ^ (inputs_len == 0) {
             return Err(YErrorKind::InvalidLength.into());
+        }
+
+        if self.fee.is_none() && inputs_len != 0 {
+            return Err(YErrorKind::FeeMissing.into());
         }
 
         for output in self.outputs.clone() {
@@ -522,6 +547,48 @@ impl YTransaction {
                 return Err(YErrorKind::InvalidHeight.into()); 
             }
             output.check()?;
+        }
+
+        if let Some(fee) = self.fee.clone() {
+            if fee.height != max_height + 1 {
+                return Err(YErrorKind::InvalidHeight.into());
+            }
+        }
+        
+        let mut inputs_refs = Vec::new();
+        for i in 0..inputs_len {
+            let inp = self.inputs[i].clone();
+            let refs = (inp.id, inp.idx);
+            inputs_refs.push(refs);
+        }
+
+        inputs_refs.sort();
+        inputs_refs.dedup();
+        
+        if inputs_refs.len() != inputs_len {
+            return Err(YErrorKind::DuplicateItem.into());
+        }
+        
+        let mut outputs_refs = Vec::new();
+        for i in 0..outputs_len {
+            let out = self.outputs[i].clone();
+            out.check()?;
+            let refs = YSHA512::hash(&out.sender.to_bytes()[..]);
+            outputs_refs.push(refs);
+        }
+
+        outputs_refs.sort();
+        outputs_refs.dedup();
+        
+        if outputs_refs.len() != outputs_len {
+            return Err(YErrorKind::DuplicateItem.into());
+        }
+
+        if let Some(fee) = self.fee.clone() {
+            let refs = YSHA512::hash(&fee.sender.to_bytes()[..]);
+            if outputs_refs.contains(&refs) {
+                return Err(YErrorKind::DuplicateItem.into());
+            }
         }
 
         Ok(())

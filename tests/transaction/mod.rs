@@ -4,7 +4,6 @@ use libyobicash::crypto::elliptic::scalar::YScalar;
 use libyobicash::crypto::elliptic::point::YPoint;
 use libyobicash::crypto::elliptic::keys::YSecretKey;
 use libyobicash::crypto::zkp::schnorr_protocol::YSchnorrProtocol;
-use libyobicash::utils::time::YTime;
 use libyobicash::amount::YAmount;
 use libyobicash::output::YOutput;
 use libyobicash::utxo::YUTXO;
@@ -29,10 +28,15 @@ fn transaction_new_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output];
-    let res = YTransaction::new(&utxos, &xs, &outputs, None);
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let res = YTransaction::new(&utxos, &sks, &outputs, Some(fee));
     assert!(res.is_ok())
 }
 
@@ -55,10 +59,14 @@ fn transaction_new_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     let outputs = vec![output];
-    let activation = YTime::new(1970, 1, 1, 0, 0, 0);
-    let res = YTransaction::new(&utxos, &xs, &outputs, Some(activation));
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let res = YTransaction::new(&utxos, &sks, &outputs, Some(fee));
     assert!(res.is_err())
 }
 
@@ -81,10 +89,15 @@ fn transaction_bytes_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output];
-    let tx_a = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let tx_a = YTransaction::new(&utxos, &sks, &outputs, Some(fee)).unwrap();
     let tx_buf = tx_a.to_bytes().unwrap();
     let tx_b = YTransaction::from_bytes(tx_buf.as_slice()).unwrap();
     assert_eq!(tx_a.to_bytes().unwrap(), tx_b.to_bytes().unwrap())
@@ -92,7 +105,7 @@ fn transaction_bytes_succ() {
 
 #[test]
 fn transaction_bytes_fail() {
-    let mut b = [0u8; 95];
+    let mut b = [0u8; 99];
     YRandom::bytes_mut(&mut b);
     let res = YTransaction::from_bytes(&b[..]);
     assert!(res.is_err())
@@ -116,10 +129,15 @@ fn transaction_verify_input_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs, Some(fee)).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         outputs[i].height -= 1;
@@ -147,10 +165,15 @@ fn transaction_verify_input_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs, Some(fee)).unwrap();
     let mut verified = true;
     for i in 0..tx.inputs.len() {
         let mut output = outputs[i].clone();
@@ -180,10 +203,15 @@ fn transaction_verify_succ() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs, Some(fee)).unwrap();
     outputs[0].height -= 1;
     let verified = tx.verify(&outputs).unwrap();
     assert!(verified)
@@ -208,10 +236,15 @@ fn transaction_verify_fail() {
     let idx = 0;
     let utxo = YUTXO::from_output(&output, id, idx);
     let utxos = vec![utxo];
-    let xs = vec![recipient_sk.sk];
+    let sks = vec![recipient_sk];
     output.height += 1;
     let mut outputs = vec![output.clone()];
-    let tx = YTransaction::new(&utxos, &xs, &outputs, None).unwrap();
+    let fee_sk = YSecretKey::from_g(g);
+    let _fee_sk = YSecretKey::from_g(g);
+    let fee_pk = _fee_sk.to_public();
+    let fee_amount = YAmount::zero();
+    let fee = YOutput::new(&fee_sk, &fee_pk, height + 1, fee_amount, None).unwrap();
+    let tx = YTransaction::new(&utxos, &sks, &outputs, Some(fee)).unwrap();
     for i in 0..outputs.len() {
         outputs[i].height -= 1;
         outputs[i].recipient.pk = YPoint::random();
@@ -223,92 +256,112 @@ fn transaction_verify_fail() {
 #[test]
 fn transaction_new_coins_succ() {
     let g = YPoint::default();
-    let main_sk = YSecretKey::from_g(g);
-    let main_pk = main_sk.to_public();
+    let coins_sk = YSecretKey::from_g(g);
+    let coins_pk = coins_sk.to_public();
     let change_sk = YSecretKey::from_g(g);
     let change_pk = change_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
     let amount = YAmount::from_u64(1000).unwrap();
+    let fee_amount = YAmount::zero();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![coins_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(10000).unwrap();
-    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &coins_pk, 0, utxo_amount, None).unwrap();
     let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
     let utxos = vec![utxo];
-    let res = YTransaction::new_coins(&main_sk, &change_sk,
-                                      &main_pk, &change_pk,
-                                      amount, &utxos, &xs,
-                                      None, None);
+    let res = YTransaction::new_coins(&coins_sk, &coins_pk,
+                                      &change_sk, &change_pk,
+                                      &fee_sk, &fee_pk,
+                                      amount, fee_amount,
+                                      &utxos, &sks,
+                                      None);
     assert!(res.is_ok())
 }
 
 #[test]
 fn transaction_new_coins_fail() {
     let g = YPoint::default();
-    let main_sk = YSecretKey::from_g(g);
-    let main_pk = main_sk.to_public();
+    let coins_sk = YSecretKey::from_g(g);
+    let coins_pk = coins_sk.to_public();
     let change_sk = YSecretKey::from_g(g);
     let change_pk = change_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
     let amount = YAmount::from_u64(1000).unwrap();
+    let fee_amount = YAmount::zero();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![coins_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(100).unwrap();
-    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &coins_pk, 0, utxo_amount, None).unwrap();
     let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
     let utxos = vec![utxo];
-    let res = YTransaction::new_coins(&main_sk, &change_sk,
-                                      &main_pk, &change_pk,
-                                      amount, &utxos, &xs,
-                                      None, None);
+    let res = YTransaction::new_coins(&coins_sk, &coins_pk,
+                                      &change_sk, &change_pk,
+                                      &fee_sk, &fee_pk,
+                                      amount, fee_amount,
+                                      &utxos, &sks,
+                                      None);
     assert!(res.is_err())
 }
 
 #[test]
 fn transaction_new_data_succ() {
     let g = YPoint::default();
-    let main_sk = YSecretKey::from_g(g);
-    let main_pk = main_sk.to_public();
+    let data_sk = YSecretKey::from_g(g);
+    let data_pk = data_sk.to_public();
     let change_sk = YSecretKey::from_g(g);
     let change_pk = change_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
     let data_buf = YRandom::bytes(1000);
+    let fee_amount = YAmount::zero();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![data_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(10000).unwrap();
-    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &data_pk, 0, utxo_amount, None).unwrap();
     let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
     let utxos = vec![utxo];
-    let res = YTransaction::new_data(&main_sk, &change_sk,
-                                     &main_pk, &change_pk,
-                                     &data_buf, &utxos, &xs,
-                                     None, None);
+    let res = YTransaction::new_data(&data_sk, &data_pk,
+                                     &change_sk, &change_pk,
+                                     &fee_sk, &fee_pk,
+                                     &data_buf, fee_amount,
+                                     &utxos, &sks,
+                                     None);
     assert!(res.is_ok())
 }
 
 #[test]
 fn transaction_new_data_fail() {
     let g = YPoint::default();
-    let main_sk = YSecretKey::from_g(g);
-    let main_pk = main_sk.to_public();
+    let data_sk = YSecretKey::from_g(g);
+    let data_pk = data_sk.to_public();
     let change_sk = YSecretKey::from_g(g);
     let change_pk = change_sk.to_public();
+    let fee_sk = YSecretKey::from_g(g);
+    let fee_pk = fee_sk.to_public();
     let data_buf = YRandom::bytes(1000);
+    let fee_amount = YAmount::zero();
     let utxo_x = YScalar::random();
-    let xs = vec![main_sk.sk];
+    let sks = vec![data_sk];
     let utxo_sk = YSecretKey::new(g, utxo_x);
     let utxo_tx_id = YDigest64::from_bytes(&YRandom::bytes(64)).unwrap();
     let utxo_amount = YAmount::from_u64(100).unwrap();
-    let utxo_output = YOutput::new(&utxo_sk, &main_pk, 0, utxo_amount, None).unwrap();
+    let utxo_output = YOutput::new(&utxo_sk, &data_pk, 0, utxo_amount, None).unwrap();
     let utxo = YUTXO::from_output(&utxo_output, utxo_tx_id, 0);
     let utxos = vec![utxo];
-    let res = YTransaction::new_data(&main_sk, &change_sk,
-                                     &main_pk, &change_pk,
-                                     &data_buf, &utxos, &xs,
-                                     None, None);
+    let res = YTransaction::new_data(&data_sk, &data_pk,
+                                     &change_sk, &change_pk,
+                                     &fee_sk, &fee_pk,
+                                     &data_buf, fee_amount,
+                                     &utxos, &sks,
+                                     None);
     assert!(res.is_err())
 }
 
