@@ -3,6 +3,8 @@
 extern crate libyobicash;
 extern crate pyo3;
 
+pub mod utils;
+
 // include build metadata
 pub mod built_info {
    include!(concat!(env!("OUT_DIR"), "/built.rs"));
@@ -10,7 +12,7 @@ pub mod built_info {
 
 
 use pyo3::prelude::*;
-
+https://github.com/PyO3/pyo3/blob/master/src/class/macros.rs
 ///
 /// Low-level python binding for libyobicash
 ///
@@ -30,6 +32,8 @@ fn init_mod(py: Python, m: &PyModule) -> PyResult<()> {
        let out = libyobicash::VERSION.to_string();
        Ok(out)
     }
+
+    m.add_class::<utils::UtilsAPI>()?;
 
     Ok(())
 }
