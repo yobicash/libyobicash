@@ -1,0 +1,28 @@
+[package]
+name = "liyobicash"
+version = "0.1.0"
+authors = ["Christian Nyumbayire <christian@yobicash.org>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/yobicash/libyobicash"
+description = "The Yobicash cryptocurrency library"
+categories = ["cryptography"]
+
+[lib]
+name = "libyobicash"
+path = "src/lib.rs"
+
+[dependencies]
+failure = "^0.1"
+failure_derive = "^0.1"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_json = "^1.0"
+rmp = "^0.8"
+rmp-serde = "^0.13"
+hex = "^0.3"
+rug = { version = "^0.9", features = ["serde"] }
+byteorder = "^1.2"
+itertools = "^0.7"
+yobicrypto = "^0.2"
+chrono = { version = "^0.4", features = ["serde"] }
+regex = "^0.2"
