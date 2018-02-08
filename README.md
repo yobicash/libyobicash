@@ -1,6 +1,11 @@
 ![banner](assets/banner.png)
 
 # Libyobicash
+[![Travis branch](https://img.shields.io/travis/yobicash/libyobicash/master.svg)](https://travis-ci.org/yobicash/libyobicash)
+[![Coveralls github branch](https://img.shields.io/coveralls/github/yobicash/libyobicash/master.svg)](https://coveralls.io/github/yobicash/libyobicash?branch=master)
+[![Crates.io](https://img.shields.io/crates/v/libyobicash.svg)](https://crates.io/crates/libyobicash)
+[![Docs.rs](https://docs.rs/libyobicash/badge.svg)](https://docs.rs/libyobicash)
+[![Crates.io](https://img.shields.io/crates/l/libyobicash.svg)]()
 
 The [Yobicash](https://yobicash.org) cryptocurrency library.
 

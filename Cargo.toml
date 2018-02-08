@@ -7,6 +7,11 @@ repository = "https://github.com/yobicash/libyobicash"
 description = "The Yobicash cryptocurrency library"
 categories = ["cryptography"]
 
+[badges]
+travis-ci = { repository = "yobicash/libyobicash", branch = "master" }
+coveralls = { repository = "yobicash/libyobicash", branch = "master", service = "github" }
+maintenance = { status = "experimental" }
+
 [lib]
 name = "libyobicash"
 path = "src/lib.rs"
