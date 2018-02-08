@@ -33,8 +33,6 @@ pub struct Error {
 /// The different types of errors used in `libyobicash`.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display="Invalid argument")]
-    InvalidArgument,
     #[fail(display="Already found")]
     AlreadyFound,
     #[fail(display="Not found")]
@@ -67,18 +65,10 @@ pub enum ErrorKind {
     InvalidWitness,
     #[fail(display="Invalid proof")]
     InvalidProof,
-    #[fail(display="Unknown method")]
-    UnknownMethod,
-    #[fail(display="Unknown content")]
-    UnknownContent,
     #[fail(display="Unknown mode")]
     UnknownMode,
-    #[fail(display="Invalid method")]
-    InvalidMethod,
     #[fail(display="Invalid mode")]
     InvalidMode,
-    #[fail(display="Invalid content")]
-    InvalidContent,
     #[fail(display="Crypto failure")]
     CryptoFailure,
     #[fail(display="Regex failure")]
