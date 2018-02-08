@@ -13,7 +13,7 @@ pub const NAME: &str = "Yobicash";
 /// The code of the cryptocurrency.
 pub const CODE: &str = "YBC";
 
-/// The version of the cryptocurrency.
+/// The version of the cryptocurrency library.
 pub const VERSION: &str = "0.1.1";
 
 /// The starting date time.
