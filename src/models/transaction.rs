@@ -15,11 +15,11 @@ use itertools::Itertools;
 
 use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, BinarySerialize, Serialize};
-use utils::{Version, Timestamp, Amount};
+use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
+use utils::{Version, NetworkType, Timestamp, Amount};
 use crypto::Digest;
 use crypto::BinarySerialize as CryptoBinarySerialize;
-use crypto::HexSerialize;
+use crypto::HexSerialize as CryptoHexSerialize;
 use models::output::Output;
 use models::coin::Coin;
 use models::input::Input;
@@ -34,6 +34,8 @@ pub struct Transaction {
     pub id: Digest,
     /// The version of the library.
     pub version: Version,
+    /// The protocol network type.
+    pub network_type: NetworkType,
     /// The unix timestamp of the time the transaction was created.
     pub timestamp: Timestamp,
     /// The size of the inputs.
@@ -52,11 +54,15 @@ pub struct Transaction {
 
 impl Transaction {
     /// Creates a new `Transaction`.
-    pub fn new(coins: &[Coin],
+    pub fn new(network_type: NetworkType,
+               coins: &[Coin],
                outputs: &[Output],
                fee: &Output) -> Result<Transaction> {
         for coin in coins {
             coin.validate()?;
+            if coin.network_type != network_type {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
         }
 
         for output in outputs {
@@ -119,6 +125,7 @@ impl Transaction {
         }
 
         let mut tx = Transaction::default();
+        tx.network_type = network_type;
         tx.timestamp = timestamp;
         tx.inputs_length = inputs.len() as u32;
         tx.inputs = inputs;
@@ -147,6 +154,7 @@ impl Default for Transaction {
         Transaction {
             id: Digest::default(),
             version: Version::default(),
+            network_type: NetworkType::default(),
             timestamp: Timestamp::default(),
             inputs_length: 0,
             inputs: Vec::new(),
@@ -165,6 +173,7 @@ impl<'a> Identify<'a> for Transaction {
         let mut buf = Vec::new();
 
         buf.write_all(&self.version.to_bytes()?)?;
+        buf.write_all(&self.network_type.to_bytes()?)?;
         buf.write_all(&self.timestamp.to_bytes()?)?;
         buf.write_u32::<BigEndian>(self.inputs_length)?;
         
@@ -218,8 +227,6 @@ impl<'a> Identify<'a> for Transaction {
 
 impl Validate for Transaction {
     fn validate(&self) -> Result<()> {
-        //TODO: check against the genesys transaction.
-
         self.version.validate()?;
         self.timestamp.validate()?;
 
@@ -273,6 +280,7 @@ impl<'a> Serialize<'a> for Transaction {
         let obj = json!({
             "id": self.string_id()?,
             "version": self.version.to_string(),
+            "network_type": self.network_type.to_hex()?,
             "timestamp": self.timestamp.to_string(),
             "inputs_length": self.inputs_length,
             "inputs": json_inputs,
@@ -297,6 +305,10 @@ impl<'a> Serialize<'a> for Transaction {
         let version_value = obj["version"].clone();
         let version_str: String = json::from_value(version_value)?;
         let version = Version::from_string(&version_str)?;
+        
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
         
         let timestamp_value = obj["timestamp"].clone();
         let timestamp_str: String = json::from_value(timestamp_value)?;
@@ -339,6 +351,7 @@ impl<'a> Serialize<'a> for Transaction {
         let transaction = Transaction {
             id: id,
             version: version,
+            network_type: network_type,
             timestamp: timestamp,
             inputs_length: inputs_length,
             inputs: inputs,

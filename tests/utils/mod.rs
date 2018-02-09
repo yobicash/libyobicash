@@ -8,5 +8,6 @@
 //! Libyobicash `utils` module tests.
 
 mod version;
+mod network_type;
 mod timestamp;
 mod amount;

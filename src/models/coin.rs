@@ -15,6 +15,7 @@ use hex;
 use error::ErrorKind;
 use result::Result;
 use traits::{Validate, Identify, BinarySerialize, HexSerialize, Serialize};
+use utils::NetworkType;
 use crypto::{Digest, Scalar, ZKPWitness, ZKPProof};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
@@ -84,19 +85,21 @@ impl HexSerialize for CoinSource {
 /// A `Coin` is an `Output` enriched with the instance needed to redeem it.
 #[derive(Clone, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Coin {
-    /// The coin output.
-    pub output: Output,
-    /// The instance used to redeem the coin.
-    pub instance: Scalar,
     /// The source of the coin.
     pub source: CoinSource,
     /// The id of the source.
     pub source_id: Digest,
+    /// The protocol network type.
+    pub network_type: NetworkType, 
+    /// The coin output.
+    pub output: Output,
+    /// The instance used to redeem the coin.
+    pub instance: Scalar,
 }
 
 impl Coin {
     /// Creates a new `Coin`.
-    pub fn new(output: &Output, instance: Scalar, source: CoinSource, source_id: Digest) -> Result<Coin> {
+    pub fn new(network_type: NetworkType, source: CoinSource, source_id: Digest, output: &Output, instance: Scalar) -> Result<Coin> {
         output.validate()?;
         instance.validate()?;
 
@@ -106,10 +109,11 @@ impl Coin {
         }
 
         let coin = Coin {
-            output: output.clone(),
-            instance: instance,
             source: source,
             source_id: source_id,
+            network_type: network_type,
+            output: output.clone(),
+            instance: instance,
         };
 
         Ok(coin)
@@ -185,10 +189,11 @@ impl Validate for Coin {
 impl<'a> Serialize<'a> for Coin {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
-            "output": self.output.to_json()?,
-            "instance": self.instance.to_hex()?,
             "source": self.source.to_hex()?,
             "source_id": self.source_id.to_hex()?,
+            "network_type": self.network_type.to_hex()?,
+            "output": self.output.to_json()?,
+            "instance": self.instance.to_hex()?,
         });
 
         let s = obj.to_string();
@@ -199,14 +204,6 @@ impl<'a> Serialize<'a> for Coin {
     fn from_json(s: &str) -> Result<Self> {
         let obj: json::Value = json::from_str(s)?;
         
-        let output_value = obj["output"].clone();
-        let output_str: String = json::from_value(output_value)?;
-        let output = Output::from_json(&output_str)?;
-        
-        let instance_value = obj["instance"].clone();
-        let instance_hex: String = json::from_value(instance_value)?;
-        let instance = Scalar::from_hex(&instance_hex)?;
-        
         let source_value = obj["source"].clone();
         let source_hex: String = json::from_value(source_value)?;
         let source = CoinSource::from_hex(&source_hex)?;
@@ -214,12 +211,25 @@ impl<'a> Serialize<'a> for Coin {
         let source_id_value = obj["source_id"].clone();
         let source_id_hex: String = json::from_value(source_id_value)?;
         let source_id = Digest::from_hex(&source_id_hex)?;
+        
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
+        
+        let output_value = obj["output"].clone();
+        let output_str: String = json::from_value(output_value)?;
+        let output = Output::from_json(&output_str)?;
+        
+        let instance_value = obj["instance"].clone();
+        let instance_hex: String = json::from_value(instance_value)?;
+        let instance = Scalar::from_hex(&instance_hex)?;
 
         let coin = Coin {
-            output: output,
-            instance: instance,
             source: source,
             source_id: source_id,
+            network_type: network_type,
+            output: output,
+            instance: instance,
         };
 
         Ok(coin)

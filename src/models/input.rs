@@ -42,6 +42,7 @@ impl Input {
                outputs_ids: &[Digest],
                fee_id: Digest) -> Result<Input> {
         coin.validate()?;
+
         version.validate()?;
         timestamp.validate()?;
 

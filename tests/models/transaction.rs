@@ -8,7 +8,7 @@
 //! Libyobicash `transaction` module tests.
 
 use libyobicash::traits::{Validate, Serialize};
-use libyobicash::utils::amount::Amount;
+use libyobicash::utils::{NetworkType, Amount};
 use libyobicash::crypto::{Digest, Scalar, ZKPWitness};
 use libyobicash::models::output::Output;
 use libyobicash::models::coin::{Coin, CoinSource};
@@ -22,7 +22,8 @@ fn transaction_new_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -37,7 +38,7 @@ fn transaction_new_succ() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let res = Transaction::new(&coins, &outputs, &fee_output);
+    let res = Transaction::new(network_type, &coins, &outputs, &fee_output);
     assert!(res.is_ok())
 }
 
@@ -49,7 +50,8 @@ fn transaction_new_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
@@ -59,7 +61,7 @@ fn transaction_new_fail() {
     let coins = vec![in_coin];
     let outputs = vec![in_output];
     
-    let res = Transaction::new(&coins, &outputs, &fee_output);
+    let res = Transaction::new(network_type, &coins, &outputs, &fee_output);
     assert!(res.is_err())
 }
 
@@ -71,7 +73,8 @@ fn transaction_validate_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -86,7 +89,7 @@ fn transaction_validate_succ() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
 
-    let transaction = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let res = transaction.validate();
     assert!(res.is_ok())
@@ -100,7 +103,8 @@ fn transaction_validate_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -115,7 +119,7 @@ fn transaction_validate_fail() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
 
-    let mut transaction = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let mut transaction = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     transaction.fee.amount += Amount::max_value();
 
@@ -131,7 +135,8 @@ fn transaction_to_json_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -146,7 +151,7 @@ fn transaction_to_json_succ() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
 
-    let transaction_a = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction_a = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let transaction_str = transaction_a.to_json().unwrap();
     let transaction_b = Transaction::from_json(&transaction_str).unwrap();
@@ -162,7 +167,8 @@ fn transaction_to_json_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -177,7 +183,7 @@ fn transaction_to_json_fail() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let transaction = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let mut transaction_str = transaction.to_json().unwrap();
     transaction_str.pop();
@@ -194,7 +200,8 @@ fn transaction_to_bytes_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -209,7 +216,7 @@ fn transaction_to_bytes_succ() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let transaction_a = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction_a = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let transaction_buf = transaction_a.to_bytes().unwrap();
     let transaction_b = Transaction::from_bytes(&transaction_buf).unwrap();
@@ -224,7 +231,8 @@ fn transaction_to_bytes_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -239,7 +247,7 @@ fn transaction_to_bytes_fail() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let transaction = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let mut transaction_buf = transaction.to_bytes().unwrap();
     transaction_buf[0] ^= transaction_buf[0];
@@ -256,7 +264,8 @@ fn transaction_to_hex_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -271,7 +280,7 @@ fn transaction_to_hex_succ() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let transaction_a = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction_a = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let transaction_str = transaction_a.to_hex().unwrap();
     let transaction_b = Transaction::from_hex(&transaction_str).unwrap();
@@ -286,7 +295,8 @@ fn transaction_to_hex_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
@@ -301,7 +311,7 @@ fn transaction_to_hex_fail() {
     let coins = vec![in_coin];
     let outputs = vec![out_output];
     
-    let transaction = Transaction::new(&coins, &outputs, &fee_output).unwrap();
+    let transaction = Transaction::new(network_type, &coins, &outputs, &fee_output).unwrap();
 
     let mut transaction_str = transaction.to_hex().unwrap();
     transaction_str.pop();

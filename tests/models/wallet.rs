@@ -8,7 +8,7 @@
 //! The `wallet` module tests.
 
 use libyobicash::traits::{Validate, Serialize};
-use libyobicash::utils::Amount;
+use libyobicash::utils::{NetworkType, Amount};
 use libyobicash::crypto::{Digest, Scalar, ZKPWitness};
 use libyobicash::models::Output;
 use libyobicash::models::{Coin, CoinSource};
@@ -25,8 +25,9 @@ fn wallet_add_ucoin_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     let res = wallet.add_ucoin(&coin);
     assert!(res.is_ok())
@@ -43,8 +44,9 @@ fn wallet_add_ucoin_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
 
     wallet.add_ucoin(&coin).unwrap();
     
@@ -63,8 +65,9 @@ fn wallet_add_scoin_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -83,8 +86,9 @@ fn wallet_add_scoin_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
 
     let res = wallet.add_scoin(&coin);
     assert!(res.is_err())
@@ -101,8 +105,9 @@ fn wallet_validate_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
     wallet.add_scoin(&coin).unwrap();
@@ -122,8 +127,9 @@ fn wallet_validate_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
     wallet.add_scoin(&coin).unwrap();
@@ -145,8 +151,9 @@ fn wallet_to_json_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -166,8 +173,9 @@ fn wallet_to_json_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -188,8 +196,9 @@ fn wallet_to_bytes_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -209,8 +218,9 @@ fn wallet_to_bytes_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -231,8 +241,9 @@ fn wallet_to_hex_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -252,8 +263,9 @@ fn wallet_to_hex_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     
     
     wallet.add_ucoin(&coin).unwrap();

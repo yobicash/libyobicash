@@ -15,8 +15,8 @@ use itertools::Itertools;
 
 use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, BinarySerialize, Serialize};
-use utils::{Version, Timestamp, Amount};
+use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
+use utils::{Version, NetworkType, Timestamp, Amount};
 use crypto::{Random, Digest, Scalar, ZKPProof};
 use crypto::Validate as CryptoValidate;
 use crypto::BinarySerialize as CryptoBinarySerialize;
@@ -35,6 +35,8 @@ pub struct DeleteOp {
     pub id: Digest,
     /// The version of the library.
     pub version: Version,
+    /// The protocol network type.
+    pub network_type: NetworkType,
     /// The unix timestamp of the time the write was created.
     pub timestamp: Timestamp,
     /// The size of the inputs.
@@ -55,15 +57,23 @@ pub struct DeleteOp {
 
 impl DeleteOp {
     /// Creates a new `DeleteOp`.
-    pub fn new(coins: &[Coin],
+    pub fn new(network_type: NetworkType,
+               coins: &[Coin],
                write_op: &WriteOp,
                proof: ZKPProof,
                fee: &Output) -> Result<DeleteOp> {
         for coin in coins {
             coin.validate()?;
+            if coin.network_type != network_type {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
         }
 
         write_op.validate()?;
+
+        if write_op.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
     
         proof.validate()?;
         
@@ -115,6 +125,7 @@ impl DeleteOp {
 
         let mut d_op = DeleteOp::default();
 
+        d_op.network_type = network_type;
         d_op.timestamp = timestamp;
         d_op.inputs_length = inputs.len() as u32;
         d_op.inputs = inputs;
@@ -128,11 +139,17 @@ impl DeleteOp {
     }
     
     /// Creates the proof required to build the `DeleteOp`.
-    pub fn proof(write_op: &WriteOp,
+    pub fn proof(network_type: NetworkType,
+                 write_op: &WriteOp,
                  instance: Scalar,
                  fee: &Output) -> Result<ZKPProof> {
         write_op.validate()?;
+        if write_op.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
+        
         instance.validate()?;
+        
         fee.validate()?;
 
         let version = Version::default();
@@ -147,6 +164,7 @@ impl DeleteOp {
         
         message.extend_from_slice(&nonce_buf);
         message.extend_from_slice(&version.to_bytes()?);
+        message.extend_from_slice(&network_type.to_bytes()?);
         message.extend_from_slice(&timestamp.to_bytes()?);
         message.extend_from_slice(&write_op.id.to_bytes()?);
         message.extend_from_slice(&fee.id.to_bytes()?);
@@ -163,7 +181,11 @@ impl DeleteOp {
     /// Verifies the `DeleteOp` against a `WriteOp`.
     pub fn verify(&self, write_op: &WriteOp) -> Result<bool> {
         self.validate()?;
+
         write_op.validate()?;
+        if write_op.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         Ok(self.proof.verify(write_op.witness)?)
     }
@@ -174,6 +196,7 @@ impl Default for DeleteOp {
         DeleteOp {
             id: Digest::default(),
             version: Version::default(),
+            network_type: NetworkType::default(),
             timestamp: Timestamp::default(),
             inputs_length: 0,
             inputs: Vec::new(),
@@ -193,6 +216,7 @@ impl<'a> Identify<'a> for DeleteOp {
         let mut buf = Vec::new();
 
         buf.write_all(&self.version.to_bytes()?)?;
+        buf.write_all(&self.network_type.to_bytes()?)?;
         buf.write_all(&self.timestamp.to_bytes()?)?;
         buf.write_u32::<BigEndian>(self.inputs_length)?;
         
@@ -262,7 +286,7 @@ impl Validate for DeleteOp {
         self.proof.validate()?;
         
         self.fee.validate()?;
-        
+
         Ok(())
     }
 }
@@ -277,6 +301,7 @@ impl<'a> Serialize<'a> for DeleteOp {
         let obj = json!({
             "id": self.string_id()?,
             "version": self.version.to_string(),
+            "network_type": self.network_type.to_hex()?,
             "timestamp": self.timestamp.to_string(),
             "inputs_length": self.inputs_length,
             "inputs": json_inputs,
@@ -302,6 +327,10 @@ impl<'a> Serialize<'a> for DeleteOp {
         let version_value = obj["version"].clone();
         let version_string: String = json::from_value(version_value)?;
         let version = Version::from_string(&version_string)?;
+        
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
         
         let timestamp_value = obj["timestamp"].clone();
         let timestamp_string: String = json::from_value(timestamp_value)?;
@@ -341,6 +370,7 @@ impl<'a> Serialize<'a> for DeleteOp {
         let delete_op = DeleteOp {
             id: id,
             version: version,
+            network_type: network_type,
             timestamp: timestamp,
             inputs_length: inputs_length,
             inputs: inputs,

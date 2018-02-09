@@ -8,7 +8,7 @@
 //! Libyobicash `output` module tests.
 
 use libyobicash::traits::{Validate, Serialize};
-use libyobicash::utils::{Version, Timestamp, Amount};
+use libyobicash::utils::{Version, NetworkType, Timestamp, Amount};
 use libyobicash::crypto::{Digest, Scalar, ZKPWitness, ZKPProof};
 use libyobicash::models::output::Output;
 use libyobicash::models::coin::{Coin, CoinSource};
@@ -43,8 +43,9 @@ fn output_verify_succ() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -64,8 +65,10 @@ fn output_verify_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];

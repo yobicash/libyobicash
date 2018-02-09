@@ -8,9 +8,11 @@
 //! The `utils` module provides utils types and methods.
 
 pub mod version;
+pub mod network_type;
 pub mod timestamp;
 pub mod amount;
 
 pub use self::version::*;
+pub use self::network_type::*;
 pub use self::timestamp::*;
 pub use self::amount::*;

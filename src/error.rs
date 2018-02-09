@@ -69,6 +69,10 @@ pub enum ErrorKind {
     UnknownMode,
     #[fail(display="Invalid mode")]
     InvalidMode,
+    #[fail(display="Unknown network")]
+    UnknownNetwork,
+    #[fail(display="Invalid network")]
+    InvalidNetwork,
     #[fail(display="Crypto failure")]
     CryptoFailure,
     #[fail(display="Regex failure")]

@@ -14,10 +14,11 @@ use hex;
 
 use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, Serialize};
-use utils::{Timestamp, Amount};
+use traits::{Identify, Validate, HexSerialize, Serialize};
+use utils::{NetworkType, Timestamp, Amount};
 use crypto::Digest;
-use crypto::{BinarySerialize, HexSerialize};
+use crypto::BinarySerialize as CryptoBinarySerialize;
+use crypto::HexSerialize as CryptoHexSerialize;
 use models::coin::Coin;
 
 /// A wallet is a node on the Yobicash collection of coins used by a unique user.
@@ -25,6 +26,8 @@ use models::coin::Coin;
 pub struct Wallet {
     /// The name of the wallet.
     pub name: String,
+    /// The protocol network type.
+    pub network_type: NetworkType,
     /// The balance of the wallet.
     pub balance: Amount,
     /// The length of the unspent coins.
@@ -52,7 +55,11 @@ impl Wallet {
     /// Add a new unspent coin.
     pub fn add_ucoin(&mut self, ucoin: &Coin) -> Result<()> {
         self.validate()?;
+
         ucoin.validate()?;
+        if ucoin.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let id = ucoin.output.id;
 
@@ -79,7 +86,11 @@ impl Wallet {
     /// Add a new spent coin.
     pub fn add_scoin(&mut self, scoin: &Coin) -> Result<()> {
         self.validate()?;
+        
         scoin.validate()?;
+        if scoin.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let id = scoin.output.id;
 
@@ -117,6 +128,7 @@ impl Default for Wallet {
 
         Wallet {
             name: String::new(),
+            network_type: NetworkType::default(),
             balance: Amount::new(),
             ucoins_length: 0,
             ucoins_ids: Vec::new(),
@@ -219,6 +231,7 @@ impl<'a> Serialize<'a> for Wallet {
 
         let obj = json!({
             "name": self.name,
+            "network_type": self.network_type.to_hex()?,
             "balance": self.balance.to_string(),
             "ucoins_length": self.ucoins_length,
             "ucoins_ids": ucoins_ids_json,
@@ -242,6 +255,10 @@ impl<'a> Serialize<'a> for Wallet {
         let balance_value = obj["balance"].clone();
         let balance_str: String = json::from_value(balance_value)?;
         let balance = Amount::from_string(&balance_str)?;
+
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
 
         let ucoins_length_value = obj["ucoins_length"].clone();
         let ucoins_length: u32 = json::from_value(ucoins_length_value)?;
@@ -275,6 +292,7 @@ impl<'a> Serialize<'a> for Wallet {
 
         let wallet = Wallet {
             name: name,
+            network_type: network_type,
             balance: balance,
             ucoins_length: ucoins_length,
             ucoins_ids: ucoins_ids,

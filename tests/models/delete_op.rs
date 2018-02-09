@@ -8,7 +8,7 @@
 //! Libyobicash `delete_op` module tests.
 
 use libyobicash::traits::{Validate, Serialize};
-use libyobicash::utils::Amount;
+use libyobicash::utils::{NetworkType, Amount};
 use libyobicash::crypto::{Random, Digest, Scalar, ZKPWitness, SecretKey};
 use libyobicash::models::output::Output;
 use libyobicash::models::coin::{Coin, CoinSource};
@@ -24,7 +24,8 @@ fn delete_op_new_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -41,13 +42,13 @@ fn delete_op_new_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let res = DeleteOp::new(&coins, &write_op, proof, &fee_output);
+    let res = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output);
     assert!(res.is_ok())
 }
 
@@ -59,7 +60,8 @@ fn delete_op_new_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -76,14 +78,14 @@ fn delete_op_new_fail() {
     let coins = vec![in_coin];
     let instance_a = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance_a, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance_a, &fee_output).unwrap();
 
     let instance_b = Scalar::random();
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance_b, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance_b, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let res = DeleteOp::new(&coins, &write_op, proof, &fee_output);
+    let res = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output);
     assert!(res.is_err())
 }
 
@@ -95,7 +97,8 @@ fn delete_op_validate_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -112,13 +115,13 @@ fn delete_op_validate_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let res = delete_op.validate();
     assert!(res.is_ok())
@@ -132,7 +135,8 @@ fn delete_op_validate_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -149,13 +153,13 @@ fn delete_op_validate_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let mut delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let mut delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
     delete_op.fee.amount += Amount::max_value();
 
     let res = delete_op.validate();
@@ -170,7 +174,8 @@ fn delete_op_verify_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -187,13 +192,13 @@ fn delete_op_verify_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let verified = delete_op.verify(&write_op).unwrap();
     assert!(verified)
@@ -207,7 +212,8 @@ fn delete_op_verify_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -224,13 +230,13 @@ fn delete_op_verify_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let mut write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let mut write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let instance_b = Scalar::random();
     let witness_b = ZKPWitness::new(instance_b).unwrap();
@@ -248,7 +254,8 @@ fn delete_op_to_json_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -265,13 +272,13 @@ fn delete_op_to_json_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let delete_op_a = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op_a = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let delete_op_str = delete_op_a.to_json().unwrap();
     let delete_op_b = DeleteOp::from_json(&delete_op_str).unwrap();
@@ -287,7 +294,8 @@ fn delete_op_to_json_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -304,13 +312,13 @@ fn delete_op_to_json_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
    
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let mut delete_op_str = delete_op.to_json().unwrap();
     delete_op_str.pop();
@@ -327,7 +335,8 @@ fn delete_op_to_bytes_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -344,13 +353,13 @@ fn delete_op_to_bytes_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
 
     // same coins for testing purposes
-    let delete_op_a = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op_a = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let delete_op_buf = delete_op_a.to_bytes().unwrap();
     let delete_op_b = DeleteOp::from_bytes(&delete_op_buf).unwrap();
@@ -365,7 +374,8 @@ fn delete_op_to_bytes_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -382,13 +392,13 @@ fn delete_op_to_bytes_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
 
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let mut delete_op_buf = delete_op.to_bytes().unwrap();
     delete_op_buf[0] ^= delete_op_buf[0];
@@ -405,7 +415,8 @@ fn delete_op_to_hex_succ() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -422,13 +433,13 @@ fn delete_op_to_hex_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
 
     // same coins for testing purposes
-    let delete_op_a = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op_a = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let delete_op_str = delete_op_a.to_hex().unwrap();
     let delete_op_b = DeleteOp::from_hex(&delete_op_str).unwrap();
@@ -443,7 +454,8 @@ fn delete_op_to_hex_fail() {
     let in_output = Output::new(&in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let in_coin = Coin::new(&in_output, in_instance, in_source, in_source_id).unwrap();
+    let network_type = NetworkType::default();
+    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
     
     let plain_size = 10;
     let plain = Random::bytes(plain_size);
@@ -460,13 +472,13 @@ fn delete_op_to_hex_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(&coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
 
     // same fee just for readability.
-    let proof = DeleteOp::proof(&write_op, instance, &fee_output).unwrap();
+    let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
 
     // same coins for testing purposes
-    let delete_op = DeleteOp::new(&coins, &write_op, proof, &fee_output).unwrap();
+    let delete_op = DeleteOp::new(network_type, &coins, &write_op, proof, &fee_output).unwrap();
 
     let mut delete_op_str = delete_op.to_hex().unwrap();
     delete_op_str.pop();

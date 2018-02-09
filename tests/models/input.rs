@@ -8,7 +8,7 @@
 //! Libyobicash `input` module tests.
 
 use libyobicash::traits::{Validate, Serialize};
-use libyobicash::utils::{Version, Timestamp, Amount};
+use libyobicash::utils::{Version, NetworkType, Timestamp, Amount};
 use libyobicash::crypto::{Digest, Scalar, ZKPWitness};
 use libyobicash::models::input::Input;
 use libyobicash::models::output::Output;
@@ -23,7 +23,9 @@ fn input_new_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -42,8 +44,9 @@ fn input_new_fail() {
     let output = Output::new(&amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
+    let network_type = NetworkType::default();
 
-    let mut coin = Coin::new(&output, instance_a, source, source_id).unwrap();
+    let mut coin = Coin::new(network_type, source, source_id, &output, instance_a).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -65,7 +68,9 @@ fn input_verify_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -86,7 +91,9 @@ fn input_verify_fail() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance_a, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance_a).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -110,7 +117,9 @@ fn input_validate_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -131,7 +140,9 @@ fn input_to_json_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -153,7 +164,9 @@ fn input_to_json_fail() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -176,7 +189,9 @@ fn input_to_bytes_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -198,7 +213,9 @@ fn input_to_bytes_fail() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -221,7 +238,9 @@ fn input_to_hex_succ() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];
@@ -243,7 +262,9 @@ fn input_to_hex_fail() {
     let source = CoinSource::default();
     let source_id = Digest::default();
 
-    let coin = Coin::new(&output, instance, source, source_id).unwrap();
+    let network_type = NetworkType::default();
+
+    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
     let version = Version::default();
     let timestamp = Timestamp::now();
     let outputs_ids = vec![];

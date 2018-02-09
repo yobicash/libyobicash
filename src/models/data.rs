@@ -14,11 +14,12 @@ use byteorder::{BigEndian, WriteBytesExt};
 
 use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, Serialize};
+use traits::{Identify, Validate, BinarySerialize, Serialize};
 use crypto::{Digest, SecretKey, PublicKey};
 use crypto::{assym_encrypt, assym_decrypt};
-use crypto::BinarySerialize;
-use crypto::HexSerialize;
+use crypto::BinarySerialize as CryptoBinarySerialize;
+use crypto::HexSerialize as CryptoSerialize;
+use utils::Version;
 
 use std::io::Write;
 
@@ -30,6 +31,8 @@ use std::io::Write;
 pub struct Data {
     /// The id of the data.
     pub id: Digest,
+    /// The protocol version.
+    pub version: Version,
     /// The from is the public key used by the sender from encrypt the data.
     pub from: PublicKey,
     /// The to is the public key that can be used by the receiver to decrypt the data.
@@ -77,6 +80,7 @@ impl<'a> Identify<'a> for Data {
     fn id(&self) -> Result<Self::ID> {
         let mut buf = Vec::new();
 
+        buf.write_all(&self.version.to_bytes()?)?;
         buf.write_all(&self.from.to_bytes()?)?;
         buf.write_all(&self.to.to_bytes()?)?;
         buf.write_u32::<BigEndian>(self.plain_size)?;
@@ -117,7 +121,7 @@ impl<'a> Identify<'a> for Data {
 
 impl Validate for Data {
     fn validate(&self) -> Result<()> {
-        // TODO: check against genesys data.
+        self.version.validate()?;
 
         if self.from == self.to {
             return Err(ErrorKind::InvalidPublicKey.into());
@@ -156,6 +160,7 @@ impl<'a> Serialize<'a> for Data {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
             "id": self.string_id()?,
+            "version": self.version.to_string(),
             "from": self.from.to_hex()?,
             "to": self.to.to_hex()?,
             "plain_size": self.plain_size,
@@ -174,6 +179,10 @@ impl<'a> Serialize<'a> for Data {
         let id_value = obj["id"].clone();
         let id_str: String = json::from_value(id_value)?;
         let id = Data::id_from_string(&id_str)?;
+        
+        let version_value = obj["version"].clone();
+        let version_string: String = json::from_value(version_value)?;
+        let version = Version::from_string(&version_string)?;
         
         let from_value = obj["from"].clone();
         let from_hex: String = json::from_value(from_value)?;
@@ -195,6 +204,7 @@ impl<'a> Serialize<'a> for Data {
 
         let data = Data {
             id: id,
+            version: version,
             from: from,
             to: to,
             plain_size: plain_size,
