@@ -9,6 +9,8 @@
 
 The [Yobicash](https://yobicash.org) cryptocurrency library.
 
+*NOTE*: the mainnet and testnet witnesses will be updated.
+
 ## Table of Contents
 
 - [Install](#install)
@@ -25,7 +27,7 @@ To install libyobicash add in your Cargo.toml:
 # Cargo.toml
 
 [dependencies]
-libyobicash = "^0.1"
+libyobicash = "^0.2"
 ```
 
 and in the root of your crate:

@@ -81,96 +81,105 @@ impl Version {
         };
 
         let buildmeta = if parts.name("buildmeta").is_some() {
-        String::from(&parts["buildmeta"])
-    } else {
-        String::new()
-    };
+            String::from(&parts["buildmeta"])
+        } else {
+            String::new()
+        };
 
-    let version = Version {
-        major: major,
-        minor: minor,
-        patch: patch,
-        release: release,
-        buildmeta: buildmeta,
-    };
+        let version = Version {
+            major: major,
+            minor: minor,
+            patch: patch,
+            release: release,
+            buildmeta: buildmeta,
+        };
 
-    Ok(version)
-}
-
-/// Creates a `Version` from a string.
-pub fn from_string(s: &str) -> Result<Version> {
-    Self::parse(s)
-}
-
-/// Converts the `Version` to string.
-pub fn to_string(&self) -> String {
-    let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
-
-    if !self.release.is_empty() {
-        version.push_str(&format!("-{}", self.release));
-
-        if !self.buildmeta.is_empty() {
-            version.push_str(&format!(".{}", self.buildmeta));
-        }
+        Ok(version)
     }
 
-    version
-}
+    /// Returns the current `Version`.
+    pub fn current() -> Result<Version> {
+        Version::parse(VERSION)
+    }
+
+    /// Returns the `Version` minimum value.
+    pub fn min_value() -> Result<Version> {
+        Version::from_parts(0, 1, 0, "", "")
+    }
+
+    /// Returns the `Version` maximum value.
+    pub fn max_value() -> Result<Version> {
+        Version::current()
+    }
+
+    /// Creates a `Version` from a string.
+    pub fn from_string(s: &str) -> Result<Version> {
+        Self::parse(s)
+    }
+
+    /// Converts the `Version` to string.
+    pub fn to_string(&self) -> String {
+        let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
+
+        if !self.release.is_empty() {
+            version.push_str(&format!("-{}", self.release));
+
+            if !self.buildmeta.is_empty() {
+                version.push_str(&format!(".{}", self.buildmeta));
+            }
+        }
+
+        version
+    }
 }
 
 impl BinarySerialize for Version {
-fn to_bytes(&self) -> Result<Vec<u8>> {
-    let buf = messagepack::encode::to_vec(self)?;
+    fn to_bytes(&self) -> Result<Vec<u8>> {
+        let buf = messagepack::encode::to_vec(self)?;
 
-    Ok(buf)
-}
+        Ok(buf)
+    }
 
-fn from_bytes(b: &[u8]) -> Result<Version> {
-    let version = messagepack::decode::from_slice(b)?;
+    fn from_bytes(b: &[u8]) -> Result<Version> {
+        let version = messagepack::decode::from_slice(b)?;
 
-    Ok(version)
-}
+        Ok(version)
+    }
 }
 
 impl HexSerialize for Version {
-fn from_hex(s: &str) -> Result<Version> {
-    if s.is_empty() {
-        return Err(ErrorKind::InvalidLength.into());
+    fn from_hex(s: &str) -> Result<Version> {
+        if s.is_empty() {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+
+        Version::from_bytes(&hex::decode(s)?)
     }
 
-    Version::from_bytes(&hex::decode(s)?)
-}
-
-fn to_hex(&self) -> Result<String> {
-    Ok(hex::encode(&self.to_bytes()?))
-}
+    fn to_hex(&self) -> Result<String> {
+        Ok(hex::encode(&self.to_bytes()?))
+    }
 }
 
 impl Default for Version {
-fn default() -> Version {
-    Version::parse(VERSION).unwrap()
-}
+    fn default() -> Version {
+        Version::current().unwrap()
+    }
 }
 
 impl fmt::Display for Version {
-fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}", self.to_string())
-}
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
 }
 
 impl Validate for Version {
     fn validate(&self) -> Result<()> {
-        let current = Version::default();
+        let max = Version::max_value()?;
 
-        let prev = Version::from_parts(
-            current.major,
-            current.minor,
-            current.patch,
-            "",
-            "",
-        )?;
+        let min = Version::min_value()?;
 
-        if *self > current || *self < prev {
+        if *self > max || *self < min {
             return Err(ErrorKind::InvalidVersion.into());
         }
 

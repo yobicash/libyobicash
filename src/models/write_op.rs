@@ -63,11 +63,17 @@ impl WriteOp {
                fee: &Output) -> Result<WriteOp> {
         for coin in coins {
             coin.validate()?;
+            if coin.output.network_type != network_type {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
         }
 
         data.validate()?;
     
         fee.validate()?;
+        if fee.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let coins_length = coins.len();
 
@@ -107,7 +113,7 @@ impl WriteOp {
                 &Version::default(),
                 timestamp,
                 &outputs_ids,
-                fee.id)?;
+                fee)?;
 
             inputs.push(input);
         }
@@ -239,6 +245,9 @@ impl Validate for WriteOp {
         self.witness.validate()?;
         
         self.fee.validate()?;
+        if self.fee.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
         
         Ok(())
     }

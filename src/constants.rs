@@ -40,6 +40,12 @@ pub const DEFAULT_BASE_FEE: f32 = 0.0;
 /// The default base difficulty per connection.
 pub const DEFAULT_BASE_DIFFICULTY: u32 = 0;
 
+/// The mainnet witness.
+pub const MAINWITNESS: &str = "1e9f288451e2beb8b5c7ae598c4ca0cfe88722a8d0c44b5ff1d42c6fde17b7f6";
+
+/// The testnet witness.
+pub const TESTWITNESS: &str = "893bca8b0c490032e53c0349ca922418b2349af16e573230680a36e38ea08a47";
+
 /// The mainnet port.
 pub const MAINPORT: u16 = 2112;
 

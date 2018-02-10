@@ -17,7 +17,7 @@ use error::ErrorKind;
 use result::Result;
 use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
 use utils::{Version, NetworkType, Timestamp, Amount};
-use crypto::Digest;
+use crypto::{Digest, ZKPWitness};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
 use models::output::Output;
@@ -60,16 +60,22 @@ impl Transaction {
                fee: &Output) -> Result<Transaction> {
         for coin in coins {
             coin.validate()?;
-            if coin.network_type != network_type {
+            if coin.output.network_type != network_type {
                 return Err(ErrorKind::InvalidNetwork.into());
             }
         }
 
         for output in outputs {
             output.validate()?;
+            if output.network_type != network_type {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
         }
         
         fee.validate()?;
+        if fee.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let coins_length = coins.len();
 
@@ -119,7 +125,7 @@ impl Transaction {
                 &Version::default(),
                 timestamp,
                 &outputs_ids,
-                fee.id)?;
+                fee)?;
 
             inputs.push(input);
         }
@@ -136,6 +142,90 @@ impl Transaction {
         tx.id = tx.id()?;
 
         Ok(tx)
+    }
+
+    /// Creates a new genesis transaction.
+    fn new_genesis(genesis_fee: Output) -> Result<Transaction> {
+        genesis_fee.validate()?;
+
+        if genesis_fee.amount != Amount::max_value() {
+            return Err(ErrorKind::InvalidGenesis.into());
+        }
+
+        let network_type = genesis_fee.network_type;
+
+        let timestamp = if network_type == NetworkType::RegTest {
+            Timestamp::now()
+        } else {
+            Timestamp::min_value()
+        };
+
+        let mut genesis_tx = Transaction::default();
+        genesis_tx.version = genesis_fee.version.clone();
+        genesis_tx.network_type = network_type;
+        genesis_tx.timestamp = timestamp;
+        genesis_tx.fee = genesis_fee;
+        genesis_tx.id = genesis_tx.id()?;
+
+        Ok(genesis_tx)
+    }
+
+    /// Creates a new regtest genesis transaction.
+    pub fn new_regtest_genesis(fee_witness: ZKPWitness) -> Result<Transaction> {
+        let genesis_fee = Output::new_regtest_genesis(fee_witness)?;
+
+        Transaction::new_genesis(genesis_fee)
+    }
+
+    /// Creates a new testnet genesis transaction.
+    pub fn new_testnet_genesis() -> Result<Transaction> {
+        let genesis_fee = Output::new_testnet_genesis()?;
+
+        Transaction::new_genesis(genesis_fee)
+    }
+
+    /// Creates a new mainnet genesis transaction.
+    pub fn new_mainnet_genesis() -> Result<Transaction> {
+        let genesis_fee = Output::new_mainnet_genesis()?;
+
+        Transaction::new_genesis(genesis_fee)
+    }
+
+    /// Verifies if the `Transaction` is a genesis transaction.
+    pub fn verify_genesis(&self) -> Result<bool> {
+        if self.version != self.fee.version {
+            return Err(ErrorKind::InvalidVersion.into());
+        }
+
+        if self.fee.verify_genesis()? {
+            if self.inputs_length != 0 ||
+                self.inputs.len() != 0 {
+                return Err(ErrorKind::InvalidLength.into());    
+            }
+
+            if self.outputs_length != 0 ||
+                self.outputs_ids.len() != 0 {
+                return Err(ErrorKind::InvalidLength.into());    
+            }
+
+            if self.outputs_amount != Amount::new() {
+                return Err(ErrorKind::OutOfBound.into());
+            }
+
+            if self.network_type != NetworkType::RegTest {
+                if self.version != Version::min_value()? {
+                    return Err(ErrorKind::InvalidVersion.into());
+                }
+
+                if self.timestamp != Timestamp::min_value() {
+                    return Err(ErrorKind::InvalidTimestamp.into());
+                }
+            }
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Returns the fee amount.
@@ -260,7 +350,12 @@ impl Validate for Transaction {
         }
         
         self.fee.validate()?;
-        
+        if self.fee.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
+
+        let _ = self.verify_genesis()?;
+
         Ok(())
     }
 }

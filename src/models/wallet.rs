@@ -57,7 +57,7 @@ impl Wallet {
         self.validate()?;
 
         ucoin.validate()?;
-        if ucoin.network_type != self.network_type {
+        if ucoin.output.network_type != self.network_type {
             return Err(ErrorKind::InvalidNetwork.into());
         }
 
@@ -88,7 +88,7 @@ impl Wallet {
         self.validate()?;
         
         scoin.validate()?;
-        if scoin.network_type != self.network_type {
+        if scoin.output.network_type != self.network_type {
             return Err(ErrorKind::InvalidNetwork.into());
         }
 

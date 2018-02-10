@@ -12,6 +12,7 @@ use rmp_serde as messagepack;
 use hex;
 use byteorder::{BigEndian, WriteBytesExt};
 
+use error::ErrorKind;
 use result::Result;
 use traits::{Identify, Validate, BinarySerialize, Serialize};
 use utils::{Version, Timestamp};
@@ -40,11 +41,17 @@ impl Input {
                version: &Version,
                timestamp: Timestamp,
                outputs_ids: &[Digest],
-               fee_id: Digest) -> Result<Input> {
+               fee: &Output) -> Result<Input> {
         coin.validate()?;
 
         version.validate()?;
         timestamp.validate()?;
+
+        fee.validate()?;
+
+        if fee.network_type != coin.output.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let mut message = Vec::new();
 
@@ -65,7 +72,7 @@ impl Input {
             message.extend_from_slice(&id.to_bytes()?);
         }
 
-        message.extend_from_slice(&fee_id.to_bytes()?);
+        message.extend_from_slice(&fee.id.to_bytes()?);
 
         let proof = coin.proof(&message)?;
 

@@ -22,12 +22,12 @@ fn wallet_add_ucoin_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     let res = wallet.add_ucoin(&coin);
     assert!(res.is_ok())
@@ -41,12 +41,12 @@ fn wallet_add_ucoin_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
 
     wallet.add_ucoin(&coin).unwrap();
     
@@ -62,12 +62,12 @@ fn wallet_add_scoin_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -83,12 +83,12 @@ fn wallet_add_scoin_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
 
     let res = wallet.add_scoin(&coin);
     assert!(res.is_err())
@@ -102,12 +102,12 @@ fn wallet_validate_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
     wallet.add_scoin(&coin).unwrap();
@@ -124,12 +124,12 @@ fn wallet_validate_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
     wallet.add_scoin(&coin).unwrap();
@@ -148,12 +148,12 @@ fn wallet_to_json_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -170,12 +170,12 @@ fn wallet_to_json_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -193,12 +193,12 @@ fn wallet_to_bytes_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -215,12 +215,12 @@ fn wallet_to_bytes_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet.add_ucoin(&coin).unwrap();
 
@@ -238,12 +238,12 @@ fn wallet_to_hex_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     wallet_a.add_ucoin(&coin).unwrap();
 
@@ -260,12 +260,12 @@ fn wallet_to_hex_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     
     wallet.add_ucoin(&coin).unwrap();

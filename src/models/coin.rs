@@ -15,7 +15,6 @@ use hex;
 use error::ErrorKind;
 use result::Result;
 use traits::{Validate, Identify, BinarySerialize, HexSerialize, Serialize};
-use utils::NetworkType;
 use crypto::{Digest, Scalar, ZKPWitness, ZKPProof};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
@@ -25,12 +24,14 @@ use models::output::Output;
 /// The type used to represent the source of the coin.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum CoinSource {
-    TransactionFee=0,
-    TransactionOutput=1,
-    WriteOpFee=2,
-    WriteOpOutput=3,
-    DeleteOpFee=4,
-    DeleteOpOutput=5,
+    GenesisFee=0,
+    GenesisOutput=1,
+    TransactionFee=2,
+    TransactionOutput=3,
+    WriteOpFee=4,
+    WriteOpOutput=5,
+    DeleteOpFee=6,
+    DeleteOpOutput=7,
 }
 
 impl Default for CoinSource {
@@ -57,12 +58,14 @@ impl BinarySerialize for CoinSource {
         let n: u32 = BigEndian::read_u32(b);
 
         match n {
-            0 => Ok(CoinSource::TransactionFee),
-            1 => Ok(CoinSource::TransactionOutput),
-            2 => Ok(CoinSource::WriteOpFee),
-            3 => Ok(CoinSource::WriteOpOutput),
-            4 => Ok(CoinSource::DeleteOpFee),
-            5 => Ok(CoinSource::DeleteOpOutput),
+            0 => Ok(CoinSource::GenesisFee),
+            1 => Ok(CoinSource::GenesisOutput),
+            2 => Ok(CoinSource::TransactionFee),
+            3 => Ok(CoinSource::TransactionOutput),
+            4 => Ok(CoinSource::WriteOpFee),
+            5 => Ok(CoinSource::WriteOpOutput),
+            6 => Ok(CoinSource::DeleteOpFee),
+            7 => Ok(CoinSource::DeleteOpOutput),
             _ => Err(ErrorKind::UnknownMode.into()),
         }
     }
@@ -89,8 +92,6 @@ pub struct Coin {
     pub source: CoinSource,
     /// The id of the source.
     pub source_id: Digest,
-    /// The protocol network type.
-    pub network_type: NetworkType, 
     /// The coin output.
     pub output: Output,
     /// The instance used to redeem the coin.
@@ -99,7 +100,7 @@ pub struct Coin {
 
 impl Coin {
     /// Creates a new `Coin`.
-    pub fn new(network_type: NetworkType, source: CoinSource, source_id: Digest, output: &Output, instance: Scalar) -> Result<Coin> {
+    pub fn new(source: CoinSource, source_id: Digest, output: &Output, instance: Scalar) -> Result<Coin> {
         output.validate()?;
         instance.validate()?;
 
@@ -111,7 +112,6 @@ impl Coin {
         let coin = Coin {
             source: source,
             source_id: source_id,
-            network_type: network_type,
             output: output.clone(),
             instance: instance,
         };
@@ -191,7 +191,6 @@ impl<'a> Serialize<'a> for Coin {
         let obj = json!({
             "source": self.source.to_hex()?,
             "source_id": self.source_id.to_hex()?,
-            "network_type": self.network_type.to_hex()?,
             "output": self.output.to_json()?,
             "instance": self.instance.to_hex()?,
         });
@@ -212,10 +211,6 @@ impl<'a> Serialize<'a> for Coin {
         let source_id_hex: String = json::from_value(source_id_value)?;
         let source_id = Digest::from_hex(&source_id_hex)?;
         
-        let network_type_value = obj["network_type"].clone();
-        let network_type_hex: String = json::from_value(network_type_value)?;
-        let network_type = NetworkType::from_hex(&network_type_hex)?;
-        
         let output_value = obj["output"].clone();
         let output_str: String = json::from_value(output_value)?;
         let output = Output::from_json(&output_str)?;
@@ -227,7 +222,6 @@ impl<'a> Serialize<'a> for Coin {
         let coin = Coin {
             source: source,
             source_id: source_id,
-            network_type: network_type,
             output: output,
             instance: instance,
         };

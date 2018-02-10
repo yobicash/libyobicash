@@ -64,7 +64,7 @@ impl DeleteOp {
                fee: &Output) -> Result<DeleteOp> {
         for coin in coins {
             coin.validate()?;
-            if coin.network_type != network_type {
+            if coin.output.network_type != network_type {
                 return Err(ErrorKind::InvalidNetwork.into());
             }
         }
@@ -82,6 +82,9 @@ impl DeleteOp {
         }
 
         fee.validate()?;
+        if fee.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let coins_length = coins.len();
 
@@ -118,7 +121,7 @@ impl DeleteOp {
                 &version,
                 timestamp,
                 &outputs_ids,
-                fee.id)?;
+                fee)?;
 
             inputs.push(input);
         }
@@ -151,6 +154,9 @@ impl DeleteOp {
         instance.validate()?;
         
         fee.validate()?;
+        if fee.network_type != network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         let version = Version::default();
         let timestamp = Timestamp::now();
@@ -286,6 +292,9 @@ impl Validate for DeleteOp {
         self.proof.validate()?;
         
         self.fee.validate()?;
+        if self.fee.network_type != self.network_type {
+            return Err(ErrorKind::InvalidNetwork.into());
+        }
 
         Ok(())
     }

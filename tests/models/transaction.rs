@@ -19,21 +19,21 @@ fn transaction_new_succ() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -47,16 +47,16 @@ fn transaction_new_fail() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![in_output];
@@ -66,25 +66,90 @@ fn transaction_new_fail() {
 }
 
 #[test]
+fn transaction_new_regtest_genesis_succ() {
+    let regtest_instance = Scalar::random();
+    let regtest_witness = ZKPWitness::new(regtest_instance).unwrap();
+
+    let transaction = Transaction::new_regtest_genesis(regtest_witness).unwrap();
+    let res = transaction.verify_genesis();
+    assert!(res.is_ok())
+}
+
+#[test]
+fn transaction_new_regtest_genesis_fail() {
+    let regtest_instance = Scalar::random();
+    let regtest_witness = ZKPWitness::new(regtest_instance).unwrap();
+
+    let mut transaction = Transaction::new_regtest_genesis(regtest_witness).unwrap();
+    transaction.outputs_length += 1;
+    let amount: Amount = 10f32.into();
+    transaction.outputs_amount += amount;
+    transaction.outputs_ids.push(Digest::default());
+
+    let res = transaction.verify_genesis();
+    assert!(res.is_err())
+}
+
+#[test]
+fn transaction_new_testnet_genesis_succ() {
+    let transaction = Transaction::new_testnet_genesis().unwrap();
+
+    let res = transaction.verify_genesis();
+    assert!(res.is_ok())
+}
+
+#[test]
+fn transaction_new_testnet_genesis_fail() {
+    let mut transaction = Transaction::new_testnet_genesis().unwrap();
+    transaction.outputs_length += 1;
+    let amount: Amount = 10f32.into();
+    transaction.outputs_amount += amount;
+    transaction.outputs_ids.push(Digest::default());
+
+    let res = transaction.verify_genesis();
+    assert!(res.is_err())
+}
+
+#[test]
+fn transaction_new_mainnet_genesis_new_succ() {
+    let transaction = Transaction::new_mainnet_genesis().unwrap();
+
+    let res = transaction.verify_genesis();
+    assert!(res.is_ok())
+}
+
+#[test]
+fn transaction_new_mainnet_genesis_fail() {
+    let mut transaction = Transaction::new_mainnet_genesis().unwrap();
+    transaction.outputs_length += 1;
+    let amount: Amount = 10f32.into();
+    transaction.outputs_amount += amount;
+    transaction.outputs_ids.push(Digest::default());
+
+    let res = transaction.verify_genesis();
+    assert!(res.is_err())
+}
+
+#[test]
 fn transaction_validate_succ() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -100,21 +165,21 @@ fn transaction_validate_fail() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -132,21 +197,21 @@ fn transaction_to_json_succ() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -164,21 +229,21 @@ fn transaction_to_json_fail() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -197,21 +262,21 @@ fn transaction_to_bytes_succ() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -228,21 +293,21 @@ fn transaction_to_bytes_fail() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -261,21 +326,21 @@ fn transaction_to_hex_succ() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];
@@ -292,21 +357,21 @@ fn transaction_to_hex_fail() {
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let in_output = Output::new(&in_amount, in_witness).unwrap();
+    let network_type = NetworkType::default();
+    let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
-    let network_type = NetworkType::default();
-    let in_coin = Coin::new(network_type, in_source, in_source_id, &in_output, in_instance).unwrap();
+    let in_coin = Coin::new(in_source, in_source_id, &in_output, in_instance).unwrap();
 
     let out_amount = Amount::from(8.0);
     let out_instance = Scalar::random();
     let out_witness = ZKPWitness::new(out_instance).unwrap();
-    let out_output = Output::new(&out_amount, out_witness).unwrap();
+    let out_output = Output::new(network_type, &out_amount, out_witness).unwrap();
     
     let fee_amount = Amount::from(2.0);
     let fee_instance = Scalar::random();
     let fee_witness = ZKPWitness::new(fee_instance).unwrap();
-    let fee_output = Output::new(&fee_amount, fee_witness).unwrap();
+    let fee_output = Output::new(network_type, &fee_amount, fee_witness).unwrap();
     
     let coins = vec![in_coin];
     let outputs = vec![out_output];

@@ -18,12 +18,12 @@ fn coin_new_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let res = Coin::new(network_type, source, source_id, &output, instance);
+    let res = Coin::new(source, source_id, &output, instance);
     assert!(res.is_ok())
 }
 
@@ -32,13 +32,13 @@ fn coin_new_fail() {
     let amount = Amount::from(10.0);
     let instance_a = Scalar::random();
     let witness_a = ZKPWitness::new(instance_a).unwrap();
-    let output = Output::new(&amount, witness_a).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness_a).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
     let instance_b = Scalar::random();
-    let network_type = NetworkType::default();
-    
-    let res = Coin::new(network_type, source, source_id, &output, instance_b);
+
+    let res = Coin::new(source, source_id, &output, instance_b);
     assert!(res.is_err())
 }
 
@@ -47,12 +47,12 @@ fn coin_verify_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     let message = Random::bytes(64);
     let proof = ZKPProof::new(instance, &message).unwrap();
@@ -66,12 +66,12 @@ fn coin_verify_fail() {
     let amount = Amount::from(10.0);
     let instance_a = Scalar::random();
     let witness_a = ZKPWitness::new(instance_a).unwrap();
-    let output = Output::new(&amount, witness_a).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness_a).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance_a).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance_a).unwrap();
     
     let message = Random::bytes(64);
     let instance_b = Scalar::random();
@@ -86,12 +86,12 @@ fn coin_validate_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     
     let res = coin.validate();
     assert!(res.is_ok())
@@ -102,12 +102,12 @@ fn coin_validate_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
-    
-    let mut coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+
+    let mut coin = Coin::new(source, source_id, &output, instance).unwrap();
     coin.instance = Scalar::random();
     
     let res = coin.validate();
@@ -119,12 +119,12 @@ fn coin_to_json_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin_a = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin_a = Coin::new(source, source_id, &output, instance).unwrap();
     let coin_str = coin_a.to_json().unwrap();
     let coin_b = Coin::from_json(&coin_str).unwrap();
     
@@ -136,12 +136,12 @@ fn coin_to_json_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     let mut coin_str = coin.to_json().unwrap();
     coin_str.pop();
     
@@ -154,12 +154,12 @@ fn coin_to_bytes_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin_a = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin_a = Coin::new(source, source_id, &output, instance).unwrap();
     let coin_buf = coin_a.to_bytes().unwrap();
     let coin_b = Coin::from_bytes(&coin_buf).unwrap();
     
@@ -171,12 +171,12 @@ fn coin_to_bytes_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     let mut coin_buf = coin.to_bytes().unwrap();
     coin_buf[0] ^= coin_buf[0];
     
@@ -189,12 +189,12 @@ fn coin_to_hex_succ() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin_a = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin_a = Coin::new(source, source_id, &output, instance).unwrap();
     let coin_str = coin_a.to_hex().unwrap();
     let coin_b = Coin::from_hex(&coin_str).unwrap();
     
@@ -206,12 +206,12 @@ fn coin_to_hex_fail() {
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let output = Output::new(&amount, witness).unwrap();
+    let network_type = NetworkType::default();
+    let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
-    let network_type = NetworkType::default();
 
-    let coin = Coin::new(network_type, source, source_id, &output, instance).unwrap();
+    let coin = Coin::new(source, source_id, &output, instance).unwrap();
     let mut coin_str = coin.to_hex().unwrap();
     coin_str.pop();
     
