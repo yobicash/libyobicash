@@ -9,24 +9,21 @@
 
 use libyobicash::traits::{Serialize, Validate};
 use libyobicash::utils::Timestamp;
-use libyobicash::crypto::SecretKey;
 use libyobicash::models::peer::Peer;
 
 #[test]
 fn peer_new_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let res = Peer::new(pk, &addr);
+    let res = Peer::new(&addr);
     assert!(res.is_ok())
 }
 
 #[test]
 fn peer_validate_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer = Peer::new(pk, &addr).unwrap();
+    let peer = Peer::new(&addr).unwrap();
     
     let res = peer.validate();
     assert!(res.is_ok())
@@ -34,10 +31,9 @@ fn peer_validate_succ() {
 
 #[test]
 fn peer_seen_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let mut peer = Peer::new(pk, &addr).unwrap();
+    let mut peer = Peer::new(&addr).unwrap();
     
     let res = peer.seen();
     assert!(res.is_ok())
@@ -45,10 +41,9 @@ fn peer_seen_succ() {
 
 #[test]
 fn peer_seen_fail() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let mut peer = Peer::new(pk, &addr).unwrap();
+    let mut peer = Peer::new(&addr).unwrap();
     peer.created_at = Timestamp::now();
     peer.updated_at = Timestamp::min_value();
     
@@ -58,10 +53,9 @@ fn peer_seen_fail() {
 
 #[test]
 fn peer_to_json_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer_a = Peer::new(pk, &addr).unwrap();
+    let peer_a = Peer::new(&addr).unwrap();
     let peer_str = peer_a.to_json().unwrap();
     let peer_b = Peer::from_json(&peer_str).unwrap();
     
@@ -70,10 +64,9 @@ fn peer_to_json_succ() {
 
 #[test]
 fn peer_to_json_fail() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer = Peer::new(pk, &addr).unwrap();
+    let peer = Peer::new(&addr).unwrap();
     let mut peer_str = peer.to_json().unwrap();
     peer_str.pop();
     
@@ -83,10 +76,9 @@ fn peer_to_json_fail() {
 
 #[test]
 fn peer_to_bytes_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer_a = Peer::new(pk, &addr).unwrap();
+    let peer_a = Peer::new(&addr).unwrap();
     let peer_buf = peer_a.to_bytes().unwrap();
     let peer_b = Peer::from_bytes(&peer_buf).unwrap();
     
@@ -95,10 +87,9 @@ fn peer_to_bytes_succ() {
 
 #[test]
 fn peer_to_bytes_fail() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer = Peer::new(pk, &addr).unwrap();
+    let peer = Peer::new(&addr).unwrap();
     let mut peer_buf = peer.to_bytes().unwrap();
     peer_buf[0] ^= peer_buf[0];
     
@@ -108,10 +99,9 @@ fn peer_to_bytes_fail() {
 
 #[test]
 fn peer_to_hex_succ() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer_a = Peer::new(pk, &addr).unwrap();
+    let peer_a = Peer::new(&addr).unwrap();
     let peer_str = peer_a.to_hex().unwrap();
     let peer_b = Peer::from_hex(&peer_str).unwrap();
     
@@ -120,10 +110,9 @@ fn peer_to_hex_succ() {
 
 #[test]
 fn peer_to_hex_fail() {
-    let pk = SecretKey::random().to_public();
     let addr = String::new();
     
-    let peer = Peer::new(pk, &addr).unwrap();
+    let peer = Peer::new(&addr).unwrap();
     let mut peer_str = peer.to_hex().unwrap();
     peer_str.pop();
     

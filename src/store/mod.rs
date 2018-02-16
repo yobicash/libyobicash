@@ -5,13 +5,16 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! Libyobicash `models` module tests.
+//! The `store` module provides the Yobicash store traits, types and methods.
 
-mod peer;
-mod data;
-mod output;
-mod coin;
-mod input;
-mod transaction;
-mod write_op;
-mod delete_op;
+pub mod mode;
+pub mod key;
+pub mod value;
+pub mod item;
+pub mod traits;
+
+pub use self::mode::*;
+pub use self::key::*;
+pub use self::value::*;
+pub use self::item::*;
+pub use self::traits::*;

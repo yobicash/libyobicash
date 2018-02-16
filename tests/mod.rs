@@ -7,9 +7,14 @@
 
 //! Libyobicash tests.
 
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate rug;
 extern crate byteorder;
 extern crate libyobicash;
 
+pub mod mocks;
 mod utils;
 mod models;
+mod store;

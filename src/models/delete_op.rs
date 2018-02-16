@@ -28,7 +28,7 @@ use models::write_op::WriteOp;
 
 use std::io::Write;
 
-/// A type representing a delete opearation done on the Yobicash dagchain.
+/// A type representing a delete opearation of a written `Data`.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct DeleteOp {
     /// The id of the output.
@@ -43,6 +43,8 @@ pub struct DeleteOp {
     pub inputs_length: u32,
     /// The inputs referencing the outputs to spend.
     pub inputs: Vec<Input>,
+    /// The data id.
+    pub data_id: Digest,
     /// The data size.
     pub data_size: u32,
     /// The write operation.
@@ -64,7 +66,7 @@ impl DeleteOp {
                fee: &Output) -> Result<DeleteOp> {
         for coin in coins {
             coin.validate()?;
-            if coin.output.network_type != network_type {
+            if coin.network_type != network_type {
                 return Err(ErrorKind::InvalidNetwork.into());
             }
         }
@@ -100,7 +102,7 @@ impl DeleteOp {
         for i in 0..coins_length {
             let coin = &coins[i];
 
-            coins_amount += &coin.output.amount;
+            coins_amount += &coin.amount;
         }
 
         if coins_amount != fee.amount  {
@@ -132,6 +134,7 @@ impl DeleteOp {
         d_op.timestamp = timestamp;
         d_op.inputs_length = inputs.len() as u32;
         d_op.inputs = inputs;
+        d_op.data_id = write_op.data_id;
         d_op.data_size = write_op.data_size;
         d_op.write_id = write_op.id;
         d_op.proof = proof;
@@ -173,6 +176,7 @@ impl DeleteOp {
         message.extend_from_slice(&network_type.to_bytes()?);
         message.extend_from_slice(&timestamp.to_bytes()?);
         message.extend_from_slice(&write_op.id.to_bytes()?);
+        message.extend_from_slice(&write_op.data_id.to_bytes()?);
         message.extend_from_slice(&fee.id.to_bytes()?);
         
         Ok(ZKPProof::new(instance, &message)?)
@@ -189,8 +193,21 @@ impl DeleteOp {
         self.validate()?;
 
         write_op.validate()?;
+
+        if write_op.id != self.write_id {
+            return Err(ErrorKind::InvalidID.into());
+        }
+
         if write_op.network_type != self.network_type {
             return Err(ErrorKind::InvalidNetwork.into());
+        }
+
+        if write_op.data_id != self.data_id {
+            return Err(ErrorKind::InvalidID.into());
+        }
+
+        if write_op.data_size != self.data_size {
+            return Err(ErrorKind::InvalidLength.into());
         }
 
         Ok(self.proof.verify(write_op.witness)?)
@@ -206,6 +223,7 @@ impl Default for DeleteOp {
             timestamp: Timestamp::default(),
             inputs_length: 0,
             inputs: Vec::new(),
+            data_id: Digest::default(),
             data_size: 0,
             write_id: Digest::default(),
             nonce: 0,
@@ -232,6 +250,7 @@ impl<'a> Identify<'a> for DeleteOp {
             buf.write_all(&input_buf)?;
         }
         
+        buf.write_all(&self.data_id.to_bytes()?)?;
         buf.write_u32::<BigEndian>(self.data_size)?;
         buf.write_all(&self.write_id.to_bytes()?)?;
         buf.write_u64::<BigEndian>(self.nonce)?;
@@ -314,6 +333,7 @@ impl<'a> Serialize<'a> for DeleteOp {
             "timestamp": self.timestamp.to_string(),
             "inputs_length": self.inputs_length,
             "inputs": json_inputs,
+            "data_id": self.data_id.to_hex()?,
             "data_size": self.data_size,
             "write_id": self.write_id.to_hex()?,
             "nonce": self.nonce,
@@ -330,8 +350,8 @@ impl<'a> Serialize<'a> for DeleteOp {
         let obj: json::Value = json::from_str(s)?;
         
         let id_value = obj["id"].clone();
-        let id_str: String = json::from_value(id_value)?;
-        let id = DeleteOp::id_from_string(&id_str)?;
+        let id_hex: String = json::from_value(id_value)?;
+        let id = Digest::from_hex(&id_hex)?;
         
         let version_value = obj["version"].clone();
         let version_string: String = json::from_value(version_value)?;
@@ -357,6 +377,10 @@ impl<'a> Serialize<'a> for DeleteOp {
             let input = Input::from_json(&input_json)?;
             inputs.push(input);
         }
+        
+        let data_id_value = obj["data_id"].clone();
+        let data_id_hex: String = json::from_value(data_id_value)?;
+        let data_id = Digest::from_hex(&data_id_hex)?;
 
         let data_size_value = obj["data_size"].clone();
         let data_size: u32 = json::from_value(data_size_value)?;
@@ -383,6 +407,7 @@ impl<'a> Serialize<'a> for DeleteOp {
             timestamp: timestamp,
             inputs_length: inputs_length,
             inputs: inputs,
+            data_id: data_id,
             data_size: data_size,
             write_id: write_id,
             nonce: nonce,

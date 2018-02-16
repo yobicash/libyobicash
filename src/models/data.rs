@@ -14,25 +14,24 @@ use byteorder::{BigEndian, WriteBytesExt};
 
 use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, BinarySerialize, Serialize};
+use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
 use crypto::{Digest, SecretKey, PublicKey};
 use crypto::{assym_encrypt, assym_decrypt};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoSerialize;
-use utils::Version;
+use utils::{Version, NetworkType};
 
 use std::io::Write;
 
-/// Input is a reference to a past output used in transactions
-/// to spend the output.
-///
-/// See the `output` module to see its usage.
+/// Data is encrypted data written with a `WriteOp`.
 #[derive(Clone, Eq, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Data {
     /// The id of the data.
     pub id: Digest,
     /// The protocol version.
     pub version: Version,
+    /// The protocol network type.
+    pub network_type: NetworkType,
     /// The from is the public key used by the sender from encrypt the data.
     pub from: PublicKey,
     /// The to is the public key that can be used by the receiver to decrypt the data.
@@ -47,11 +46,12 @@ pub struct Data {
 
 impl Data {
     /// Creates a new `Data`.
-    pub fn new(sk: SecretKey, pk: PublicKey, plaintext: &[u8]) -> Result<Data> {
+    pub fn new(network_type: NetworkType, sk: SecretKey, pk: PublicKey, plaintext: &[u8]) -> Result<Data> {
         let cyphertext = assym_encrypt(sk, pk, plaintext)?;
 
         let mut data = Data::default();
 
+        data.network_type = network_type;
         data.from = sk.to_public();
         data.to = pk;
         data.plain_size = plaintext.len() as u32;
@@ -81,6 +81,7 @@ impl<'a> Identify<'a> for Data {
         let mut buf = Vec::new();
 
         buf.write_all(&self.version.to_bytes()?)?;
+        buf.write_all(&self.network_type.to_bytes()?)?;
         buf.write_all(&self.from.to_bytes()?)?;
         buf.write_all(&self.to.to_bytes()?)?;
         buf.write_u32::<BigEndian>(self.plain_size)?;
@@ -161,6 +162,7 @@ impl<'a> Serialize<'a> for Data {
         let obj = json!({
             "id": self.string_id()?,
             "version": self.version.to_string(),
+            "network_type": self.network_type.to_hex()?,
             "from": self.from.to_hex()?,
             "to": self.to.to_hex()?,
             "plain_size": self.plain_size,
@@ -184,6 +186,10 @@ impl<'a> Serialize<'a> for Data {
         let version_string: String = json::from_value(version_value)?;
         let version = Version::from_string(&version_string)?;
         
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
+        
         let from_value = obj["from"].clone();
         let from_hex: String = json::from_value(from_value)?;
         let from = PublicKey::from_hex(&from_hex)?;
@@ -205,6 +211,7 @@ impl<'a> Serialize<'a> for Data {
         let data = Data {
             id: id,
             version: version,
+            network_type: network_type,
             from: from,
             to: to,
             plain_size: plain_size,

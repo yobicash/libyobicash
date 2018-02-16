@@ -1,17 +1,14 @@
-// Copyright 2018 Yobicash Ltd.
+// Copyright 2018 Yobicash Ltd. See the COPYRIGHT file at the top-level directory
+// of this distribution.
 //
 // Licensed under the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>
 // and the Apache 2.0 license <LICENSE-APACHE or https://opensource.org/licenses/Apache-2.0>.
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! Libyobicash `models` module tests.
+//! Libyobicash `store` module tests.
 
-mod peer;
-mod data;
-mod output;
-mod coin;
-mod input;
-mod transaction;
-mod write_op;
-mod delete_op;
+mod mode;
+mod key;
+mod value;
+mod item;

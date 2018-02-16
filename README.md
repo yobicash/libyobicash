@@ -9,7 +9,12 @@
 
 The [Yobicash](https://yobicash.org) cryptocurrency library.
 
-*NOTE*: the mainnet and testnet witnesses will be updated.
+*NOTES*:
+
+- This is definitely alpha quality code.
+- Some tests are still missing.
+- The API is unstable.
+- The genesis will be updated.
 
 ## Table of Contents
 
@@ -54,7 +59,7 @@ let network_type = NetworkType::MainNet;
 // let plain = some super important secret.
 // let alice_pk = Alice public key;
 let bob_sk = SecretKey::random();
-let bob_data = Data::new(bob_sk, alice_pk, &plain)?;
+let bob_data = Data::new(network_type, bob_sk, alice_pk, &plain)?;
 
 // let bob_coins = some spendable coins Bob owns that pay the node fee.
 // required by the node;

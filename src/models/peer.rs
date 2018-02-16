@@ -15,16 +15,14 @@ use error::ErrorKind;
 use result::Result;
 use traits::{Identify, Validate, Serialize};
 use utils::Timestamp;
-use crypto::{PublicKey, HexSerialize};
-use crypto::Validate as CryptoValidate;
 
 /// A peer is a node on the Yobicash peer-to-peer network.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Peer {
     /// The address of the peer.
     pub address: String,
-    /// The public key of the peer.
-    pub public_key: PublicKey,
+    /// Blacklist flag.
+    pub blacklisted: bool,
     /// The unix timestamp of the time the peer has been created.
     pub created_at: Timestamp,
     /// The unix timestamp of the last time the peer has been updated.
@@ -33,14 +31,25 @@ pub struct Peer {
 
 impl Peer {
     /// Creates a new `Peer`.
-    pub fn new(public_key: PublicKey, address: &str) -> Result<Peer> {
-        public_key.validate()?;
-
+    pub fn new(address: &str) -> Result<Peer> {
         let mut peer = Peer::default();
         peer.address = address.into();
-        peer.public_key = public_key;
 
         Ok(peer)
+    }
+
+    /// Blacklist the peer.
+    pub fn blacklist(&mut self) -> Result<()> {
+        self.blacklisted = true;
+
+        Ok(())
+    }
+
+    /// Whitelist the peer.
+    pub fn whitelist(&mut self) -> Result<()> {
+        self.blacklisted = false;
+
+        Ok(())
     }
 
     /// Updates the last time the `Peer` has been seen.
@@ -57,7 +66,7 @@ impl<'a> Serialize<'a> for Peer {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
             "address": self.address,
-            "public_key": self.public_key.to_hex()?,
+            "blacklisted": self.blacklisted,
             "created_at": self.created_at.to_string(),
             "updated_at": self.updated_at.to_string(),
         });
@@ -72,11 +81,10 @@ impl<'a> Serialize<'a> for Peer {
        
         let address_value = obj["address"].clone();
         let address: String = json::from_value(address_value)?;
-        
-        let public_key_value = obj["public_key"].clone();
-        let public_key_hex: String = json::from_value(public_key_value)?;
-        let public_key = PublicKey::from_hex(&public_key_hex)?;
 
+        let blacklisted_value = obj["blacklisted"].clone();
+        let blacklisted: bool = json::from_value(blacklisted_value)?;
+        
         let created_at_value = obj["created_at"].clone();
         let created_at_str: String = json::from_value(created_at_value)?;
         let created_at = Timestamp::from_string(&created_at_str)?;
@@ -87,7 +95,7 @@ impl<'a> Serialize<'a> for Peer {
 
         let peer = Peer {
             address: address,
-            public_key: public_key,
+            blacklisted: blacklisted,
             created_at: created_at,
             updated_at: updated_at,
         };
@@ -122,7 +130,7 @@ impl Default for Peer {
 
         Peer {
             address: String::new(),
-            public_key: PublicKey::default(),
+            blacklisted: false,
             created_at: now,
             updated_at: now,
         }
@@ -168,7 +176,6 @@ impl<'a> Identify<'a> for Peer {
 
 impl Validate for Peer {
     fn validate(&self) -> Result<()> {
-        self.public_key.validate()?;
         self.created_at.validate()?;
         self.updated_at.validate()?;
 

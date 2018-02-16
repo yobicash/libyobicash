@@ -19,19 +19,16 @@ use crypto::{Digest, Scalar, ZKPWitness, ZKPProof};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
 use crypto::Validate as CryptoValidate;
+use utils::{Version, NetworkType, Amount};
 use models::output::Output;
 
 /// The type used to represent the source of the coin.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum CoinSource {
-    GenesisFee=0,
-    GenesisOutput=1,
-    TransactionFee=2,
-    TransactionOutput=3,
-    WriteOpFee=4,
-    WriteOpOutput=5,
-    DeleteOpFee=6,
-    DeleteOpOutput=7,
+    TransactionFee=0,
+    TransactionOutput=1,
+    WriteOpFee=2,
+    DeleteOpFee=3,
 }
 
 impl Default for CoinSource {
@@ -58,14 +55,10 @@ impl BinarySerialize for CoinSource {
         let n: u32 = BigEndian::read_u32(b);
 
         match n {
-            0 => Ok(CoinSource::GenesisFee),
-            1 => Ok(CoinSource::GenesisOutput),
-            2 => Ok(CoinSource::TransactionFee),
-            3 => Ok(CoinSource::TransactionOutput),
-            4 => Ok(CoinSource::WriteOpFee),
-            5 => Ok(CoinSource::WriteOpOutput),
-            6 => Ok(CoinSource::DeleteOpFee),
-            7 => Ok(CoinSource::DeleteOpOutput),
+            0 => Ok(CoinSource::TransactionFee),
+            1 => Ok(CoinSource::TransactionOutput),
+            2 => Ok(CoinSource::WriteOpFee),
+            3 => Ok(CoinSource::DeleteOpFee),
             _ => Err(ErrorKind::UnknownMode.into()),
         }
     }
@@ -88,14 +81,22 @@ impl HexSerialize for CoinSource {
 /// A `Coin` is an `Output` enriched with the instance needed to redeem it.
 #[derive(Clone, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Coin {
+    /// The output id.
+    pub id: Digest,
+    /// The protocol version.
+    pub version: Version,
+    /// The protocol network type.
+    pub network_type: NetworkType,
+    /// The instance used to build the output.
+    pub instance: Scalar,
+    /// The witness used in the output.
+    pub witness: ZKPWitness,
+    /// The output amount.
+    pub amount: Amount,
     /// The source of the coin.
     pub source: CoinSource,
     /// The id of the source.
     pub source_id: Digest,
-    /// The coin output.
-    pub output: Output,
-    /// The instance used to redeem the coin.
-    pub instance: Scalar,
 }
 
 impl Coin {
@@ -110,10 +111,14 @@ impl Coin {
         }
 
         let coin = Coin {
+            id: output.id,
+            version: output.version.clone(),
+            network_type: output.network_type,
+            instance: instance,
+            witness: witness,
+            amount: output.amount.clone(),
             source: source,
             source_id: source_id,
-            output: output.clone(),
-            instance: instance,
         };
 
         Ok(coin)
@@ -141,7 +146,7 @@ impl<'a> Identify<'a> for Coin {
     type ID = Digest;
 
     fn id(&self) -> Result<Self::ID> {
-        Ok(self.output.id)
+        Ok(self.id)
     }
 
     fn id_from_bytes(b: &[u8]) -> Result<Self::ID> {
@@ -153,7 +158,7 @@ impl<'a> Identify<'a> for Coin {
     }
 
     fn binary_id(&self) -> Result<Vec<u8>> {
-        Ok(self.output.id.to_bytes()?)
+        Ok(self.id.to_bytes()?)
     }
 
     fn id_from_string(s: &str) -> Result<Self::ID> {
@@ -173,12 +178,13 @@ impl<'a> Identify<'a> for Coin {
 
 impl Validate for Coin {
     fn validate(&self) -> Result<()> {
-        self.output.validate()?;
         self.instance.validate()?;
+        self.witness.validate()?;
+        self.amount.validate()?;
 
         let witness = ZKPWitness::new(self.instance)?;
 
-        if witness != self.output.witness {
+        if witness != self.witness {
             return Err(ErrorKind::InvalidWitness.into());
         }
     
@@ -189,10 +195,14 @@ impl Validate for Coin {
 impl<'a> Serialize<'a> for Coin {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
+            "id": self.string_id()?,
+            "version": self.version.to_string(),
+            "network_type": self.network_type.to_hex()?,
+            "instance": self.instance.to_hex()?,
+            "witness": self.witness.to_hex()?,
+            "amount": self.amount.to_string(),
             "source": self.source.to_hex()?,
             "source_id": self.source_id.to_hex()?,
-            "output": self.output.to_json()?,
-            "instance": self.instance.to_hex()?,
         });
 
         let s = obj.to_string();
@@ -203,6 +213,30 @@ impl<'a> Serialize<'a> for Coin {
     fn from_json(s: &str) -> Result<Self> {
         let obj: json::Value = json::from_str(s)?;
         
+        let id_value = obj["id"].clone();
+        let id_hex: String = json::from_value(id_value)?;
+        let id = Digest::from_hex(&id_hex)?;
+        
+        let version_value = obj["version"].clone();
+        let version_str: String = json::from_value(version_value)?;
+        let version = Version::from_string(&version_str)?;
+        
+        let network_type_value = obj["network_type"].clone();
+        let network_type_hex: String = json::from_value(network_type_value)?;
+        let network_type = NetworkType::from_hex(&network_type_hex)?;
+        
+        let instance_value = obj["instance"].clone();
+        let instance_hex: String = json::from_value(instance_value)?;
+        let instance = Scalar::from_hex(&instance_hex)?;
+        
+        let witness_value = obj["witness"].clone();
+        let witness_hex: String = json::from_value(witness_value)?;
+        let witness = ZKPWitness::from_hex(&witness_hex)?;
+
+        let amount_value = obj["amount"].clone();
+        let amount_str: String = json::from_value(amount_value)?;
+        let amount = Amount::from_string(&amount_str)?;
+        
         let source_value = obj["source"].clone();
         let source_hex: String = json::from_value(source_value)?;
         let source = CoinSource::from_hex(&source_hex)?;
@@ -210,20 +244,16 @@ impl<'a> Serialize<'a> for Coin {
         let source_id_value = obj["source_id"].clone();
         let source_id_hex: String = json::from_value(source_id_value)?;
         let source_id = Digest::from_hex(&source_id_hex)?;
-        
-        let output_value = obj["output"].clone();
-        let output_str: String = json::from_value(output_value)?;
-        let output = Output::from_json(&output_str)?;
-        
-        let instance_value = obj["instance"].clone();
-        let instance_hex: String = json::from_value(instance_value)?;
-        let instance = Scalar::from_hex(&instance_hex)?;
 
         let coin = Coin {
+            id: id,
+            version: version,
+            network_type: network_type,
+            instance: instance,
+            witness: witness,
+            amount: amount,
             source: source,
             source_id: source_id,
-            output: output,
-            instance: instance,
         };
 
         Ok(coin)

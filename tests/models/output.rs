@@ -18,10 +18,11 @@ use libyobicash::models::input::Input;
 
 #[test]
 fn output_new_succ() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
 
     let res = Output::new(network_type, &amount, witness);
     assert!(res.is_ok())
@@ -29,11 +30,12 @@ fn output_new_succ() {
 
 #[test]
 fn output_new_fail() {
+    let network_type = NetworkType::default();
+
     let mut amount = Amount::max_value();
     amount += Amount::from(1.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let res = Output::new(network_type, &amount, witness);
     assert!(res.is_err())
@@ -96,10 +98,11 @@ fn output_new_mainnet_genesis_fail() {
 
 #[test]
 fn output_verify_succ() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
@@ -123,10 +126,11 @@ fn output_verify_succ() {
 
 #[test]
 fn output_verify_fail() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     let output = Output::new(network_type, &amount, witness).unwrap();
     let source = CoinSource::default();
     let source_id = Digest::default();
@@ -152,10 +156,11 @@ fn output_verify_fail() {
 
 #[test]
 fn output_validate_succ() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output = Output::new(network_type, &amount, witness).unwrap();
     
@@ -165,10 +170,11 @@ fn output_validate_succ() {
 
 #[test]
 fn output_validate_fail() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let mut output = Output::new(network_type, &amount, witness).unwrap();
     output.amount += Amount::max_value();
@@ -179,10 +185,11 @@ fn output_validate_fail() {
 
 #[test]
 fn output_to_json_succ() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output_a = Output::new(network_type, &amount, witness).unwrap();
     let output_str = output_a.to_json().unwrap();
@@ -193,10 +200,11 @@ fn output_to_json_succ() {
 
 #[test]
 fn output_to_json_fail() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output = Output::new(network_type, &amount, witness).unwrap();
     let mut output_str = output.to_json().unwrap();
@@ -208,10 +216,11 @@ fn output_to_json_fail() {
 
 #[test]
 fn output_to_bytes_succ() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output_a = Output::new(network_type, &amount, witness).unwrap();
     let output_buf = output_a.to_bytes().unwrap();
@@ -222,10 +231,11 @@ fn output_to_bytes_succ() {
 
 #[test]
 fn output_to_bytes_fail() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output = Output::new(network_type, &amount, witness).unwrap();
     let mut output_buf = output.to_bytes().unwrap();
@@ -237,10 +247,11 @@ fn output_to_bytes_fail() {
 
 #[test]
 fn output_to_hex_succ() {
+    let network_type = NetworkType::default();
+    
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output_a = Output::new(network_type, &amount, witness).unwrap();
     let output_str = output_a.to_hex().unwrap();
@@ -251,10 +262,11 @@ fn output_to_hex_succ() {
 
 #[test]
 fn output_to_hex_fail() {
+    let network_type = NetworkType::default();
+
     let amount = Amount::from(10.0);
     let instance = Scalar::random();
     let witness = ZKPWitness::new(instance).unwrap();
-    let network_type = NetworkType::default();
     
     let output = Output::new(network_type, &amount, witness).unwrap();
     let mut output_str = output.to_hex().unwrap();

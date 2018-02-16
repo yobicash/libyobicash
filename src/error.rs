@@ -21,6 +21,7 @@ use rug::rational::ParseRationalError;
 use std::fmt::{self, Display};
 use std::string::FromUtf8Error;
 use std::num::ParseIntError;
+use std::sync::PoisonError;
 use std::io::Error as IOError;
 
 /// The error type used in `libyobicash`.
@@ -65,6 +66,10 @@ pub enum ErrorKind {
     InvalidWitness,
     #[fail(display="Invalid proof")]
     InvalidProof,
+    #[fail(display="Invalid coin source")]
+    InvalidSource,
+    #[fail(display="Invalid variant")]
+    InvalidVariant,
     #[fail(display="Unknown mode")]
     UnknownMode,
     #[fail(display="Invalid mode")]
@@ -73,6 +78,10 @@ pub enum ErrorKind {
     UnknownNetwork,
     #[fail(display="Invalid network")]
     InvalidNetwork,
+    #[fail(display="Invalid store")]
+    InvalidStore,
+    #[fail(display="Not enough space")]
+    NotEnoughSpace,
     #[fail(display="Invalid genesis")]
     InvalidGenesis,
     #[fail(display="Crypto failure")]
@@ -85,6 +94,8 @@ pub enum ErrorKind {
     SerializationFailure,
     #[fail(display="Deserialization failure")]
     DeserializationFailure,
+    #[fail(display="Sync failure")]
+    SyncFailure,
     #[fail(display="I/O failure")]
     IOFailure,
     #[fail(display="From Failure")]
@@ -133,6 +144,12 @@ impl From<FailureError> for Error {
 impl From<CryptoError> for Error {
     fn from(e: CryptoError) -> Error {
         Error { inner: e.context(ErrorKind::CryptoFailure) }
+    }
+}
+
+impl<T> From<PoisonError<T>> for Error {
+    fn from(_: PoisonError<T>) -> Error {
+        Error { inner: Context::new(ErrorKind::SyncFailure) }
     }
 }
 

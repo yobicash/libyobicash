@@ -16,10 +16,11 @@ use libyobicash::models::transaction::Transaction;
 
 #[test]
 fn transaction_new_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -44,10 +45,11 @@ fn transaction_new_succ() {
 
 #[test]
 fn transaction_new_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -132,10 +134,11 @@ fn transaction_new_mainnet_genesis_fail() {
 
 #[test]
 fn transaction_validate_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -162,10 +165,11 @@ fn transaction_validate_succ() {
 
 #[test]
 fn transaction_validate_fail() {
+    let network_type = NetworkType::default();
+    
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -194,10 +198,11 @@ fn transaction_validate_fail() {
 
 #[test]
 fn transaction_to_json_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -226,10 +231,11 @@ fn transaction_to_json_succ() {
 
 #[test]
 fn transaction_to_json_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -259,10 +265,11 @@ fn transaction_to_json_fail() {
 
 #[test]
 fn transaction_to_bytes_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -290,10 +297,11 @@ fn transaction_to_bytes_succ() {
 
 #[test]
 fn transaction_to_bytes_fail() {
+    let network_type = NetworkType::default();
+    
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -323,10 +331,11 @@ fn transaction_to_bytes_fail() {
 
 #[test]
 fn transaction_to_hex_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -354,10 +363,11 @@ fn transaction_to_hex_succ() {
 
 #[test]
 fn transaction_to_hex_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();

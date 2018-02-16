@@ -18,10 +18,11 @@ use libyobicash::models::delete_op::DeleteOp;
 
 #[test]
 fn delete_op_new_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -32,7 +33,7 @@ fn delete_op_new_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -54,10 +55,11 @@ fn delete_op_new_succ() {
 
 #[test]
 fn delete_op_new_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -68,7 +70,7 @@ fn delete_op_new_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -91,10 +93,11 @@ fn delete_op_new_fail() {
 
 #[test]
 fn delete_op_validate_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -105,7 +108,7 @@ fn delete_op_validate_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -129,10 +132,11 @@ fn delete_op_validate_succ() {
 
 #[test]
 fn delete_op_validate_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -143,7 +147,7 @@ fn delete_op_validate_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -168,10 +172,11 @@ fn delete_op_validate_fail() {
 
 #[test]
 fn delete_op_verify_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -182,7 +187,7 @@ fn delete_op_verify_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -206,10 +211,11 @@ fn delete_op_verify_succ() {
 
 #[test]
 fn delete_op_verify_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -220,7 +226,7 @@ fn delete_op_verify_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -248,10 +254,11 @@ fn delete_op_verify_fail() {
 
 #[test]
 fn delete_op_to_json_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -262,7 +269,7 @@ fn delete_op_to_json_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -288,10 +295,11 @@ fn delete_op_to_json_succ() {
 
 #[test]
 fn delete_op_to_json_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -302,7 +310,7 @@ fn delete_op_to_json_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -329,10 +337,11 @@ fn delete_op_to_json_fail() {
 
 #[test]
 fn delete_op_to_bytes_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -343,7 +352,7 @@ fn delete_op_to_bytes_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -368,10 +377,11 @@ fn delete_op_to_bytes_succ() {
 
 #[test]
 fn delete_op_to_bytes_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -382,7 +392,7 @@ fn delete_op_to_bytes_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -409,10 +419,11 @@ fn delete_op_to_bytes_fail() {
 
 #[test]
 fn delete_op_to_hex_succ() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -423,7 +434,7 @@ fn delete_op_to_hex_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -448,10 +459,11 @@ fn delete_op_to_hex_succ() {
 
 #[test]
 fn delete_op_to_hex_fail() {
+    let network_type = NetworkType::default();
+
     let in_amount = Amount::from(10.0);
     let in_instance = Scalar::random();
     let in_witness = ZKPWitness::new(in_instance).unwrap();
-    let network_type = NetworkType::default();
     let in_output = Output::new(network_type, &in_amount, in_witness).unwrap();
     let in_source = CoinSource::default();
     let in_source_id = Digest::default();
@@ -462,7 +474,7 @@ fn delete_op_to_hex_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
-    let data = Data::new(sk_a, pk_b, &plain).unwrap();
+    let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();

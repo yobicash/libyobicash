@@ -60,7 +60,7 @@ impl Transaction {
                fee: &Output) -> Result<Transaction> {
         for coin in coins {
             coin.validate()?;
-            if coin.output.network_type != network_type {
+            if coin.network_type != network_type {
                 return Err(ErrorKind::InvalidNetwork.into());
             }
         }
@@ -91,7 +91,7 @@ impl Transaction {
         let mut coins_amount = Amount::new();
         for i in 0..coins_length {
             let coin = &coins[i];
-            coins_amount += &coin.output.amount;
+            coins_amount += &coin.amount;
         }
 
         let mut outputs_ids = Vec::new();

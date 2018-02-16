@@ -29,7 +29,7 @@ use models::delete_op::DeleteOp;
 
 use std::io::Write;
 
-/// A type representing a write opearation done on the Yobicash dagchain.
+/// A type representing an write operation done on the Yobicash dagchain.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct WriteOp {
     /// The id of the output.
@@ -63,7 +63,7 @@ impl WriteOp {
                fee: &Output) -> Result<WriteOp> {
         for coin in coins {
             coin.validate()?;
-            if coin.output.network_type != network_type {
+            if coin.network_type != network_type {
                 return Err(ErrorKind::InvalidNetwork.into());
             }
         }
@@ -94,7 +94,7 @@ impl WriteOp {
         for i in 0..coins_length {
             let coin = &coins[i];
 
-            coins_amount += &coin.output.amount;
+            coins_amount += &coin.amount;
         }
 
         if coins_amount != fee.amount {
@@ -102,9 +102,11 @@ impl WriteOp {
         }
 
         let timestamp = Timestamp::now();
+        let data_id = data.id;
+        let data_size = data.to_bytes()?.len() as u32;
 
         let mut inputs = Vec::new();
-        let outputs_ids = vec![data.id];
+        let outputs_ids = vec![data_id];
         for i in 0..coins_length {
             let coin = &coins[i];
 
@@ -123,8 +125,8 @@ impl WriteOp {
         w_op.timestamp = timestamp;
         w_op.inputs_length = inputs.len() as u32;
         w_op.inputs = inputs;
-        w_op.data_size = data.to_bytes()?.len() as u32;
-        w_op.data_id = data.id;
+        w_op.data_size = data_size;
+        w_op.data_id = data_id;
         w_op.witness = ZKPWitness::new(instance)?;
         w_op.fee = fee.clone();
         w_op.id = w_op.id()?;
@@ -137,7 +139,7 @@ impl WriteOp {
         self.fee.amount.clone()
     }
 
-    /// Verifies the `WriteOp` against a `DeleteOp`.
+    /// Verifies the `WriteOp` against an `DeleteOp`.
     pub fn verify(&self, delete_op: &DeleteOp) -> Result<bool> {
         self.validate()?;
         
@@ -154,6 +156,7 @@ impl Default for WriteOp {
     fn default() -> WriteOp {
         let data = Data::default();
         let data_size = data.to_bytes().unwrap().len() as u32;
+
         WriteOp {
             id: Digest::default(),
             version: Version::default(),
@@ -282,8 +285,8 @@ impl<'a> Serialize<'a> for WriteOp {
         let obj: json::Value = json::from_str(s)?;
         
         let id_value = obj["id"].clone();
-        let id_str: String = json::from_value(id_value)?;
-        let id = WriteOp::id_from_string(&id_str)?;
+        let id_hex: String = json::from_value(id_value)?;
+        let id = Digest::from_hex(&id_hex)?;
         
         let version_value = obj["version"].clone();
         let version_str: String = json::from_value(version_value)?;
