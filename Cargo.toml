@@ -31,3 +31,4 @@ itertools = "^0.7"
 yobicrypto = "^0.2"
 chrono = { version = "^0.4", features = ["serde"] }
 regex = "^0.2"
+udt = { version = "^0.2.0", git = "https://github.com/eminence/udt-rs.git" }
