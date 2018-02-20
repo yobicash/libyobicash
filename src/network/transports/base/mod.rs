@@ -5,14 +5,10 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `network` module provides the Yobicash network traits, types and methods.
+//! The `base` module provides the base transport implementation for Yobicash network.
 
-pub mod session;
-pub mod resource_type;
-pub mod message;
-pub mod transports;
-// pub mod handlers;
-// pub mod router;
-// pub mod stream;
-// pub mod server;
-// pub mod client;
+pub mod client;
+pub mod server;
+pub mod transport_session;
+
+

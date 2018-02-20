@@ -5,14 +5,11 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `network` module provides the Yobicash network traits, types and methods.
+//! The `client` module provides the base transport session implementation for yobicash network
 
-pub mod session;
-pub mod resource_type;
-pub mod message;
-pub mod transports;
-// pub mod handlers;
-// pub mod router;
-// pub mod stream;
-// pub mod server;
-// pub mod client;
+
+pub struct BaseTransportSession {
+    pub remote_endpoint: String, // the endpoint of the remote peer
+    pub is_open: bool,           // set true when the connection is live
+}
+
