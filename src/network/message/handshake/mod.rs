@@ -5,13 +5,12 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `network` module provides the Yobicash network traits, types and methods.
+//! The `handshake` module provides the Yobicash network handshake message types and methods.
 
-pub mod session;
-pub mod resource_type;
-pub mod message;
-// pub mod handlers;
-// pub mod router;
-// pub mod stream;
-// pub mod server;
-// pub mod client;
+pub mod syn;
+pub mod ack;
+pub mod syn_ack;
+
+use self::syn::*;
+use self::ack::*;
+use self::syn_ack::*;

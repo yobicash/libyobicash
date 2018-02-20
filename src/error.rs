@@ -74,10 +74,22 @@ pub enum ErrorKind {
     UnknownMode,
     #[fail(display="Invalid mode")]
     InvalidMode,
-    #[fail(display="Unknown network")]
-    UnknownNetwork,
+    #[fail(display="Invalid session")]
+    InvalidSession,
+    #[fail(display="Invalid message")]
+    InvalidMessage,
+    #[fail(display="Invalid resource")]
+    InvalidResource,
+    #[fail(display="Unknown resource")]
+    UnknownResource,
+    #[fail(display="Invalid method")]
+    InvalidMethod,
+    #[fail(display="Unknown method")]
+    UnknownMethod,
     #[fail(display="Invalid network")]
     InvalidNetwork,
+    #[fail(display="Unknown network")]
+    UnknownNetwork,
     #[fail(display="Invalid store")]
     InvalidStore,
     #[fail(display="Not enough space")]

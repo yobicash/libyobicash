@@ -5,13 +5,10 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `network` module provides the Yobicash network traits, types and methods.
+//! The `list` module provides the Yobicash network list message types and methods.
 
-pub mod session;
-pub mod resource_type;
-pub mod message;
-// pub mod handlers;
-// pub mod router;
-// pub mod stream;
-// pub mod server;
-// pub mod client;
+pub mod request;
+pub mod response;
+
+use self::request::*;
+use self::response::*;

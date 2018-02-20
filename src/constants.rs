@@ -40,6 +40,9 @@ pub const DEFAULT_BASE_FEE: f32 = 0.0;
 /// The default base difficulty per connection.
 pub const DEFAULT_BASE_DIFFICULTY: u32 = 0;
 
+/// The maximum number of bytes per chunk in a network stream.
+pub const MAX_CHUNK_SIZE: u32 = 1<<9;
+
 /// The mainnet witness.
 pub const MAINWITNESS: &str = "1e9f288451e2beb8b5c7ae598c4ca0cfe88722a8d0c44b5ff1d42c6fde17b7f6";
 

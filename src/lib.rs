@@ -34,4 +34,4 @@ pub mod utils;
 pub mod models;
 pub mod store;
 pub mod node;
-//pub mod network;
+pub mod network;
