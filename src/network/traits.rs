@@ -14,6 +14,9 @@ use std::net::Shutdown;
 
 /// Trait implementend by Yobicash network transports.
 pub trait Connection: Sized + Read + Write {
+    /// Bind to an address.
+    fn bind(addr: &str) -> Result<Self>;
+
     /// Connects to an address.
     fn connect(addr: &str) -> Result<Self>;
 
