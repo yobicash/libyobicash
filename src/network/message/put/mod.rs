@@ -10,5 +10,5 @@
 pub mod request;
 pub mod response;
 
-use self::request::*;
-use self::response::*;
+pub use self::request::*;
+pub use self::response::*;

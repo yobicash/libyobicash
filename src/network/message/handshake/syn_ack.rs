@@ -56,6 +56,7 @@ impl SynAck {
     pub fn new(session: &Session,
                plain_size: u32,
                cyph_size: u32,
+               padding: u32,
                plain_digest: Digest,
                cyph_digest: Digest) -> Result<SynAck> {
         session.validate()?;
@@ -84,7 +85,10 @@ impl SynAck {
             return Err(ErrorKind::InvalidLength.into());
         }
 
-        let padding = cyph_size % MAX_CHUNK_SIZE;
+        if padding != cyph_size % MAX_CHUNK_SIZE {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+
         let chunks_count = (cyph_size + padding) / MAX_CHUNK_SIZE;
         
         if plain_digest == cyph_digest {

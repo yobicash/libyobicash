@@ -15,7 +15,6 @@ use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
-use crypto::Digest;
 use network::session::Session;
 use network::resource_type::ResourceType;
 

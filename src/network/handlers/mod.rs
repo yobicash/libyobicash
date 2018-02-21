@@ -7,16 +7,16 @@
 
 //! The `handlers` module provides the Yobicash network handlers types and methods.
 
-// pub mod ping;
-// pub mod list;
-// pub mod sample;
-// pub mod get;
-// pub mod lookup;
-// pub mod put;
+pub mod ping;
+pub mod list;
+pub mod sample;
+pub mod get;
+pub mod lookup;
+pub mod put;
 
-// pub use self::ping::*;
-// pub use self::list::*;
-// pub use self::sample::*;
-// pub use self::get::*;
-// pub use self::lookup::*;
-// pub use self::put::*;
+pub use self::ping::*;
+pub use self::list::*;
+pub use self::sample::*;
+pub use self::get::*;
+pub use self::lookup::*;
+pub use self::put::*;

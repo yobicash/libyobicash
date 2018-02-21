@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `request` module provides the Yobicash network list request message type and methods.
+//! The `error` module provides the Yobicash network error response message type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
@@ -16,30 +16,25 @@ use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
 use network::session::Session;
-use network::resource_type::ResourceType;
 
-/// The request for sampling a resource.
+/// The error_response message type.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct SampleRequest {
+pub struct ErrorResponse {
     /// Id of the session.
     pub id: u32,
     /// The version of the protocol.
     pub version: Version,
     /// The network type of the protocol.
     pub network_type: NetworkType,
-    /// The maximum size of the `SampleRequest` message.
+    /// The maximum size of the `ErrorResponse` message.
     pub max_size: u32,
-    /// The resource type.
-    pub resource_type: ResourceType,
-    /// The maximum number of retrieved resources.
-    pub count: u32,
+    /// The error message.
+    pub message: String,
 }
 
-impl SampleRequest {
-    /// Creates a new `SampleRequest`.
-    pub fn new(session: &Session,
-               resource_type: ResourceType,
-               count: u32) -> Result<SampleRequest> {
+impl ErrorResponse {
+    /// Creates a new `ErrorResponse`.
+    pub fn new(session: &Session, message: &str) -> Result<ErrorResponse> {
         session.validate()?;
 
         if session.max_size.is_none() {
@@ -52,24 +47,23 @@ impl SampleRequest {
         let version = session.version.clone();
         let network_type = session.network_type;
 
-        let sample_request = SampleRequest {
+        let error_response = ErrorResponse {
             id: id,
             version: version,
             network_type: network_type,
             max_size: max_size,
-            resource_type: resource_type,
-            count: count,
+            message: String::from(message),
         };
 
-        if sample_request.to_bytes()?.len() as u32 > max_size {
+        if error_response.to_bytes()?.len() as u32 > max_size {
             return Err(ErrorKind::InvalidLength.into());
         }
 
-        Ok(sample_request)
+        Ok(error_response)
     }
 }
 
-impl Validate for SampleRequest {
+impl Validate for ErrorResponse {
     fn validate(&self) -> Result<()> {
         self.version.validate()?;
 
@@ -81,7 +75,7 @@ impl Validate for SampleRequest {
     }
 }
 
-impl<'a> Serialize<'a> for SampleRequest {
+impl<'a> Serialize<'a> for ErrorResponse {
     fn to_json(&self) -> Result<String> {
 
         let obj = json!({
@@ -89,8 +83,7 @@ impl<'a> Serialize<'a> for SampleRequest {
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
             "max_size": self.max_size,
-            "resource_type": self.resource_type.to_hex()?,
-            "count": self.count,
+            "message": self.message,
         });
 
         let s = obj.to_string();
@@ -114,24 +107,19 @@ impl<'a> Serialize<'a> for SampleRequest {
 
         let max_size_value = obj["max_size"].clone();
         let max_size: u32 = json::from_value(max_size_value)?;
-      
-        let resource_type_value = obj["resource_type"].clone();
-        let resource_type_hex: String = json::from_value(resource_type_value)?;
-        let resource_type = ResourceType::from_hex(&resource_type_hex)?;
 
-        let count_value = obj["count"].clone();
-        let count: u32 = json::from_value(count_value)?;
+        let message_value = obj["message"].clone();
+        let message: String = json::from_value(message_value)?;
 
-        let sample_request = SampleRequest {
+        let error_response = ErrorResponse {
             id: id,
             version: version,
             network_type: network_type,
             max_size: max_size,
-            resource_type: resource_type,
-            count: count,
+            message: message,
         };
 
-        Ok(sample_request)
+        Ok(error_response)
     }
     
     fn to_bytes(&self) -> Result<Vec<u8>> {
@@ -141,9 +129,9 @@ impl<'a> Serialize<'a> for SampleRequest {
     }
     
     fn from_bytes(b: &[u8]) -> Result<Self> {
-        let sample_request = messagepack::from_slice(b)?;
+        let error_response = messagepack::from_slice(b)?;
 
-        Ok(sample_request)
+        Ok(error_response)
     }
     
     fn to_hex(&self) -> Result<String> {

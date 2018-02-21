@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `request` module provides the Yobicash network ping request message type and methods.
+//! The `ping` module provides the Yobicash network ping message type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
@@ -15,7 +15,6 @@ use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
-use crypto::Digest;
 use network::session::Session;
 
 /// The ping message type.

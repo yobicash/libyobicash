@@ -15,6 +15,9 @@ use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
+use crypto::Digest;
+use crypto::HexSerialize as CryptoHexSerialize;
+use models::CoinSource;
 use network::session::Session;
 use network::resource_type::ResourceType;
 
@@ -31,6 +34,12 @@ pub struct PutRequest {
     pub max_size: u32,
     /// The resource type.
     pub resource_type: ResourceType,
+    /// The source if any.
+    pub source: Option<CoinSource>,
+    /// The source id if any.
+    pub source_id: Option<Digest>,
+    /// The write id if any.
+    pub write_id: Option<Digest>,
     /// The resource payload.
     pub resource: Vec<u8>,
 }
@@ -39,8 +48,19 @@ impl PutRequest {
     /// Creates a new `PutRequest`.
     pub fn new(session: &Session,
                resource_type: ResourceType,
+               source: Option<CoinSource>,
+               source_id: Option<Digest>,
+               write_id: Option<Digest>,
                resource: &[u8]) -> Result<PutRequest> {
         session.validate()?;
+
+        if source.is_some() ^ source.is_some() {
+            return Err(ErrorKind::InvalidSource.into());
+        }
+
+        if source.is_some() && write_id.is_some() {
+            return Err(ErrorKind::InvalidSource.into());
+        }
 
         if session.max_size.is_none() {
             return Err(ErrorKind::InvalidSession.into());
@@ -62,6 +82,9 @@ impl PutRequest {
             network_type: network_type,
             max_size: max_size,
             resource_type: resource_type,
+            source: source,
+            source_id: source_id,
+            write_id: write_id,
             resource: Vec::from(resource),
         };
 
@@ -77,6 +100,14 @@ impl Validate for PutRequest {
     fn validate(&self) -> Result<()> {
         self.version.validate()?;
 
+        if self.source.is_some() ^ self.source.is_some() {
+            return Err(ErrorKind::InvalidMessage.into());
+        }
+
+        if self.source.is_some() && self.write_id.is_some() {
+            return Err(ErrorKind::InvalidMessage.into());
+        }
+
         if self.to_bytes()?.len() as u32 > self.max_size {
             return Err(ErrorKind::InvalidLength.into());
         }
@@ -88,12 +119,33 @@ impl Validate for PutRequest {
 impl<'a> Serialize<'a> for PutRequest {
     fn to_json(&self) -> Result<String> {
 
+        let source_hex = if self.source.is_none() {
+            String::from("")
+        } else {
+            self.source.unwrap().to_hex()?
+        };
+
+        let source_id_hex = if self.source_id.is_none() {
+            String::from("")
+        } else {
+            self.source_id.unwrap().to_hex()?
+        };
+
+        let write_id_hex = if self.write_id.is_none() {
+            String::from("")
+        } else {
+            self.write_id.unwrap().to_hex()?
+        };
+
         let obj = json!({
             "id": self.id,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
             "max_size": self.max_size,
             "resource_type": self.resource_type.to_hex()?,
+            "source": source_hex,
+            "source_id": source_id_hex,
+            "write_id": write_id_hex,
             "resource": hex::encode(&self.resource),
         });
 
@@ -123,6 +175,30 @@ impl<'a> Serialize<'a> for PutRequest {
         let resource_type_hex: String = json::from_value(resource_type_value)?;
         let resource_type = ResourceType::from_hex(&resource_type_hex)?;
       
+        let source_value = obj["source"].clone();
+        let source_hex: String = json::from_value(source_value)?;
+        let source = if source_hex.is_empty() {
+            None
+        } else {
+            Some(CoinSource::from_hex(&source_hex)?)
+        };
+      
+        let source_id_value = obj["source_id"].clone();
+        let source_id_hex: String = json::from_value(source_id_value)?;
+        let source_id = if source_id_hex.is_empty() {
+            None
+        } else {
+            Some(Digest::from_hex(&source_id_hex)?)
+        };
+      
+        let write_id_value = obj["write_id"].clone();
+        let write_id_hex: String = json::from_value(write_id_value)?;
+        let write_id = if write_id_hex.is_empty() {
+            None
+        } else {
+            Some(Digest::from_hex(&write_id_hex)?)
+        };
+      
         let resource_value = obj["resource"].clone();
         let resource_hex: String = json::from_value(resource_value)?;
         let resource = hex::decode(&resource_hex)?;
@@ -133,6 +209,9 @@ impl<'a> Serialize<'a> for PutRequest {
             network_type: network_type,
             max_size: max_size,
             resource_type: resource_type,
+            source: source,
+            source_id: source_id,
+            write_id: write_id,
             resource: resource,
         };
 

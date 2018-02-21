@@ -7,23 +7,17 @@
 
 //! The `resource` module provides the Yobicash network resource message type and methods.
 
-use serde_json as json;
-use rmp_serde as messagepresource;
-use hex;
-
 use error::ErrorKind;
 use result::Result;
-use traits::{Validate, HexSerialize, Serialize};
-use utils::{Version, NetworkType};
+use traits::Validate;
 use store::Store;
 use node::Node;
 use network::session::Session;
-use network::resource_type::ResourceType;
-use network::message::Message;
+use network::message::{Message, ErrorResponse};
 use network::handlers::*;
 
 /// The type used for routing message to the node.
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Router<S: Store> {
     /// The node the router is wrapping.
     node: Node<S>,
@@ -31,19 +25,70 @@ pub struct Router<S: Store> {
 
 impl<S: Store> Router<S> {
     /// Creates a new `Router`.
-    pub fn new(node: &Node<S>) -> Router<S> {
-        Router { node: node.clone() }
+    pub fn new(node: Node<S>) -> Router<S> {
+        Router { node: node }
     }
 
     /// Routes a message to the inner node, producing a new `Message` or an `Error`.
-    pub fn route<S: Store>(&mut self, message: &Message) -> Result<Message> {
+    pub fn route(&mut self, session: &Session, message: &Message) -> Result<Message> {
+        session.validate()?;
+
         match message {
-            &Message::Ping(ping) => PingHandler::handle(&mut self.node, ping),
-            &Message::ListRequest(req) => ListHandler::handle(&mut self.node, req),
-            &Message::SampleRequest(req) => SampleHandler::handle(&mut self.node, req),
-            &Message::GetRequest(req) => GetHandler::handle(&mut self.node, req),
-            &Message::LookupRequest(req) => LookupHandler::handle(&mut self.node, req),
-            &Message::PutRequest(req) => PutHandler::handle(&mut self.node, req),
+            &Message::Ping(ref req) => {
+                match PingHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            &Message::ListRequest(ref req) => {
+                match ListHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            &Message::SampleRequest(ref req) => {
+                match SampleHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            &Message::GetRequest(ref req) => {
+                match GetHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            &Message::LookupRequest(ref req) => {
+                match LookupHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            &Message::PutRequest(ref req) => {
+                match PutHandler::handle(&mut self.node, session, req) {
+                    Ok(message) => Ok(message),
+                    Err(e) => {
+                        let err_response = ErrorResponse::new(session, &format!("{}", e))?;
+                        Ok(Message::ErrorResponse(err_response))
+                    },
+                }
+            },
+            _ => Err(ErrorKind::InvalidMessage.into())
         }
     }
 }

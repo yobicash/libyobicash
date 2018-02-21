@@ -11,6 +11,6 @@ pub mod syn;
 pub mod ack;
 pub mod syn_ack;
 
-use self::syn::*;
-use self::ack::*;
-use self::syn_ack::*;
+pub use self::syn::*;
+pub use self::ack::*;
+pub use self::syn_ack::*;

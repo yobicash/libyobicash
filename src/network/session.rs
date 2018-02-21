@@ -14,7 +14,7 @@ use hex;
 use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
-use crypto::{Random, Scalar, SecretKey, PublicKey};
+use crypto::{Random, Scalar, ZKPWitness, SecretKey, PublicKey};
 use crypto::Validate as CryptoValidate;
 use crypto::HexSerialize as CryptoHexSerialize;
 use utils::{Version, NetworkType, Amount};
@@ -38,6 +38,8 @@ pub struct Session {
     pub pow_difficulty: Option<u32>,
     /// The fee_instance if this end requires a fee.
     pub fee_instance: Option<Scalar>,
+    /// The other side fee_witness if this end requires a fee.
+    pub fee_witness: Option<ZKPWitness>,
     /// The fee_per_byte if this end requires a fee.
     pub fee_per_byte: Option<Amount>,
 }
@@ -59,6 +61,7 @@ impl Session {
             max_size: None,
             pow_difficulty: None,
             fee_instance: None,
+            fee_witness: None,
             fee_per_byte: None,
         }
     }
@@ -87,11 +90,30 @@ impl Session {
     }
 
     /// Adds the fee instance and price per byte.
-    pub fn add_fee_data(&mut self, fee_instance: Scalar, fee_per_byte: &Amount) -> Result<()> {
+    pub fn add_local_fee_data(&mut self, fee_instance: Scalar, fee_per_byte: &Amount) -> Result<()> {
         fee_instance.validate()?;
         fee_per_byte.validate()?;
 
+        if self.fee_witness.is_some() {
+            return Err(ErrorKind::InvalidSession.into());
+        }
+
         self.fee_instance = Some(fee_instance);
+        self.fee_per_byte = Some(fee_per_byte.clone());
+
+        Ok(())
+    }
+
+    /// Adds the fee instance and price per byte.
+    pub fn add_peer_fee_data(&mut self, fee_witness: ZKPWitness, fee_per_byte: &Amount) -> Result<()> {
+        fee_witness.validate()?;
+        fee_per_byte.validate()?;
+
+        if self.fee_instance.is_some() {
+            return Err(ErrorKind::InvalidSession.into());
+        }
+
+        self.fee_witness = Some(fee_witness);
         self.fee_per_byte = Some(fee_per_byte.clone());
 
         Ok(())
@@ -109,13 +131,22 @@ impl Validate for Session {
                 return Err(ErrorKind::InvalidPublicKey.into());
             }
         }
+
+        if self.fee_witness.is_some() && self.fee_instance.is_some() {
+            return Err(ErrorKind::InvalidSession.into());
+        }
         
-        if self.fee_instance.is_none() ^ self.fee_per_byte.is_none() {
+        if (self.fee_instance.is_some() ^ self.fee_instance.is_some())
+            && self.fee_per_byte.is_none() {
             return Err(ErrorKind::InvalidSession.into());
         }
 
         if let Some(fee_instance) = self.fee_instance {
             fee_instance.validate()?;
+        }
+
+        if let Some(fee_witness) = self.fee_witness {
+            fee_witness.validate()?;
         }
 
         if let Some(fee_per_byte) = self.fee_per_byte.clone() {
@@ -144,6 +175,12 @@ impl<'a> Serialize<'a> for Session {
             self.fee_instance.unwrap().to_hex()?
         };
 
+        let fee_witness_hex = if self.fee_witness.is_none() {
+            String::from("")
+        } else {
+            self.fee_witness.unwrap().to_hex()?
+        };
+
         let fee_per_byte_str = if self.fee_per_byte.is_none() {
             String::from("")
         } else {
@@ -159,6 +196,7 @@ impl<'a> Serialize<'a> for Session {
             "max_size": max_size_u32,
             "pow_difficulty": pow_difficulty_u32,
             "fee_instance": fee_instance_hex,
+            "fee_witness": fee_witness_hex,
             "fee_per_byte": fee_per_byte_str,
         });
 
@@ -217,6 +255,14 @@ impl<'a> Serialize<'a> for Session {
             Some(Scalar::from_hex(&fee_instance_hex)?)
         };
       
+        let fee_witness_value = obj["fee_witness"].clone();
+        let fee_witness_hex: String = json::from_value(fee_witness_value)?;
+        let fee_witness = if fee_witness_hex.is_empty() {
+            None
+        } else {
+            Some(ZKPWitness::from_hex(&fee_witness_hex)?)
+        };
+      
         let fee_per_byte_value = obj["fee_per_byte"].clone();
         let fee_per_byte_str: String = json::from_value(fee_per_byte_value)?;
         let fee_per_byte = if fee_per_byte_str.is_empty() {
@@ -234,6 +280,7 @@ impl<'a> Serialize<'a> for Session {
             max_size: max_size,
             pow_difficulty: pow_difficulty,
             fee_instance: fee_instance,
+            fee_witness: fee_witness,
             fee_per_byte: fee_per_byte,
         };
 

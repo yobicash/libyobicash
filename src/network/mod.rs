@@ -7,11 +7,20 @@
 
 //! The `network` module provides the Yobicash network traits, types and methods.
 
+pub mod traits;
 pub mod session;
 pub mod resource_type;
 pub mod message;
-// pub mod handlers;
-// pub mod router;
-// pub mod stream;
+pub mod handlers;
+pub mod router;
 // pub mod server;
 // pub mod client;
+
+pub use self::traits::*;
+pub use self::session::*;
+pub use self::resource_type::*;
+pub use self::message::*;
+pub use self::handlers::*;
+pub use self::router::*;
+// pub use self::server::*;
+// pub use self::client::*;
