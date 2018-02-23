@@ -9,39 +9,40 @@
 //! Libyobicash `value` module tests.
 
 use libyobicash::traits::Serialize;
-use libyobicash::crypto::{SecretKey, Key};
+use libyobicash::crypto::{Random, SecretKey, Key};
 use libyobicash::store::StoreValue;
-use mocks::Unit;
 
 #[test]
-fn store_value_to_obj_succ() {
+fn store_value_new_succ() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
 
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit_a = Unit {};
-    let store_value = StoreValue::from_object(&unit_a, key).unwrap();
-    let unit_b = store_value.to_object::<Unit>(key).unwrap();
+    let value_size = 1000;
+    let value_a = Random::bytes(value_size);
+    let store_value = StoreValue::new(enc_key, &value_a).unwrap();
+    let value_b = store_value.decrypt(enc_key).unwrap();
     
-    assert_eq!(unit_a, unit_b)
+    assert_eq!(&value_a, &value_b)
 }
 
 #[test]
-fn store_value_to_obj_fail() {
+fn store_value_new_fail() {
     let sk_a = SecretKey::random();
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
+    let mut store_value = StoreValue::new(enc_key, &value).unwrap();
+    let cyph_len = store_value.to_bytes().unwrap().len() as u32;
+    store_value.size = cyph_len + 1;
     
-    let mut store_value = StoreValue::from_object(&unit, key).unwrap();
-    store_value.size -= 1;
-    
-    let res = store_value.to_object::<Unit>(key);
+    let res = store_value.decrypt(enc_key);
     assert!(res.is_err())
 }
 
@@ -51,11 +52,12 @@ fn store_value_to_json_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value_a = StoreValue::from_object(&unit, key).unwrap();
+    let store_value_a = StoreValue::new(enc_key, &value).unwrap();
     let store_value_str = store_value_a.to_json().unwrap();
     let store_value_b = StoreValue::from_json(&store_value_str).unwrap();
     
@@ -68,11 +70,12 @@ fn store_value_to_json_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value = StoreValue::from_object(&unit, key).unwrap();
+    let store_value = StoreValue::new(enc_key, &value).unwrap();
     let mut store_value_str = store_value.to_json().unwrap();
     store_value_str.pop();
     
@@ -86,11 +89,12 @@ fn store_value_to_bytes_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value_a = StoreValue::from_object(&unit, key).unwrap();
+    let store_value_a = StoreValue::new(enc_key, &value).unwrap();
     let store_value_buf = store_value_a.to_bytes().unwrap();
     let store_value_b = StoreValue::from_bytes(&store_value_buf).unwrap();
     
@@ -103,11 +107,12 @@ fn store_value_to_bytes_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value = StoreValue::from_object(&unit, key).unwrap();
+    let store_value = StoreValue::new(enc_key, &value).unwrap();
     let mut store_value_buf = store_value.to_bytes().unwrap();
     store_value_buf[0] ^= store_value_buf[0];
     
@@ -121,11 +126,12 @@ fn store_value_to_hex_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value_a = StoreValue::from_object(&unit, key).unwrap();
+    let store_value_a = StoreValue::new(enc_key, &value).unwrap();
     let store_value_str = store_value_a.to_hex().unwrap();
     let store_value_b = StoreValue::from_hex(&store_value_str).unwrap();
     
@@ -138,11 +144,12 @@ fn store_value_to_hex_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     
-    let key = Key::shared(sk_a, pk_b).unwrap();
+    let enc_key = Key::shared(sk_a, pk_b).unwrap();
     
-    let unit = Unit {};
+    let value_size = 1000;
+    let value = Random::bytes(value_size);
     
-    let store_value = StoreValue::from_object(&unit, key).unwrap();
+    let store_value = StoreValue::new(enc_key, &value).unwrap();
     let mut store_value_str = store_value.to_hex().unwrap();
     store_value_str.pop();
     

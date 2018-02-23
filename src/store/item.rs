@@ -12,9 +12,8 @@ use serde_json as json;
 use rmp_serde as messagepack;
 use hex;
 
-use error::ErrorKind;
 use result::Result;
-use traits::{Identify, HexSerialize, Serialize};
+use traits::{HexSerialize, Serialize};
 use crypto::Key;
 use store::key::StoreKey;
 use store::value::StoreValue;
@@ -29,13 +28,12 @@ pub struct StoreItem {
 }
 
 impl StoreItem {
-    /// Creates a `StoreItem` from an object T.
-    pub fn from_object<'a, T: Identify<'a> + Serialize<'a>>(obj: &T, key: Key) -> Result<StoreItem> {
-        let id = obj.id()?;
-        let store_key = StoreKey::from_id::<T>(id)?;
-        let store_value = StoreValue::from_object(obj, key)?;
+    /// Creates a new `StoreItem`.
+    pub fn new(enc_key: Key, key: &[u8], value: &[u8]) -> Result<StoreItem> {
+        let store_key = StoreKey::new(key);
+        let store_value = StoreValue::new(enc_key, value)?;
 
-        let store_item: StoreItem = StoreItem {
+        let store_item = StoreItem {
             key: store_key,
             value: store_value,
         };
@@ -43,16 +41,9 @@ impl StoreItem {
         Ok(store_item)
     }
 
-    /// Converts a `StoreItem` to an object T.
-    pub fn to_object<'a, T: Identify<'a> + Serialize<'a>>(&self, key: Key) -> Result<T> {
-        let obj = self.value.to_object::<T>(key)?;
-        let id = self.key.to_id::<T>()?;
-
-        if obj.binary_id()? != T::id_to_bytes(id)? {
-            return Err(ErrorKind::InvalidID.into());
-        }
-
-        Ok(obj)
+    /// Decrypts a `StoreItem` value.
+    pub fn decrypt(&self, key: Key) -> Result<Vec<u8>> {
+        self.value.decrypt(key)
     }
 }
 

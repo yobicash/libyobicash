@@ -8,27 +8,16 @@
 
 //! Libyobicash `key` module tests.
 
-use libyobicash::traits::{Identify, BinarySerialize};
+use libyobicash::traits::{BinarySerialize, HexSerialize};
+use libyobicash::crypto::Random;
 use libyobicash::store::StoreKey;
-use mocks::Unit;
-
-#[test]
-fn store_key_to_id_succ() {
-    let unit = Unit {};
-    
-    let unit_a_id = unit.id().unwrap();
-    let key_a = StoreKey::from_id::<Unit>(unit_a_id).unwrap();
-    let unit_b_id = key_a.to_id::<Unit>().unwrap();
-
-    assert_eq!(unit_a_id, unit_b_id)
-}
 
 #[test]
 fn store_key_to_bytes_suc() {
-    let unit = Unit {};
-    let unit_id = unit.id().unwrap();
+    let key_size = 10;
+    let key = Random::bytes(key_size);
     
-    let key_a = StoreKey::from_id::<Unit>(unit_id).unwrap();
+    let key_a = StoreKey::new(&key);
     let key_buf = key_a.to_bytes().unwrap();
     let key_b = StoreKey::from_bytes(&key_buf).unwrap();
     
@@ -37,13 +26,38 @@ fn store_key_to_bytes_suc() {
 
 #[test]
 fn store_key_to_bytes_fail() {
-    let unit = Unit {};
-    let unit_id = unit.id().unwrap();
+    let key_size = 10;
+    let key = Random::bytes(key_size);
     
-    let key_a = StoreKey::from_id::<Unit>(unit_id).unwrap();
+    let key_a = StoreKey::new(&key);
     let mut key_buf = key_a.to_bytes().unwrap();
     key_buf[0] ^= 1;
     let key_b = StoreKey::from_bytes(&key_buf).unwrap();
     
     assert_ne!(key_a, key_b)
+}
+
+#[test]
+fn store_key_to_hex_suc() {
+    let key_size = 10;
+    let key = Random::bytes(key_size);
+    
+    let key_a = StoreKey::new(&key);
+    let key_buf = key_a.to_hex().unwrap();
+    let key_b = StoreKey::from_hex(&key_buf).unwrap();
+    
+    assert_eq!(key_a, key_b)
+}
+
+#[test]
+fn store_key_to_hex_fail() {
+    let key_size = 10;
+    let key = Random::bytes(key_size);
+    
+    let key_a = StoreKey::new(&key);
+    let mut key_str = key_a.to_hex().unwrap();
+    key_str.pop();
+
+    let res = StoreKey::from_hex(&key_str);
+    assert!(res.is_err())
 }

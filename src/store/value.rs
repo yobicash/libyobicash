@@ -26,26 +26,23 @@ pub struct StoreValue {
 }
 
 impl StoreValue {
-    /// Creates a `StoreValue` from an object T.
-    pub fn from_object<'a, T: Serialize<'a>>(obj: &T, key: Key) -> Result<StoreValue> {
-        let msg = obj.to_bytes()?;
-        let size = msg.len() as u32;
+    /// Creates a new `StoreValue`.
+    pub fn new(enc_key: Key, value: &[u8]) -> Result<StoreValue> {
+        let size = value.len() as u32;
 
-        let cyph = sym_encrypt(key, &msg)?;
+        let cyph = sym_encrypt(enc_key, value)?;
 
-        let value = StoreValue {
+        let store_value = StoreValue {
             size: size,
             cyph: cyph,
         };
         
-        Ok(value)
+        Ok(store_value)
     }
 
-    /// Converts a `StoreValue` to an object T.
-    pub fn to_object<'a, T: Serialize<'a>>(&self, key: Key) -> Result<T> {
-        let msg = sym_decrypt(key, &self.cyph, self.size)?;
-
-        T::from_bytes(&msg)
+    /// Decrypts a `StoreValue`.
+    pub fn decrypt(&self, enc_key: Key) -> Result<Vec<u8>> {
+        Ok(sym_decrypt(enc_key, &self.cyph, self.size)?)
     }
 }
 

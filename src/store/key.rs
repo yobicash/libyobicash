@@ -10,37 +10,23 @@
 
 use hex;
 
-use error::ErrorKind;
 use result::Result;
-use traits::{Identify, BinarySerialize, HexSerialize};
+use traits::{BinarySerialize, HexSerialize};
 
 /// A store key.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct StoreKey(pub Vec<u8>);
 
 impl StoreKey {
-    /// Creates a `StoreKey` from an `ID`.
-    pub fn from_id<'a, T: Identify<'a>>(id: T::ID) -> Result<StoreKey> {
-        let _key = T::id_to_bytes(id)?;
-        Ok(StoreKey(_key))
-    }
-
-    /// Converts a `StoreKey` to an object `ID`.
-    pub fn to_id<'a, T: Identify<'a>>(&self) -> Result<T::ID> {
-        T::id_from_bytes(&self.0)
+    /// Creates a new `StoreKey`.
+    pub fn new(key: &[u8]) -> StoreKey {
+        StoreKey(Vec::from(key))
     }
 }
 
 impl BinarySerialize for StoreKey {
     fn from_bytes(b: &[u8]) -> Result<StoreKey> {
-        if b.is_empty() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
-        let mut _key = Vec::new();
-        _key.extend_from_slice(b);
-
-        Ok(StoreKey(_key))
+        Ok(StoreKey(Vec::from(b)))
     }
 
     fn to_bytes(&self) -> Result<Vec<u8>> {
@@ -50,10 +36,6 @@ impl BinarySerialize for StoreKey {
 
 impl HexSerialize for StoreKey {
     fn from_hex(s: &str) -> Result<StoreKey> {
-        if s.is_empty() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-    
         StoreKey::from_bytes(&hex::decode(s)?)
     }
 
