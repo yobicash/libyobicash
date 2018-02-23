@@ -11,7 +11,6 @@ use serde_json as json;
 use rmp_serde as messagepack;
 use hex;
 
-use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
@@ -26,20 +25,12 @@ pub struct Ping {
     pub version: Version,
     /// The network type of the protocol.
     pub network_type: NetworkType,
-    /// The maximum size of the `Ping` message.
-    pub max_size: u32,
 }
 
 impl Ping {
     /// Creates a new `Ping`.
     pub fn new(session: &Session) -> Result<Ping> {
         session.validate()?;
-
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-        
-        let max_size = session.max_size.unwrap();
 
         let id = session.id;
         let version = session.version.clone();
@@ -49,12 +40,7 @@ impl Ping {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
         };
-
-        if ping.to_bytes()?.len() as u32 > max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
 
         Ok(ping)
     }
@@ -63,10 +49,6 @@ impl Ping {
 impl Validate for Ping {
     fn validate(&self) -> Result<()> {
         self.version.validate()?;
-
-        if self.to_bytes()?.len() as u32 > self.max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
 
         Ok(())
     }
@@ -79,7 +61,6 @@ impl<'a> Serialize<'a> for Ping {
             "id": self.id,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
-            "max_size": self.max_size,
         });
 
         let s = obj.to_string();
@@ -101,14 +82,10 @@ impl<'a> Serialize<'a> for Ping {
         let network_type_hex: String = json::from_value(network_type_value)?;
         let network_type = NetworkType::from_hex(&network_type_hex)?;
 
-        let max_size_value = obj["max_size"].clone();
-        let max_size: u32 = json::from_value(max_size_value)?;
-
         let ping = Ping {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
         };
 
         Ok(ping)

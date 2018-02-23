@@ -7,6 +7,7 @@
 
 //! Libyobicash `write_op` module tests.
 
+use libyobicash::constants::MIN_DATA_DURATION;
 use libyobicash::traits::{Validate, Serialize};
 use libyobicash::utils::{NetworkType, Amount};
 use libyobicash::crypto::{Random, Digest, Scalar, ZKPWitness, SecretKey};
@@ -34,6 +35,7 @@ fn write_op_new_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -43,7 +45,7 @@ fn write_op_new_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let res = WriteOp::new(network_type, &coins, &data, instance, &fee_output);
+    let res = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output);
     assert!(res.is_ok())
 }
 
@@ -65,6 +67,7 @@ fn write_op_new_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -74,7 +77,7 @@ fn write_op_new_fail() {
     let coins = vec![in_coin];
     let instance = in_instance;
     
-    let res = WriteOp::new(network_type, &coins, &data, instance, &fee_output);
+    let res = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output);
     println!("res: {:?}", res);
     assert!(res.is_err())
 }
@@ -97,6 +100,7 @@ fn write_op_validate_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -106,7 +110,7 @@ fn write_op_validate_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let res = write_op.validate();
     assert!(res.is_ok())
@@ -130,6 +134,7 @@ fn write_op_validate_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -139,7 +144,7 @@ fn write_op_validate_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let mut write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let mut write_op = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     write_op.fee.amount += Amount::max_value();
 
@@ -165,6 +170,7 @@ fn write_op_verify_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -174,7 +180,7 @@ fn write_op_verify_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     // same fee just for readability.
     let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
@@ -204,6 +210,7 @@ fn write_op_verify_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -213,7 +220,7 @@ fn write_op_verify_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let mut write_op = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let mut write_op = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     // same fee just for readability.
     let proof = DeleteOp::proof(network_type, &write_op, instance, &fee_output).unwrap();
@@ -246,6 +253,7 @@ fn write_op_to_json_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -255,7 +263,7 @@ fn write_op_to_json_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let write_op_str = write_op_a.to_json().unwrap();
     let write_op_b = WriteOp::from_json(&write_op_str).unwrap();
@@ -281,6 +289,7 @@ fn write_op_to_json_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -290,7 +299,7 @@ fn write_op_to_json_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let mut write_op_str = write_op_a.to_json().unwrap();
     write_op_str.pop();
@@ -317,6 +326,7 @@ fn write_op_to_bytes_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -326,7 +336,7 @@ fn write_op_to_bytes_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let write_op_buf = write_op_a.to_bytes().unwrap();
     let write_op_b = WriteOp::from_bytes(&write_op_buf).unwrap();
@@ -351,6 +361,7 @@ fn write_op_to_bytes_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -360,7 +371,7 @@ fn write_op_to_bytes_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let mut write_op_buf = write_op_a.to_bytes().unwrap();
     write_op_buf[0] ^= write_op_buf[0];
@@ -387,6 +398,7 @@ fn write_op_to_hex_succ() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -396,7 +408,7 @@ fn write_op_to_hex_succ() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let write_op_str = write_op_a.to_hex().unwrap();
     let write_op_b = WriteOp::from_hex(&write_op_str).unwrap();
@@ -421,6 +433,7 @@ fn write_op_to_hex_fail() {
     let sk_b = SecretKey::random();
     let pk_b = sk_b.to_public();
     let data = Data::new(network_type, sk_a, pk_b, &plain).unwrap();
+    let duration = MIN_DATA_DURATION;
     
     let fee_amount = Amount::from(10.0);
     let fee_instance = Scalar::random();
@@ -430,7 +443,7 @@ fn write_op_to_hex_fail() {
     let coins = vec![in_coin];
     let instance = Scalar::random();
     
-    let write_op_a = WriteOp::new(network_type, &coins, &data, instance, &fee_output).unwrap();
+    let write_op_a = WriteOp::new(network_type, &coins, &data, duration, instance, &fee_output).unwrap();
 
     let mut write_op_str = write_op_a.to_hex().unwrap();
     write_op_str.pop();

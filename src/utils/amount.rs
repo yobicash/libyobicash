@@ -19,7 +19,7 @@ use traits::{Validate, BinarySerialize, HexSerialize};
 use std::fmt;
 use std::cmp::Eq;
 use std::convert::From;
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign};
 
 /// Type used for amounts and balances.
 #[derive(Clone, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
@@ -210,5 +210,95 @@ impl SubAssign for Amount {
 impl<'a> SubAssign<&'a Amount> for Amount {
     fn sub_assign(&mut self, rhs: &Amount) {
         self.0 -= rhs.0.clone()
+    }
+}
+
+impl Mul for Amount {
+    type Output = Amount;
+
+    fn mul(self, rhs: Amount) -> Amount {
+        let mut output = self.0.clone();
+        output *= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl<'a> Mul<&'a Amount> for Amount {
+    type Output = Amount;
+
+    fn mul(self, rhs: &Amount) -> Amount {
+        let mut output = self.0.clone();
+        output *= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl<'a, 'b> Mul<&'b Amount> for &'a Amount {
+    type Output = Amount;
+
+    fn mul(self, rhs: &Amount) -> Amount {
+        let mut output = self.0.clone();
+        output *= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl MulAssign<Amount> for Amount {
+    fn mul_assign(&mut self, rhs: Amount) {
+        self.0 *= rhs.0.clone()
+    }
+}
+
+impl<'a> MulAssign<&'a Amount> for Amount {
+    fn mul_assign(&mut self, rhs: &Amount) {
+        self.0 *= rhs.0.clone()
+    }
+}
+
+impl Div for Amount {
+    type Output = Amount;
+
+    fn div(self, rhs: Amount) -> Amount {
+        let mut output = self.0.clone();
+        output /= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl<'a> Div<&'a Amount> for Amount {
+    type Output = Amount;
+
+    fn div(self, rhs: &Amount) -> Amount {
+        let mut output = self.0.clone();
+        output /= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl<'a, 'b> Div<&'b Amount> for &'a Amount {
+    type Output = Amount;
+
+    fn div(self, rhs: &Amount) -> Amount {
+        let mut output = self.0.clone();
+        output /= rhs.0.clone();
+
+        Amount(output)
+    }
+}
+
+impl DivAssign<Amount> for Amount {
+    fn div_assign(&mut self, rhs: Amount) {
+        self.0 /= rhs.0.clone()
+    }
+}
+
+impl<'a> DivAssign<&'a Amount> for Amount {
+    fn div_assign(&mut self, rhs: &Amount) {
+        self.0 /= rhs.0.clone()
     }
 }

@@ -32,6 +32,11 @@ impl <S: Store> Node<S> {
             return Err(ErrorKind::InvalidLength.into());
         }
 
+        // check if the write_op is expired
+        if write_op.is_expired() {
+            return Err(ErrorKind::InvalidTime.into());
+        }
+
         // check write_id fee
         self.check_output_source(CoinSource::WriteOpFee, write_id, write_op.fee.id)
     }

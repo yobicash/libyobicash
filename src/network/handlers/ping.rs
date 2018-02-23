@@ -10,8 +10,6 @@
 use error::ErrorKind;
 use result::Result;
 use traits::Validate;
-use store::Store;
-use node::Node;
 use network::session::Session;
 use network::message::{Message, Ping};
 
@@ -21,7 +19,7 @@ pub struct PingHandler;
 
 impl PingHandler {
     /// Handles a ping request.
-    pub fn handle<S: Store>(_node: &mut Node<S>, session: &Session, req: &Ping) -> Result<Message> {
+    pub fn handle(session: &Session, req: &Ping) -> Result<Message> {
         session.validate()?;
 
         if req.id != session.id {
@@ -30,14 +28,6 @@ impl PingHandler {
 
         if req.network_type != session.network_type {
             return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if req.max_size != session.max_size.unwrap() {
-            return Err(ErrorKind::InvalidLength.into());
         }
 
         req.validate()?;

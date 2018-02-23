@@ -11,7 +11,6 @@ use serde_json as json;
 use rmp_serde as messagepack;
 use hex;
 
-use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
 use utils::{Version, NetworkType};
@@ -27,8 +26,6 @@ pub struct GetResponse {
     pub version: Version,
     /// The network type of the protocol.
     pub network_type: NetworkType,
-    /// The maximum size of the `GetResponse` message.
-    pub max_size: u32,
     /// The resource type.
     pub resource_type: ResourceType,
     /// The resource payload.
@@ -42,16 +39,6 @@ impl GetResponse {
                resource: &[u8]) -> Result<GetResponse> {
         session.validate()?;
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-        
-        let max_size = session.max_size.unwrap();
-
-        if resource.len() as u32 > max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         let id = session.id;
         let version = session.version.clone();
         let network_type = session.network_type;
@@ -60,14 +47,9 @@ impl GetResponse {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
             resource_type: resource_type,
             resource: Vec::from(resource),
         };
-
-        if get_response.to_bytes()?.len() as u32 > max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
 
         Ok(get_response)
     }
@@ -76,10 +58,6 @@ impl GetResponse {
 impl Validate for GetResponse {
     fn validate(&self) -> Result<()> {
         self.version.validate()?;
-
-        if self.to_bytes()?.len() as u32 > self.max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
 
         Ok(())
     }
@@ -92,7 +70,6 @@ impl<'a> Serialize<'a> for GetResponse {
             "id": self.id,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
-            "max_size": self.max_size,
             "resource_type": self.resource_type.to_hex()?,
             "resource": hex::encode(&self.resource),
         });
@@ -116,9 +93,6 @@ impl<'a> Serialize<'a> for GetResponse {
         let network_type_hex: String = json::from_value(network_type_value)?;
         let network_type = NetworkType::from_hex(&network_type_hex)?;
 
-        let max_size_value = obj["max_size"].clone();
-        let max_size: u32 = json::from_value(max_size_value)?;
-      
         let resource_type_value = obj["resource_type"].clone();
         let resource_type_hex: String = json::from_value(resource_type_value)?;
         let resource_type = ResourceType::from_hex(&resource_type_hex)?;
@@ -131,7 +105,6 @@ impl<'a> Serialize<'a> for GetResponse {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
             resource_type: resource_type,
             resource: resource,
         };

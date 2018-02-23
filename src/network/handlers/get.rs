@@ -33,14 +33,6 @@ impl GetHandler {
             return Err(ErrorKind::InvalidSession.into());
         }
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if req.max_size != session.max_size.unwrap() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         req.validate()?;
 
         let resource_type = req.resource_type;
@@ -77,25 +69,6 @@ impl GetHandler {
                 }
 
                 let resource = write_op.to_bytes()?;
-
-                let res = GetResponse::new(session, resource_type, &resource)?;
-
-                let message = Message::GetResponse(res);
-
-                Ok(message)
-            },
-            ResourceType::DeleteOp => {
-                let resource_id = req.resource_id;
-
-                let delete_op = node.get_delete_op(resource_id)?;
-                
-                delete_op.validate()?;
-
-                if delete_op.network_type != req.network_type {
-                    return Err(ErrorKind::InvalidNetwork.into());
-                }
-
-                let resource = delete_op.to_bytes()?;
 
                 let res = GetResponse::new(session, resource_type, &resource)?;
 

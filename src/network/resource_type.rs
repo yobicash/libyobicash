@@ -20,12 +20,11 @@ pub enum ResourceType {
     Peer=0,
     Transaction=1,
     WriteOp=2,
-    DeleteOp=3,
-    UnspentCoin=4,
-    SpentCoin=5,
-    UnspentOutput=6,
-    SpentOutput=7,
-    UndeletedData=8,
+    UnspentCoin=3,
+    SpentCoin=4,
+    UnspentOutput=5,
+    SpentOutput=6,
+    UndeletedData=7,
 }
 
 impl Default for ResourceType {
@@ -55,12 +54,11 @@ impl BinarySerialize for ResourceType {
             0 => Ok(ResourceType::Peer),
             1 => Ok(ResourceType::Transaction),
             2 => Ok(ResourceType::WriteOp),
-            3 => Ok(ResourceType::DeleteOp),
-            4 => Ok(ResourceType::UnspentCoin),
-            5 => Ok(ResourceType::SpentCoin),
-            6 => Ok(ResourceType::UnspentOutput),
-            7 => Ok(ResourceType::SpentOutput),
-            8 => Ok(ResourceType::UndeletedData),
+            3 => Ok(ResourceType::UnspentCoin),
+            4 => Ok(ResourceType::SpentCoin),
+            5 => Ok(ResourceType::UnspentOutput),
+            6 => Ok(ResourceType::SpentOutput),
+            7 => Ok(ResourceType::UndeletedData),
             _ => Err(ErrorKind::UnknownResource.into()),
         }
     }

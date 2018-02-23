@@ -31,13 +31,11 @@ pub struct Ack {
     pub network_type: NetworkType,
     /// Public key of the server.
     pub public_key: PublicKey,
-    /// Maximum size of the `Resource` message.
-    pub max_size: u32,
     /// Difficulty of the `SynAck` PoW.
     pub pow_difficulty: u32,
     /// Fee witness.
     pub fee_witness: Option<ZKPWitness>,
-    /// Fee per byte if payable.
+    /// Fee per byte if a payable put operation.
     pub fee_per_byte: Option<Amount>,
 }
 
@@ -45,10 +43,6 @@ impl Ack {
     /// Creates a new `Ack`.
     pub fn new(session: &Session) -> Result<Ack> {
         session.validate()?;
-
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
 
         let fee_witness = if session.fee_instance.is_none() {
             None
@@ -60,7 +54,6 @@ impl Ack {
         let version = session.version.clone();
         let network_type = session.network_type;
         let public_key = session.secret_key.to_public();
-        let max_size = session.max_size.unwrap();
         let pow_difficulty = session.pow_difficulty.unwrap();
         let fee_witness = fee_witness;
         let fee_per_byte = session.fee_per_byte.clone();
@@ -70,7 +63,6 @@ impl Ack {
             version: version,
             network_type: network_type,
             public_key: public_key,
-            max_size: max_size,
             pow_difficulty: pow_difficulty,
             fee_witness: fee_witness,
             fee_per_byte: fee_per_byte,
@@ -85,7 +77,7 @@ impl Validate for Ack {
         self.version.validate()?;
         self.public_key.validate()?;
         
-        if self.fee_witness.is_none() ^ self.fee_per_byte.is_none() {
+        if self.fee_witness.is_none() && self.fee_per_byte.is_none() {
             return Err(ErrorKind::InvalidMessage.into());
         }
 
@@ -120,7 +112,6 @@ impl<'a> Serialize<'a> for Ack {
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
             "public_key": self.public_key.to_hex()?,
-            "max_size": self.max_size,
             "pow_difficulty": self.pow_difficulty,
             "fee_witness": fee_witness,
             "fee_per_byte": fee_per_byte,
@@ -149,9 +140,6 @@ impl<'a> Serialize<'a> for Ack {
         let public_key_hex: String = json::from_value(public_key_value)?;
         let public_key = PublicKey::from_hex(&public_key_hex)?;
 
-        let max_size_value = obj["max_size"].clone();
-        let max_size: u32 = json::from_value(max_size_value)?;
-      
         let pow_difficulty_value = obj["pow_difficulty"].clone();
         let pow_difficulty: u32 = json::from_value(pow_difficulty_value)?;
       
@@ -170,13 +158,12 @@ impl<'a> Serialize<'a> for Ack {
         } else {
             Some(Amount::from_string(&fee_per_byte_str)?)
         };
-
+      
         let ack = Ack {
             id: id,
             version: version,
             network_type: network_type,
             public_key: public_key,
-            max_size: max_size,
             pow_difficulty: pow_difficulty,
             fee_witness: fee_witness,
             fee_per_byte: fee_per_byte,

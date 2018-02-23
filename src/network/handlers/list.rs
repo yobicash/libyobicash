@@ -34,14 +34,6 @@ impl ListHandler {
             return Err(ErrorKind::InvalidSession.into());
         }
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if req.max_size != session.max_size.unwrap() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         req.validate()?;
 
         let resource_type = req.resource_type;
@@ -79,21 +71,6 @@ impl ListHandler {
             },
             ResourceType::WriteOp => {
                 let ids = node.list_write_ops()?;
-              
-                let mut resources = Vec::new();
-
-                for id in ids {
-                    resources.push(id.to_bytes()?);
-                }
-
-                let res = ListResponse::new(session, resource_type, &resources)?;
-
-                let message = Message::ListResponse(res);
-
-                Ok(message)
-            },
-            ResourceType::DeleteOp => {
-                let ids = node.list_delete_ops()?;
               
                 let mut resources = Vec::new();
 

@@ -33,14 +33,6 @@ impl LookupHandler {
             return Err(ErrorKind::InvalidSession.into());
         }
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if req.max_size != session.max_size.unwrap() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         req.validate()?;
 
         let resource_type = req.resource_type;
@@ -61,17 +53,6 @@ impl LookupHandler {
                 let resource_id = req.resource_id;
 
                 let found = node.lookup_write_op(resource_id)?;
-
-                let res = LookupResponse::new(session, resource_type, found)?;
-
-                let message = Message::LookupResponse(res);
-
-                Ok(message)
-            },
-            ResourceType::DeleteOp => {
-                let resource_id = req.resource_id;
-
-                let found = node.lookup_delete_op(resource_id)?;
 
                 let res = LookupResponse::new(session, resource_type, found)?;
 

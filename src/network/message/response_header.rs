@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `syn_ack` module provides the Yobicash network syn-ack message type and methods.
+//! The `response_header` module provides the Yobicash network response-header message type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
@@ -15,14 +15,14 @@ use constants::MAX_CHUNK_SIZE;
 use error::ErrorKind;
 use result::Result;
 use traits::{Validate, HexSerialize, Serialize};
-use crypto::{Digest, BalloonParams, PoW};
+use crypto::Digest;
 use crypto::HexSerialize as CryptoHexSerialize;
 use utils::{Version, NetworkType};
 use network::session::Session;
 
 /// The type used for syn-ack messages in the Yobicash handshake.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
-pub struct SynAck {
+pub struct ResponseHeader {
     /// Id of the session.
     pub id: u32,
     /// The version of the protocol.
@@ -41,32 +41,21 @@ pub struct SynAck {
     pub plain_digest: Digest,
     /// Checksum of the cyphertext.
     pub cyph_digest: Digest,
-    /// Difficulty of the proof-of-work.
-    pub pow_difficulty: u32,
-    /// Nonce of the proof-of-work.
-    pub pow_nonce: u64,
-    /// Digest of the proof-of-work.
-    pub pow_digest: Option<Digest>,
 }
 
-impl SynAck {
-    /// Creates a new `SynAck`.
+impl ResponseHeader {
+    /// Creates a new `ResponseHeader`.
     pub fn new(session: &Session,
                plain_size: u32,
                cyph_size: u32,
                padding: u32,
                plain_digest: Digest,
-               cyph_digest: Digest) -> Result<SynAck> {
+               cyph_digest: Digest) -> Result<ResponseHeader> {
         session.validate()?;
-
-        if session.pow_difficulty.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
 
         let id = session.id;
         let version = session.version.clone();
         let network_type = session.network_type;
-        let pow_difficulty = session.pow_difficulty.unwrap();
 
         if plain_size > cyph_size {
             return Err(ErrorKind::OutOfBound.into());
@@ -82,7 +71,7 @@ impl SynAck {
             return Err(ErrorKind::InvalidDigest.into());
         }
 
-        let mut syn_ack = SynAck {
+        let response_header = ResponseHeader {
             id: id,
             version: version,
             network_type: network_type,
@@ -92,31 +81,13 @@ impl SynAck {
             chunks_count: chunks_count,
             plain_digest: plain_digest,
             cyph_digest: cyph_digest,
-            pow_difficulty: pow_difficulty,
-            pow_nonce: 0,
-            pow_digest: None,
         };
 
-        let pow_salt = Digest::hash(&syn_ack.to_bytes()?);
-
-        let pow_params = BalloonParams::from_memory(cyph_size)?;
-
-        let mut pow = PoW::new(pow_salt, pow_params, pow_difficulty)?;
-
-        pow.mine()?;
-
-        if !pow.verify()? {
-            return Err(ErrorKind::NotFound.into());
-        }
-
-        syn_ack.pow_nonce = pow.nonce.unwrap();
-        syn_ack.pow_digest = pow.digest;
-
-        Ok(syn_ack)
+        Ok(response_header)
     }
 }
 
-impl Validate for SynAck {
+impl Validate for ResponseHeader {
     fn validate(&self) -> Result<()> {
         self.version.validate()?;
 
@@ -126,14 +97,6 @@ impl Validate for SynAck {
         let chunks_count = self.chunks_count;
         let plain_digest = self.plain_digest;
         let cyph_digest = self.cyph_digest;
-        let pow_difficulty = self.pow_difficulty;
-        let pow_nonce = self.pow_nonce;
-
-        if self.pow_digest.is_none() {
-            return Err(ErrorKind::InvalidMessage.into());
-        }
-
-        let pow_digest = self.pow_digest.unwrap();
 
         if plain_size > cyph_size {
             return Err(ErrorKind::OutOfBound.into());
@@ -151,37 +114,12 @@ impl Validate for SynAck {
             return Err(ErrorKind::InvalidDigest.into());
         }
 
-        let mut pow_syn_ack = self.clone();
-        pow_syn_ack.pow_nonce = 0;
-        pow_syn_ack.pow_digest = None;
-
-        let pow_salt = Digest::hash(&pow_syn_ack.to_bytes()?);
-
-        let pow_params = BalloonParams::from_memory(cyph_size)?;
-
-        let pow = PoW {
-            salt: pow_salt,
-            params: pow_params,
-            difficulty: pow_difficulty,
-            nonce: Some(pow_nonce),
-            digest: Some(pow_digest),
-        };
-
-        if !pow.verify()? {
-            return Err(ErrorKind::InvalidMessage.into());
-        }
-
         Ok(())
     }
 }
 
-impl<'a> Serialize<'a> for SynAck {
+impl<'a> Serialize<'a> for ResponseHeader {
     fn to_json(&self) -> Result<String> {
-        let pow_digest_hex = if self.pow_digest.is_none() {
-            String::from("")
-        } else {
-            self.pow_digest.unwrap().to_hex()?
-        };
         
         let obj = json!({
             "id": self.id,
@@ -193,9 +131,6 @@ impl<'a> Serialize<'a> for SynAck {
             "chunks_count": self.chunks_count,
             "plain_digest": self.plain_digest.to_hex()?,
             "cyph_digest": self.cyph_digest.to_hex()?,
-            "pow_difficulty": self.pow_difficulty,
-            "pow_nonce": self.pow_nonce,
-            "pow_digest": pow_digest_hex,
         });
 
         let s = obj.to_string();
@@ -237,21 +172,7 @@ impl<'a> Serialize<'a> for SynAck {
         let cyph_digest_hex: String = json::from_value(cyph_digest_value)?;
         let cyph_digest = Digest::from_hex(&cyph_digest_hex)?;
 
-        let pow_difficulty_value = obj["pow_difficulty"].clone();
-        let pow_difficulty: u32 = json::from_value(pow_difficulty_value)?;
-
-        let pow_nonce_value = obj["pow_nonce"].clone();
-        let pow_nonce: u64 = json::from_value(pow_nonce_value)?;
-      
-        let pow_digest_value = obj["pow_digest"].clone();
-        let pow_digest_hex: String = json::from_value(pow_digest_value)?;
-        let pow_digest = if pow_digest_hex.is_empty() {
-            None
-        } else {
-            Some(Digest::from_hex(&pow_digest_hex)?)
-        };
-
-        let syn_ack = SynAck {
+        let response_header = ResponseHeader {
             id: id,
             version: version,
             network_type: network_type,
@@ -261,12 +182,9 @@ impl<'a> Serialize<'a> for SynAck {
             chunks_count: chunks_count,
             plain_digest: plain_digest,
             cyph_digest: cyph_digest,
-            pow_difficulty: pow_difficulty,
-            pow_nonce: pow_nonce,
-            pow_digest: pow_digest,
         };
 
-        Ok(syn_ack)
+        Ok(response_header)
     }
     
     fn to_bytes(&self) -> Result<Vec<u8>> {
@@ -276,9 +194,9 @@ impl<'a> Serialize<'a> for SynAck {
     }
     
     fn from_bytes(b: &[u8]) -> Result<Self> {
-        let syn_ack = messagepack::from_slice(b)?;
+        let response_header = messagepack::from_slice(b)?;
 
-        Ok(syn_ack)
+        Ok(response_header)
     }
     
     fn to_hex(&self) -> Result<String> {

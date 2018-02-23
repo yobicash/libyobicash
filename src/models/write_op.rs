@@ -13,6 +13,7 @@ use hex;
 use byteorder::{BigEndian, WriteBytesExt};
 use itertools::Itertools;
 
+use constants::MIN_DATA_DURATION;
 use error::ErrorKind;
 use result::Result;
 use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
@@ -25,7 +26,6 @@ use models::output::Output;
 use models::coin::Coin;
 use models::input::Input;
 use models::data::Data;
-use models::delete_op::DeleteOp;
 
 use std::io::Write;
 
@@ -44,10 +44,12 @@ pub struct WriteOp {
     pub inputs_length: u32,
     /// The inputs referencing the outputs to spend.
     pub inputs: Vec<Input>,
-    /// The data size.
-    pub data_size: u32,
     /// The encrypted data id.
     pub data_id: Digest,
+    /// The data size.
+    pub data_size: u32,
+    /// The data duration.
+    pub data_duration: u32,
     /// The zero-knowledge proof witness of the write operation.
     pub witness: ZKPWitness,
     /// The fee output of the write.
@@ -59,6 +61,7 @@ impl WriteOp {
     pub fn new(network_type: NetworkType,
                coins: &[Coin],
                data: &Data,
+               duration: u32,
                instance: Scalar,
                fee: &Output) -> Result<WriteOp> {
         for coin in coins {
@@ -69,6 +72,10 @@ impl WriteOp {
         }
 
         data.validate()?;
+
+        if duration < MIN_DATA_DURATION {
+            return Err(ErrorKind::InvalidTime.into());
+        }
     
         fee.validate()?;
         if fee.network_type != network_type {
@@ -125,8 +132,9 @@ impl WriteOp {
         w_op.timestamp = timestamp;
         w_op.inputs_length = inputs.len() as u32;
         w_op.inputs = inputs;
-        w_op.data_size = data_size;
         w_op.data_id = data_id;
+        w_op.data_size = data_size;
+        w_op.data_duration = duration;
         w_op.witness = ZKPWitness::new(instance)?;
         w_op.fee = fee.clone();
         w_op.id = w_op.id()?;
@@ -134,21 +142,17 @@ impl WriteOp {
         Ok(w_op)
     }
 
+    /// Verify if the write operation is expired.
+    pub fn is_expired(&self) -> bool {
+        let now = Timestamp::now();
+        let diff = self.timestamp.diff(now);
+
+        diff >= self.data_duration as i64
+    }
+
     /// Returns the fee amount.
     pub fn fee_amount(&self) -> Amount {
         self.fee.amount.clone()
-    }
-
-    /// Verifies the `WriteOp` against an `DeleteOp`.
-    pub fn verify(&self, delete_op: &DeleteOp) -> Result<bool> {
-        self.validate()?;
-        
-        delete_op.validate()?;
-        if delete_op.network_type != self.network_type {
-            return Err(ErrorKind::InvalidNetwork.into());
-        }
-
-        Ok(delete_op.proof.verify(self.witness)?)
     }
 }
 
@@ -164,8 +168,9 @@ impl Default for WriteOp {
             timestamp: Timestamp::default(),
             inputs_length: 0,
             inputs: Vec::new(),
-            data_size: data_size,
             data_id: data.id,
+            data_size: data_size,
+            data_duration: MIN_DATA_DURATION,
             witness: ZKPWitness::default(),
             fee: Output::default(),
         }
@@ -189,8 +194,9 @@ impl<'a> Identify<'a> for WriteOp {
             buf.write_all(&input_buf)?;
         }
         
-        buf.write_u32::<BigEndian>(self.data_size)?;
         buf.write_all(&self.data_id.to_bytes()?)?;
+        buf.write_u32::<BigEndian>(self.data_size)?;
+        buf.write_u32::<BigEndian>(self.data_duration)?;
         buf.write_all(&self.witness.to_bytes()?)?;
         buf.write_all(&self.fee.to_bytes()?)?;
 
@@ -245,6 +251,10 @@ impl Validate for WriteOp {
             return Err(ErrorKind::DuplicatesFound.into());
         }
 
+        if self.data_duration < MIN_DATA_DURATION {
+            return Err(ErrorKind::InvalidTime.into());
+        }
+
         self.witness.validate()?;
         
         self.fee.validate()?;
@@ -270,8 +280,9 @@ impl<'a> Serialize<'a> for WriteOp {
             "timestamp": self.timestamp.to_string(),
             "inputs_length": self.inputs_length,
             "inputs": json_inputs,
-            "data_size": self.data_size,
             "data_id": self.data_id.to_hex()?,
+            "data_size": self.data_size,
+            "data_duration": self.data_duration,
             "witness": self.witness.to_hex()?,
             "fee": self.fee.to_json()?,
         });
@@ -312,13 +323,16 @@ impl<'a> Serialize<'a> for WriteOp {
             let input = Input::from_json(&input_json)?;
             inputs.push(input);
         }
-
-        let data_size_value = obj["data_size"].clone();
-        let data_size: u32 = json::from_value(data_size_value)?;
         
         let data_id_value = obj["data_id"].clone();
         let data_id_hex: String = json::from_value(data_id_value)?;
         let data_id = Digest::from_hex(&data_id_hex)?;
+
+        let data_size_value = obj["data_size"].clone();
+        let data_size: u32 = json::from_value(data_size_value)?;
+        
+        let data_duration_value = obj["data_duration"].clone();
+        let data_duration: u32 = json::from_value(data_duration_value)?;
         
         let witness_value = obj["witness"].clone();
         let witness_hex: String = json::from_value(witness_value)?;
@@ -335,8 +349,9 @@ impl<'a> Serialize<'a> for WriteOp {
             timestamp: timestamp,
             inputs_length: inputs_length,
             inputs: inputs,
-            data_size: data_size,
             data_id: data_id,
+            data_size: data_size,
+            data_duration: data_duration,
             witness: witness,
             fee: fee,
         };

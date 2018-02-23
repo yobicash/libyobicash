@@ -30,7 +30,6 @@ mod deleted_data;
 mod input;
 mod transaction;
 mod write_op;
-mod delete_op;
 
 /// The store mode of the node.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -50,18 +49,16 @@ pub enum NodePrefix {
     Transaction=1,
     /// Node write operation store prefix.
     WriteOp=2,
-    /// Node delete operation store prefix.
-    DeleteOp=3,
     /// Node unspent coin.
-    UnspentCoin=4,
+    UnspentCoin=3,
     /// Node spent coin.
-    SpentCoin=5,
+    SpentCoin=4,
     /// Node unspent output.
-    UnspentOutput=6,
+    UnspentOutput=5,
     /// Node spent output.
-    SpentOutput=7,
+    SpentOutput=6,
     /// Node undeleted data.
-    UndeletedData=8,
+    UndeletedData=7,
 }
 
 /// The node check mode.
@@ -175,7 +172,6 @@ impl<S: Store> Node<S> {
         self.check_spent_outputs_sample(count)?;
         self.check_transactions_sample(count)?;
         self.check_write_ops_sample(count)?;
-        self.check_delete_ops_sample(count)?;
         self.check_peers_sample(count)?;
 
         Ok(())
@@ -188,7 +184,6 @@ impl<S: Store> Node<S> {
         self.check_spent_outputs_sample(count)?;
         self.check_transactions_sample(count)?;
         self.check_write_ops_sample(count)?;
-        self.check_delete_ops_sample(count)?;
         self.check_peers_sample(count)?;
 
         Ok(())
@@ -201,7 +196,6 @@ impl<S: Store> Node<S> {
         self.check_spent_outputs()?;
         self.check_transactions()?;
         self.check_write_ops()?;
-        self.check_delete_ops()?;
         self.check_peers()?;
 
         Ok(())

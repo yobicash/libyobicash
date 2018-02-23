@@ -24,6 +24,9 @@ pub const MAXTIMENOISE: i64 = 3_600;
 
 /// The maximum amount of coins.
 pub const MAXAMOUNT: f32 = 21_000_000.000_000_000_000_000;
+
+/// The minimum data duration in hours.
+pub const MIN_DATA_DURATION: u32 = 1;
     
 /// The default maximum number of concurrently connected peers.
 pub const DEFAULT_MAX_CONNECTIONS: u32 = 8;

@@ -8,38 +8,31 @@
 //! The `message` module provides the Yobicash network message types and methods.
 
 pub mod handshake;
+pub mod error;
+pub mod response_header;
 pub mod ping;
 pub mod list;
 pub mod sample;
 pub mod lookup;
 pub mod get;
 pub mod put;
-pub mod error;
 
 pub use self::handshake::*;
+pub use self::error::*;
+pub use self::response_header::*;
 pub use self::ping::*;
 pub use self::list::*;
 pub use self::sample::*;
 pub use self::lookup::*;
 pub use self::get::*;
 pub use self::put::*;
-pub use self::error::*;
-
-/*
-use network::message::list::request::*;
-use network::message::list::response::*;
-use network::message::sample::request::*;
-use network::message::sample::response::*;
-use network::message::lookup::request::*;
-use network::message::lookup::response::*;
-use network::message::get::request::*;
-use network::message::get::response::*;
-use network::message::put::request::*;
-use network::message::put::response::*;
-*/
 
 /// The network message type.
 pub enum Message {
+    /// An error response message.
+    ErrorResponse(ErrorResponse),
+    /// A response header response.
+    ResponseHeader(ResponseHeader),
     /// A ping request or response message.
     Ping(Ping),
     /// A list request message.
@@ -62,6 +55,4 @@ pub enum Message {
     PutRequest(PutRequest),
     /// A put response message.
     PutResponse(PutResponse),
-    /// An error response message.
-    ErrorResponse(ErrorResponse),
 }

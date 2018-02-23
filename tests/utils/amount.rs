@@ -110,3 +110,49 @@ fn amount_sub_assign_succ() {
     
     assert_eq!(sub, c)
 }
+
+#[test]
+fn amount_mul_succ() {
+    let a = Amount::from_string("10/3").unwrap();
+    let b = Amount::from_string("7/3").unwrap();
+    let c = Amount::from_string("70/9").unwrap();
+    
+    let sum = a * b;
+    
+    assert_eq!(sum, c)
+}
+
+#[test]
+fn amount_mul_assign_succ() {
+    let a = Amount::from_string("10/3").unwrap();
+    let b = Amount::from_string("7/3").unwrap();
+    let c = Amount::from_string("70/9").unwrap();
+    
+    let mut sum = a;
+    sum *= b;
+    
+    assert_eq!(sum, c)
+}
+
+#[test]
+fn amount_div_succ() {
+    let a = Amount::from_string("10/3").unwrap();
+    let b = Amount::from_string("10/3").unwrap();
+    let c = Amount::from_string("1").unwrap();
+    
+    let div = a / b;
+    
+    assert_eq!(div, c)
+}
+
+#[test]
+fn amount_div_assign_succ() {
+    let a = Amount::from_string("10/3").unwrap();
+    let b = Amount::from_string("10/3").unwrap();
+    let c = Amount::from_string("1").unwrap();
+    
+    let mut div = a;
+    div /= b;
+    
+    assert_eq!(div, c)
+}

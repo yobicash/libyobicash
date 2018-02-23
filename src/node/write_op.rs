@@ -54,6 +54,10 @@ impl <S: Store> Node<S> {
         // validate the write_op
         write_op.validate()?;
 
+        if write_op.is_expired() {
+            return Err(ErrorKind::InvalidTime.into());
+        }
+
         // check the write_op preconditions
         self.check_write_op_pre(write_op)?;
 

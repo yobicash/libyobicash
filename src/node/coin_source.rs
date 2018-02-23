@@ -33,11 +33,6 @@ impl<S: Store> Node<S> {
                     return Ok(false);
                 }
             },
-            CoinSource::DeleteOpFee => {
-                if !self.lookup_delete_op(source_id)? {
-                    return Ok(false);
-                }
-            },
         }
 
         Ok(true)
@@ -73,12 +68,6 @@ impl<S: Store> Node<S> {
             CoinSource::WriteOpFee => {
                 let write_op = self.get_write_op(source_id)?;
                 if write_op.fee.id != id {
-                    return Err(ErrorKind::NotFound.into());
-                }
-            },
-            CoinSource::DeleteOpFee => {
-                let delete_op = self.get_delete_op(source_id)?;
-                if delete_op.fee.id != id {
                     return Err(ErrorKind::NotFound.into());
                 }
             },

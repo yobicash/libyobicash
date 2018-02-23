@@ -28,6 +28,10 @@ impl <S: Store> Node<S> {
             return Err(ErrorKind::InvalidLength.into());
         }
 
+        if write_op.is_expired() {
+            return Err(ErrorKind::InvalidTime.into());
+        }
+
         // the data should exist in the store
         if !self.lookup_undeleted_data(id)? {
             return Err(ErrorKind::NotFound.into());
@@ -48,6 +52,10 @@ impl <S: Store> Node<S> {
 
         if write_op.data_size != size {
             return Err(ErrorKind::InvalidLength.into());
+        }
+
+        if !write_op.is_expired() {
+            return Err(ErrorKind::InvalidTime.into());
         }
 
         // the data should not exist in the store

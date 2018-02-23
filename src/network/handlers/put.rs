@@ -10,7 +10,9 @@
 use error::ErrorKind;
 use result::Result;
 use traits::{Validate, Serialize};
-use models::{Transaction, WriteOp, DeleteOp, Coin, Output, Data};
+use crypto::ZKPWitness;
+use utils::Amount;
+use models::{Transaction, WriteOp, Coin, Output, Data};
 use store::Store;
 use node::Node;
 use network::session::Session;
@@ -34,14 +36,6 @@ impl PutHandler {
             return Err(ErrorKind::InvalidSession.into());
         }
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-
-        if req.max_size != session.max_size.unwrap() {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         req.validate()?;
 
         let resource_type = req.resource_type;
@@ -54,6 +48,33 @@ impl PutHandler {
 
                 if transaction.network_type != req.network_type {
                     return Err(ErrorKind::InvalidNetwork.into());
+                }
+
+                if session.fee_instance.is_none() {
+                    return Err(ErrorKind::InvalidSession.into());
+                }
+
+                if session.fee_per_byte.is_none() {
+                    return Err(ErrorKind::InvalidSession.into());
+                }
+
+                let fee_instance = session.fee_instance.unwrap();
+                let fee_per_byte = session.fee_per_byte.clone().unwrap();
+
+                let fee_witness = ZKPWitness::new(fee_instance)?;
+                
+                let size = req.resource.len() as u32;
+                let size_amount = Amount::from(size as f32);
+                let fee_amount = size_amount * fee_per_byte;
+                
+                let fee = transaction.fee.clone();
+                
+                if fee.witness != fee_witness {
+                    return Err(ErrorKind::InvalidMessage.into());
+                }
+
+                if fee.amount != fee_amount {
+                    return Err(ErrorKind::InvalidMessage.into());
                 }
                 
                 node.add_transaction(&transaction)?;
@@ -74,29 +95,37 @@ impl PutHandler {
                 if write_op.network_type != req.network_type {
                     return Err(ErrorKind::InvalidNetwork.into());
                 }
+
+                if session.fee_instance.is_none() {
+                    return Err(ErrorKind::InvalidSession.into());
+                }
+
+                if session.fee_per_byte.is_none() {
+                    return Err(ErrorKind::InvalidSession.into());
+                }
+
+                let fee_instance = session.fee_instance.unwrap();
+                let fee_per_byte = session.fee_per_byte.clone().unwrap();
+
+                let fee_witness = ZKPWitness::new(fee_instance)?;
+                
+                let size = req.resource.len() as u32;
+                let size_amount = Amount::from(size as f32);
+                let fee_amount = size_amount * fee_per_byte;
+                
+                let fee = write_op.fee.clone();
+                
+                if fee.witness != fee_witness {
+                    return Err(ErrorKind::InvalidMessage.into());
+                }
+
+                if fee.amount != fee_amount {
+                    return Err(ErrorKind::InvalidMessage.into());
+                }
                 
                 node.add_write_op(&write_op)?;
 
                 let resource_id = write_op.id;
-
-                let res = PutResponse::new(session, resource_type, resource_id)?;
-
-                let message = Message::PutResponse(res);
-
-                Ok(message)
-            },
-            ResourceType::DeleteOp => {
-                let delete_op = DeleteOp::from_bytes(&req.resource)?;
-
-                delete_op.validate()?;
-
-                if delete_op.network_type != req.network_type {
-                    return Err(ErrorKind::InvalidNetwork.into());
-                }
-                
-                node.add_delete_op(&delete_op)?;
-
-                let resource_id = delete_op.id;
 
                 let res = PutResponse::new(session, resource_type, resource_id)?;
 

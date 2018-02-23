@@ -30,8 +30,6 @@ pub struct PutRequest {
     pub version: Version,
     /// The network type of the protocol.
     pub network_type: NetworkType,
-    /// The maximum size of the `PutRequest` message.
-    pub max_size: u32,
     /// The resource type.
     pub resource_type: ResourceType,
     /// The source if any.
@@ -62,16 +60,6 @@ impl PutRequest {
             return Err(ErrorKind::InvalidSource.into());
         }
 
-        if session.max_size.is_none() {
-            return Err(ErrorKind::InvalidSession.into());
-        }
-        
-        let max_size = session.max_size.unwrap();
-
-        if resource.len() as u32 > max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
-
         let id = session.id;
         let version = session.version.clone();
         let network_type = session.network_type;
@@ -80,17 +68,12 @@ impl PutRequest {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
             resource_type: resource_type,
             source: source,
             source_id: source_id,
             write_id: write_id,
             resource: Vec::from(resource),
         };
-
-        if put_request.to_bytes()?.len() as u32 > max_size {
-            return Err(ErrorKind::InvalidLength.into());
-        }
 
         Ok(put_request)
     }
@@ -106,10 +89,6 @@ impl Validate for PutRequest {
 
         if self.source.is_some() && self.write_id.is_some() {
             return Err(ErrorKind::InvalidMessage.into());
-        }
-
-        if self.to_bytes()?.len() as u32 > self.max_size {
-            return Err(ErrorKind::InvalidLength.into());
         }
 
         Ok(())
@@ -141,7 +120,6 @@ impl<'a> Serialize<'a> for PutRequest {
             "id": self.id,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,
-            "max_size": self.max_size,
             "resource_type": self.resource_type.to_hex()?,
             "source": source_hex,
             "source_id": source_id_hex,
@@ -168,9 +146,6 @@ impl<'a> Serialize<'a> for PutRequest {
         let network_type_hex: String = json::from_value(network_type_value)?;
         let network_type = NetworkType::from_hex(&network_type_hex)?;
 
-        let max_size_value = obj["max_size"].clone();
-        let max_size: u32 = json::from_value(max_size_value)?;
-      
         let resource_type_value = obj["resource_type"].clone();
         let resource_type_hex: String = json::from_value(resource_type_value)?;
         let resource_type = ResourceType::from_hex(&resource_type_hex)?;
@@ -207,7 +182,6 @@ impl<'a> Serialize<'a> for PutRequest {
             id: id,
             version: version,
             network_type: network_type,
-            max_size: max_size,
             resource_type: resource_type,
             source: source,
             source_id: source_id,

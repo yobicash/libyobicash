@@ -14,4 +14,3 @@ mod coin;
 mod input;
 mod transaction;
 mod write_op;
-mod delete_op;

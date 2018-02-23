@@ -14,7 +14,6 @@ pub mod coin;
 pub mod input;
 pub mod transaction;
 pub mod write_op;
-pub mod delete_op;
 
 pub use self::peer::*;
 pub use self::data::*;
@@ -23,4 +22,3 @@ pub use self::coin::*;
 pub use self::input::*;
 pub use self::transaction::*;
 pub use self::write_op::*;
-pub use self::delete_op::*;

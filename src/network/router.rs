@@ -35,7 +35,7 @@ impl<S: Store> Router<S> {
 
         match message {
             &Message::Ping(ref req) => {
-                match PingHandler::handle(&mut self.node, session, req) {
+                match PingHandler::handle(session, req) {
                     Ok(message) => Ok(message),
                     Err(e) => {
                         let err_response = ErrorResponse::new(session, &format!("{}", e))?;

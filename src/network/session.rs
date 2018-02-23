@@ -18,6 +18,7 @@ use crypto::{Random, Scalar, ZKPWitness, SecretKey, PublicKey};
 use crypto::Validate as CryptoValidate;
 use crypto::HexSerialize as CryptoHexSerialize;
 use utils::{Version, NetworkType, Amount};
+use network::message::handshake::Ack;
 
 /// The type used for network sessions.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -32,15 +33,13 @@ pub struct Session {
     pub secret_key: SecretKey,
     /// The public key of the other end of the connection.
     pub public_key: Option<PublicKey>,
-    /// The maximum size of a `Message`.
-    pub max_size: Option<u32>,
     /// Difficulty of the `SynAck` PoW.
     pub pow_difficulty: Option<u32>,
     /// The fee_instance if this end requires a fee.
     pub fee_instance: Option<Scalar>,
     /// The other side fee_witness if this end requires a fee.
     pub fee_witness: Option<ZKPWitness>,
-    /// The fee_per_byte if this end requires a fee.
+    /// The fee per byte used in payable put operations.
     pub fee_per_byte: Option<Amount>,
 }
 
@@ -58,12 +57,42 @@ impl Session {
             network_type: network_type,
             secret_key: secret_key,
             public_key: None,
-            max_size: None,
             pow_difficulty: None,
             fee_instance: None,
             fee_witness: None,
             fee_per_byte: None,
         }
+    }
+
+    /// Creates a new `Session` from an `Ack`.
+    pub fn update(&mut self, ack: &Ack) -> Result<()> {
+        self.validate()?;
+        ack.validate()?;
+
+        if ack.id != self.id {
+            return Err(ErrorKind::InvalidMessage.into());
+        }
+
+        if ack.network_type != self.network_type {
+            return Err(ErrorKind::InvalidMessage.into());
+        }
+
+        if let Some(instance) = self.fee_instance {
+            if let Some(witness) = ack.fee_witness {
+                if ZKPWitness::new(instance)? == witness {
+                    return Err(ErrorKind::InvalidMessage.into());
+                }
+            }
+        }
+
+        self.public_key = Some(ack.public_key);
+        self.pow_difficulty = Some(ack.pow_difficulty);
+        self.fee_witness = ack.fee_witness;
+        self.fee_per_byte = ack.fee_per_byte.clone();
+
+        self.validate()?;
+
+        Ok(())
     }
 
     /// Adds the public key of the other side of the connection.
@@ -77,11 +106,6 @@ impl Session {
         self.public_key = Some(pk);
 
         Ok(())
-    }
-
-    /// Adds the `Message` maximum size.
-    pub fn add_size(&mut self, max_size: u32) {
-        self.max_size = Some(max_size);
     }
 
     /// Adds the pow params and difficulty.
@@ -136,8 +160,8 @@ impl Validate for Session {
             return Err(ErrorKind::InvalidSession.into());
         }
         
-        if (self.fee_instance.is_some() ^ self.fee_instance.is_some())
-            && self.fee_per_byte.is_none() {
+        if (self.fee_instance.is_some() ^ self.fee_instance.is_some()) &&
+            self.fee_per_byte.is_none() {
             return Err(ErrorKind::InvalidSession.into());
         }
 
@@ -165,8 +189,6 @@ impl<'a> Serialize<'a> for Session {
             self.public_key.unwrap().to_hex()?
         };
 
-        let max_size_u32 = self.max_size.unwrap_or(0);
-
         let pow_difficulty_u32 = self.pow_difficulty.unwrap_or(0);
 
         let fee_instance_hex = if self.fee_instance.is_none() {
@@ -193,7 +215,6 @@ impl<'a> Serialize<'a> for Session {
             "network_type": self.network_type.to_hex()?,
             "secret_key": self.secret_key.to_hex()?,
             "public_key": public_key_hex,
-            "max_size": max_size_u32,
             "pow_difficulty": pow_difficulty_u32,
             "fee_instance": fee_instance_hex,
             "fee_witness": fee_witness_hex,
@@ -229,14 +250,6 @@ impl<'a> Serialize<'a> for Session {
             None
         } else {
             Some(PublicKey::from_hex(&public_key_hex)?)
-        };
-
-        let max_size_value = obj["max_size"].clone();
-        let max_size_u32: u32 = json::from_value(max_size_value)?;
-        let max_size = if max_size_u32 == 0 {
-            None
-        } else {
-            Some(max_size_u32)
         };
 
         let pow_difficulty_value = obj["pow_difficulty"].clone();
@@ -277,7 +290,6 @@ impl<'a> Serialize<'a> for Session {
             network_type: network_type,
             secret_key: secret_key,
             public_key: public_key,
-            max_size: max_size,
             pow_difficulty: pow_difficulty,
             fee_instance: fee_instance,
             fee_witness: fee_witness,

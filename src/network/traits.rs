@@ -14,14 +14,14 @@ use std::net::Shutdown;
 
 /// Trait implementend by Yobicash network transports.
 pub trait Connection: Sized + Read + Write {
-    /// Bind to an address.
-    fn bind(addr: &str) -> Result<Self>;
+    /// Bind to an address, handling incoming connections concurrently.
+    fn bind(&mut self, addr: &str, max_connections: u32) -> Result<()>;
 
     /// Connects to an address.
-    fn connect(addr: &str) -> Result<Self>;
+    fn connect(&mut self, addr: &str) -> Result<()>;
 
     /// Connects to an address, add a timeout.
-    fn connect_timeout(addr: &str, timeout: u64) -> Result<Self>;
+    fn connect_timeout(&mut self, addr: &str, timeout: u64) -> Result<()>;
 
     /// Returns the peer address.
     fn peer_addr(&self) -> Result<String>;

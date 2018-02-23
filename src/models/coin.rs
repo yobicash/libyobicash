@@ -28,7 +28,6 @@ pub enum CoinSource {
     TransactionFee=0,
     TransactionOutput=1,
     WriteOpFee=2,
-    DeleteOpFee=3,
 }
 
 impl Default for CoinSource {
@@ -58,7 +57,6 @@ impl BinarySerialize for CoinSource {
             0 => Ok(CoinSource::TransactionFee),
             1 => Ok(CoinSource::TransactionOutput),
             2 => Ok(CoinSource::WriteOpFee),
-            3 => Ok(CoinSource::DeleteOpFee),
             _ => Err(ErrorKind::UnknownMode.into()),
         }
     }
