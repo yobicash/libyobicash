@@ -76,6 +76,7 @@ impl UDTServer {
                      self.udt_sock = Some(udt::UdtSocket::new(udt::SocketFamily::AFInet6, udt::SocketType::Datagram).unwrap());
                   }
                   self.udt_sock.unwrap().bind(sock_addr);
+                  self.udt_sock.unwrap().listen(100);
                   Ok(true)
                } else {
                   Err(ListenError::InvalidEndpoint)
@@ -92,8 +93,13 @@ impl UDTServer {
             if(self.is_listening == false) {
                Err(AcceptError::NotListening)
             } else {
-               // TODO - add UDT accept() here
-               Err(AcceptError::NotPending)
+               let mut accept_ret = self.udt_sock.unwrap().accept();
+               if(accept_ret.is_ok()) {
+                 let (new_sock,peer) = accept_ret.unwrap();
+                 Ok(UDTTransportSession::new(new_sock))
+               } else {
+                 Err(AcceptError::NotPending)
+               }
             }
          } else {
             Err(AcceptError::NotRunning)

@@ -92,6 +92,7 @@ fn double_shutdown_fails() {
 
 #[test]
 fn send_and_recv_msg() {
+
    // we use this to block threads on each other to ensure there's no race conditions in the test
    let (tx,rx) = sync_channel(1);
 
@@ -103,14 +104,14 @@ fn send_and_recv_msg() {
        let mut listened_ok: bool = listen_result.unwrap();
        assert!(listened_ok);
 
-       tx.send(1).unwrap(); // we block here until the client is ready to send us a connection
+       tx.send(1); // block until client is ready to connect
 
        // accept the connection     
        let mut accept_result: server::AcceptResult = my_server.accept();
        assert!(accept_result.is_ok());
        let mut server_session: transport_session::UDTTransportSession = accept_result.unwrap();
        
-       tx.send(1).unwrap(); // block until the client has sent us a message
+       tx.send(1); // block until the client has sent us a message
 
        // receive the message
        let mut recv_result: transport_session::RecvMsgResult = server_session.recv_msg();
@@ -131,14 +132,13 @@ fn send_and_recv_msg() {
    let client = spawn(move || {
        let mut my_client: client::UDTClient = client::UDTClient::new();
 
-       rx.recv().unwrap(); // unblock server thread
+       rx.recv();
 
        // send connection
        let mut connect_result: client::ConnectResult = my_client.connect_to("127.0.0.1:2112");
        assert!(connect_result.is_ok());
        let mut client_session: transport_session::UDTTransportSession = connect_result.unwrap();
 
-       rx.recv().unwrap(); // unblock server thread
 
        // try to send a message from client to server
        let mut hello_msg = "Hello";
@@ -149,8 +149,13 @@ fn send_and_recv_msg() {
        let mut sent_bytes: usize = send_result.unwrap();
        assert_eq!(sent_bytes, 5);
 
+       rx.recv(); // unblock server thread
+
        // finally, cleanup
        client_session.shutdown();
        my_client.shutdown();
    });
+
+   server.join();
+   client.join();
 }
