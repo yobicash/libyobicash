@@ -9,6 +9,8 @@
 //! Libyobicash `transport` module tests.
 
 use libyobicash::network::transports::udtnet::*;
+use std::thread::spawn;
+use std::sync::mpsc::sync_channel;
 
 #[test]
 fn udt_server_listen_bad_addr() {
@@ -88,53 +90,67 @@ fn double_shutdown_fails() {
    assert_eq!(second_shutdown_error, server::ShutdownError::NotRunning);
 }
 
-// the below is quite a large test, more of an integration test than unit test
-// it's needed to verify the actual functionality though
-// TODO - rewrite this test to use threads to avoid the timeout issue on connect_to()
 #[test]
 fn send_and_recv_msg() {
-   let mut my_server: server::UDTServer = server::UDTServer::new();
+   // we use this to block threads on each other to ensure there's no race conditions in the test
+   let (tx,rx) = sync_channel(1);
+
+   let server = spawn(move || {
+       let mut my_server: server::UDTServer = server::UDTServer::new();
+
+       let mut listen_result: server::ListenResult = my_server.listen_on("127.0.0.1:2112");
+       assert!(listen_result.is_ok());
+       let mut listened_ok: bool = listen_result.unwrap();
+       assert!(listened_ok);
+
+       tx.send(1).unwrap(); // we block here until the client is ready to send us a connection
+
+       // accept the connection     
+       let mut accept_result: server::AcceptResult = my_server.accept();
+       assert!(accept_result.is_ok());
+       let mut server_session: transport_session::UDTTransportSession = accept_result.unwrap();
+       
+       tx.send(1).unwrap(); // block until the client has sent us a message
+
+       // receive the message
+       let mut recv_result: transport_session::RecvMsgResult = server_session.recv_msg();
+       assert!(recv_result.is_ok());
+       let mut recv_msg: Vec<u8> = recv_result.unwrap();
+
+       // check the message is of right length and content
+       assert_eq!(recv_msg.len(), 5);
+       let hello_msg = "Hello";
+       let mut recv_str: String = String::from_utf8(recv_msg).unwrap();
+       assert_eq!(recv_str, hello_msg);
+
+       // finally, cleanup
+       server_session.shutdown();
+       my_server.shutdown();
+   });
+
+   let client = spawn(move || {
+       let mut my_client: client::UDTClient = client::UDTClient::new();
+
+       rx.recv().unwrap(); // unblock server thread
+
+       // send connection
+       let mut connect_result: client::ConnectResult = my_client.connect_to("127.0.0.1:2112");
+       assert!(connect_result.is_ok());
+       let mut client_session: transport_session::UDTTransportSession = connect_result.unwrap();
+
+       rx.recv().unwrap(); // unblock server thread
+
+       // try to send a message from client to server
+       let mut hello_msg = "Hello";
+       let mut send_result: transport_session::SendMsgResult = client_session.send_msg(hello_msg.as_bytes(),false);
+       assert!(send_result.is_ok());
    
-   let mut listen_result: server::ListenResult = my_server.listen_on("127.0.0.1:2112");
-   assert!(listen_result.is_ok());
-   let mut listened_ok: bool = listen_result.unwrap();
-   assert!(listened_ok);
+       // we verify it sent the correct number of bytes (should send 5 bytes for the "hello" string)
+       let mut sent_bytes: usize = send_result.unwrap();
+       assert_eq!(sent_bytes, 5);
 
-   let mut my_client: client::UDTClient = client::UDTClient::new();
-
-   let mut connect_result: client::ConnectResult = my_client.connect_to("127.0.0.1:2112");
-   assert!(connect_result.is_ok());
-
-   let mut accept_result: server::AcceptResult = my_server.accept();
-   assert!(accept_result.is_ok());
-
-   let mut client_session: transport_session::UDTTransportSession = connect_result.unwrap();
-   let mut server_session: transport_session::UDTTransportSession = accept_result.unwrap();
-
-   // first we try to send a message from client to server
-   let mut hello_msg = "Hello";
-   let mut send_result: transport_session::SendMsgResult = client_session.send_msg(hello_msg.as_bytes(),false);
-   assert!(send_result.is_ok());
-   
-   // we verify it sent the correct number of bytes (should send 5 bytes for the "hello" string)
-   let mut sent_bytes: usize = send_result.unwrap();
-   assert_eq!(sent_bytes, 5);
-   
-   // now we try and receive it
-   let mut recv_result: transport_session::RecvMsgResult = server_session.recv_msg();
-   assert!(recv_result.is_ok());
-   
-   // check we received a message of 5 bytes
-   let mut recv_msg: Vec<u8> = recv_result.unwrap();
-   assert_eq!(recv_msg.len(), 5);
-
-   // convert it to a string and check it matches the "Hello" string
-   let mut recv_str: String = String::from_utf8(recv_msg).unwrap(); // convert it into a string
-   assert_eq!(hello_msg, recv_str);
-
-   // finally, cleanup
-   client_session.shutdown();
-   server_session.shutdown();
-   my_client.shutdown();
-   my_server.shutdown();
+       // finally, cleanup
+       client_session.shutdown();
+       my_client.shutdown();
+   });
 }
