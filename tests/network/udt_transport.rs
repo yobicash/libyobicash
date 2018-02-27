@@ -90,6 +90,7 @@ fn double_shutdown_fails() {
 
 // the below is quite a large test, more of an integration test than unit test
 // it's needed to verify the actual functionality though
+// TODO - rewrite this test to use threads to avoid the timeout issue on connect_to()
 #[test]
 fn send_and_recv_msg() {
    let mut my_server: server::UDTServer = server::UDTServer::new();
