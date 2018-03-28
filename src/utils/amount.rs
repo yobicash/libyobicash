@@ -9,7 +9,8 @@
 
 use rmp_serde as messagepack;
 use hex;
-use rug::{Rational, ops::Pow};
+use rug::Rational;
+use rug::ops::Pow;
 
 use constants::GENESIS_AMOUNT;
 use error::ErrorKind;
