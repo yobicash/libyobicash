@@ -13,5 +13,4 @@ extern crate libyobicash;
 
 
 mod utils;
-mod store;
-//mod models;
+mod models;

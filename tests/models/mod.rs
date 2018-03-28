@@ -7,10 +7,10 @@
 
 //! Libyobicash `models` module tests.
 
-mod peer;
 mod data;
 mod output;
 mod coin;
 mod input;
 mod transaction;
-mod write_op;
+mod block;
+mod block_header;

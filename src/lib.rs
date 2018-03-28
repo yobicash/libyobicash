@@ -24,6 +24,7 @@ extern crate itertools;
 extern crate yobicrypto;
 extern crate chrono;
 extern crate regex;
+extern crate futures;
 
 pub mod constants;
 pub mod error;
@@ -31,7 +32,4 @@ pub mod result;
 pub mod traits;
 pub mod crypto;
 pub mod utils;
-pub mod store;
-//pub mod models;
-//pub mod node;
-//pub mod network;
+pub mod models;

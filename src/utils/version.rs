@@ -19,7 +19,7 @@ use traits::{Validate, BinarySerialize, HexSerialize};
 use std::fmt;
 use std::str::FromStr;
 
-/// A version is a semver formatted version.
+/// A `Version` is a semver formatted version.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Version {
     /// Major version.

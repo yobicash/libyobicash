@@ -5,79 +5,40 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `input` module provides the transaction input types and methods.
+//! The `input` module provides the transaction input type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
 use hex;
 
-use error::ErrorKind;
 use result::Result;
-use traits::{Identify, Validate, BinarySerialize, HexSerialize, Serialize};
-use utils::{Version, Timestamp};
+use traits::{Identify, Validate, Serialize};
 use crypto::{Digest, ZKPProof};
 use crypto::Validate as CryptoValidate;
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
 use models::output::Output;
-use models::coin::{CoinSource, Coin};
+use models::coin::Coin;
 
-/// Input is a reference to a past output used in transactions
+/// An `Input` is a reference to a past output used in transactions
 /// to spend the output.
 #[derive(Copy, Clone, Eq, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Input {
     /// The id of the referenced output.
     pub id: Digest,
-    /// The source of the referenced output.
-    pub source: CoinSource,
-    /// The source id of the referenced output.
-    pub source_id: Digest,
     /// The zero-knowledge-proof proof used to spend the referenced output.
     pub proof: ZKPProof,
 }
 
 impl Input {
     /// Creates an `Input`.
-    pub fn new(coin: &Coin,
-               version: &Version,
-               timestamp: Timestamp,
-               outputs_ids: &[Digest],
-               fee: &Output) -> Result<Input> {
+    pub fn new(coin: &Coin, message: &[u8]) -> Result<Input> {
         coin.validate()?;
 
-        version.validate()?;
-        timestamp.validate()?;
-
-        fee.validate()?;
-
-        if fee.network_type != coin.network_type {
-            return Err(ErrorKind::InvalidNetwork.into());
-        }
-
-        let mut message = Vec::new();
-
-        let id = coin.id;
-        let source = coin.source;
-        let source_id = coin.source_id;
-
-        message.extend_from_slice(&id.to_bytes()?);
-        message.extend_from_slice(&source.to_bytes()?);
-        message.extend_from_slice(&source_id.to_bytes()?);
-        message.extend_from_slice(&version.to_bytes()?);
-        message.extend_from_slice(&timestamp.to_bytes()?);
-        
-        for id in outputs_ids {
-            message.extend_from_slice(&id.to_bytes()?);
-        }
-
-        message.extend_from_slice(&fee.id.to_bytes()?);
-
-        let proof = coin.proof(&message)?;
+        let proof = coin.proof(message)?;
 
         let input = Input {
-            id: id,
-            source: source,
-            source_id: source_id,
+            id: coin.id,
             proof: proof,
         };
 
@@ -139,8 +100,6 @@ impl<'a> Serialize<'a> for Input {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
             "id": self.id.to_hex()?,
-            "source": self.source.to_hex()?,
-            "source_id": self.source_id.to_hex()?,
             "proof": self.proof.to_hex()?,
         });
 
@@ -155,14 +114,6 @@ impl<'a> Serialize<'a> for Input {
         let id_value = obj["id"].clone();
         let id_hex: String = json::from_value(id_value)?;
         let id = Digest::from_hex(&id_hex)?;
-        
-        let source_value = obj["source"].clone();
-        let source_hex: String = json::from_value(source_value)?;
-        let source = CoinSource::from_hex(&source_hex)?;
-        
-        let source_id_value = obj["source_id"].clone();
-        let source_id_hex: String = json::from_value(source_id_value)?;
-        let source_id = Digest::from_hex(&source_id_hex)?;
 
         let proof_value = obj["proof"].clone();
         let proof_hex: String = json::from_value(proof_value)?;
@@ -170,8 +121,6 @@ impl<'a> Serialize<'a> for Input {
 
         let input = Input {
             id: id,
-            source: source,
-            source_id: source_id,
             proof: proof,
         };
 

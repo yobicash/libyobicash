@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `transaction` module provides the transaction types and methods.
+//! The `transaction` module provides the transaction type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
@@ -21,16 +21,17 @@ use crypto::{Digest, ZKPWitness};
 use crypto::BinarySerialize as CryptoBinarySerialize;
 use crypto::HexSerialize as CryptoHexSerialize;
 use models::output::Output;
+use models::data::Data;
 use models::coin::Coin;
 use models::input::Input;
 
 use std::io::Write;
 
-/// Transaction is a transfer of balance from the inputs of
+/// A `Transaction` is a transfer of balance from the inputs of
 /// (generally) one user to one or more users.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Transaction {
-    /// The id of the output.
+    /// The id of the transaction.
     pub id: Digest,
     /// The version of the library.
     pub version: Version,
@@ -38,18 +39,24 @@ pub struct Transaction {
     pub network_type: NetworkType,
     /// The unix timestamp of the time the transaction was created.
     pub timestamp: Timestamp,
-    /// The size of the inputs.
+    /// The size of the transaction inputs.
     pub inputs_length: u32,
-    /// The inputs referencing the outputs to spend.
+    /// The transaction inputs.
     pub inputs: Vec<Input>,
-    /// The outputs amount.
+    /// The transaction outputs' amount.
     pub outputs_amount: Amount,
-    /// The length of the outputs.
+    /// The length of the transaction outputs.
     pub outputs_length: u32,
-    /// The sent outputs ids.
-    pub outputs_ids: Vec<Digest>,
-    /// The fee output of the transaction.
-    pub fee: Output,
+    /// The transaction outputs.
+    pub outputs: Vec<Output>,
+    /// The size of the transaction data.
+    pub data_size: u32,
+    /// The length of the transaction data.
+    pub data_length: u32,
+    /// The transaction data ids.
+    pub data_ids: Vec<Digest>,
+    /// The transaction fee.
+    pub fee: Amount,
 }
 
 impl Transaction {
@@ -57,24 +64,18 @@ impl Transaction {
     pub fn new(network_type: NetworkType,
                coins: &[Coin],
                outputs: &[Output],
-               fee: &Output) -> Result<Transaction> {
+               data: &[Data],
+               fee: &Amount) -> Result<Transaction> {
         for coin in coins {
             coin.validate()?;
-            if coin.network_type != network_type {
-                return Err(ErrorKind::InvalidNetwork.into());
-            }
         }
 
         for output in outputs {
             output.validate()?;
-            if output.network_type != network_type {
-                return Err(ErrorKind::InvalidNetwork.into());
-            }
         }
-        
-        fee.validate()?;
-        if fee.network_type != network_type {
-            return Err(ErrorKind::InvalidNetwork.into());
+
+        for d in data {
+            d.validate()?;
         }
 
         let coins_length = coins.len();
@@ -94,11 +95,17 @@ impl Transaction {
             coins_amount += &coin.amount;
         }
 
+        let outputs_length = outputs.len() as u32;
+
         let mut outputs_ids = Vec::new();
         let mut outputs_amount = Amount::new();
         for output in outputs {
             outputs_ids.push(output.id);
             outputs_amount += &output.amount;
+        }
+
+        if coins_amount != outputs_amount.clone() + fee {
+            return Err(ErrorKind::OutOfBound.into());
         }
 
         let mut outputs_binary_ids = Vec::new();
@@ -110,22 +117,58 @@ impl Transaction {
             return Err(ErrorKind::DuplicatesFound.into());
         }
 
-        if coins_amount != &outputs_amount + &fee.amount {
-            return Err(ErrorKind::OutOfBound.into());
+        let data_length = data.len();
+
+        let mut data_ids = Vec::new();
+        for d in data {
+            data_ids.push(d.id);
+        }
+
+        let mut data_binary_ids = Vec::new();
+        for id in data_ids.clone() {
+            data_binary_ids.push(id.to_bytes()?);
+        }
+
+        let mut data_size = 0;
+        for i in 0..data_length {
+            let d = &data[i];
+            data_size += &d.cyph_size;
         }
 
         let timestamp = Timestamp::now();
 
-        let mut inputs = Vec::new();
-        for i in 0..coins_length {
+        let mut inputs: Vec<Input> = Vec::new();
+
+        let mut message_header = Vec::new();
+        
+        message_header.write_all(&Version::default().to_bytes()?)?;
+        message_header.write_all(&network_type.to_bytes()?)?;
+        message_header.write_all(&timestamp.to_bytes()?)?;
+        
+        message_header.write_u32::<BigEndian>(coins_length as u32)?;
+        
+        message_header.write_all(&outputs_amount.to_bytes()?)?;
+        message_header.write_u32::<BigEndian>(outputs_length)?;
+        
+        for i in 0..outputs_length as usize {
+            let id = &outputs_ids[i];
+            message_header.write_all(&id.to_bytes()?)?;
+        }
+        
+        message_header.write_all(&fee.to_bytes()?)?;
+
+        for i in 0..coins_length as usize {
             let coin = &coins[i];
 
-            let input = Input::new(
-                coin,
-                &Version::default(),
-                timestamp,
-                &outputs_ids,
-                fee)?;
+            let mut message = message_header.clone();
+            
+            for i in 0..inputs.len() {
+                let input = inputs[i];
+                let input_buf = input.to_bytes()?;
+                message.write_all(&input_buf)?;
+            }
+
+            let input = Input::new(coin, &message)?;
 
             inputs.push(input);
         }
@@ -133,26 +176,28 @@ impl Transaction {
         let mut tx = Transaction::default();
         tx.network_type = network_type;
         tx.timestamp = timestamp;
-        tx.inputs_length = inputs.len() as u32;
+        tx.inputs_length = coins_length as u32;
         tx.inputs = inputs;
         tx.outputs_amount = outputs_amount;
-        tx.outputs_length = outputs.len() as u32;
-        tx.outputs_ids = outputs_ids;
+        tx.outputs_length = outputs_length;
+        tx.outputs = outputs.to_vec();
+        tx.data_size = data_size;
+        tx.data_length = data.len() as u32;
+        tx.data_ids = data_ids;
         tx.fee = fee.clone();
         tx.id = tx.id()?;
 
         Ok(tx)
     }
 
-    /// Creates a new genesis transaction.
-    fn new_genesis(genesis_fee: Output) -> Result<Transaction> {
-        genesis_fee.validate()?;
+    /// Creates a new genesis `Transaction`.
+    fn new_genesis(version: &Version, network_type: NetworkType, genesis_output: &Output) -> Result<Transaction> {
+        version.validate()?;
+        genesis_output.validate()?;
 
-        if genesis_fee.amount != Amount::max_value() {
+        if genesis_output.amount != Amount::genesis_value() {
             return Err(ErrorKind::InvalidGenesis.into());
         }
-
-        let network_type = genesis_fee.network_type;
 
         let timestamp = if network_type == NetworkType::RegTest {
             Timestamp::now()
@@ -161,65 +206,57 @@ impl Transaction {
         };
 
         let mut genesis_tx = Transaction::default();
-        genesis_tx.version = genesis_fee.version.clone();
+        genesis_tx.version = version.clone();
         genesis_tx.network_type = network_type;
         genesis_tx.timestamp = timestamp;
-        genesis_tx.fee = genesis_fee;
+        genesis_tx.outputs_length = 1;
+        genesis_tx.outputs_amount = Amount::genesis_value();
+        genesis_tx.outputs = vec![genesis_output.clone()];
         genesis_tx.id = genesis_tx.id()?;
 
         Ok(genesis_tx)
     }
 
-    /// Creates a new regtest genesis transaction.
-    pub fn new_regtest_genesis(fee_witness: ZKPWitness) -> Result<Transaction> {
-        let genesis_fee = Output::new_regtest_genesis(fee_witness)?;
+    /// Creates a new regtest genesis `Transaction`.
+    pub fn new_regtest_genesis(genesis_witness: ZKPWitness) -> Result<Transaction> {
+        let version = Version::default();
+        let network_type = NetworkType::RegTest;
+        let genesis_output = Output::new_regtest_genesis(genesis_witness)?;
 
-        Transaction::new_genesis(genesis_fee)
+        Transaction::new_genesis(&version, network_type, &genesis_output)
     }
 
-    /// Creates a new testnet genesis transaction.
+    /// Creates a new testnet genesis `Transaction`.
     pub fn new_testnet_genesis() -> Result<Transaction> {
-        let genesis_fee = Output::new_testnet_genesis()?;
+        let version = Version::default();
+        let network_type = NetworkType::TestNet;
+        let genesis_output = Output::new_testnet_genesis()?;
 
-        Transaction::new_genesis(genesis_fee)
+        Transaction::new_genesis(&version, network_type, &genesis_output)
     }
 
-    /// Creates a new mainnet genesis transaction.
+    /// Creates a new mainnet genesis `Transaction`.
     pub fn new_mainnet_genesis() -> Result<Transaction> {
-        let genesis_fee = Output::new_mainnet_genesis()?;
+        let version = Version::default();
+        let network_type = NetworkType::MainNet;
+        let genesis_output = Output::new_mainnet_genesis()?;
 
-        Transaction::new_genesis(genesis_fee)
+        Transaction::new_genesis(&version, network_type, &genesis_output)
     }
 
-    /// Verifies if the `Transaction` is a genesis transaction.
-    pub fn verify_genesis(&self) -> Result<bool> {
-        if self.version != self.fee.version {
-            return Err(ErrorKind::InvalidVersion.into());
-        }
-
-        if self.fee.verify_genesis()? {
-            if self.inputs_length != 0 ||
-                self.inputs.len() != 0 {
-                return Err(ErrorKind::InvalidLength.into());    
+    /// Verifies if the `Transaction` is a coinbase transaction.
+    pub fn is_coinbase(&self) -> Result<bool> {
+        if self.inputs_length == 0 {
+            if self.outputs_length != 1 {
+                return Err(ErrorKind::InvalidLength.into());
             }
-
-            if self.outputs_length != 0 ||
-                self.outputs_ids.len() != 0 {
-                return Err(ErrorKind::InvalidLength.into());    
+            
+            if self.data_length != 0 {
+                return Err(ErrorKind::InvalidLength.into());
             }
-
-            if self.outputs_amount != Amount::new() {
+           
+            if self.outputs_amount < Amount::genesis_value() {
                 return Err(ErrorKind::OutOfBound.into());
-            }
-
-            if self.network_type != NetworkType::RegTest {
-                if self.version != Version::min_value()? {
-                    return Err(ErrorKind::InvalidVersion.into());
-                }
-
-                if self.timestamp != Timestamp::min_value() {
-                    return Err(ErrorKind::InvalidTimestamp.into());
-                }
             }
 
             Ok(true)
@@ -228,14 +265,49 @@ impl Transaction {
         }
     }
 
-    /// Returns the fee amount.
-    pub fn fee_amount(&self) -> Amount {
-        self.fee.amount.clone()
+    /// Verifies if the `Transaction` is a genesis transaction.
+    pub fn is_genesis(&self) -> Result<bool> {
+        if !self.is_coinbase()? {
+            return Ok(false);
+        }
+
+        let output = self.outputs[0].clone();
+        
+        if !output.is_genesis()? {
+            return Ok(false);
+        };
+
+        if output.id == Output::new_testnet_genesis()?.id {
+            if self.network_type != NetworkType::TestNet {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
+            
+            return Ok(true);
+        }
+
+        if output.id == Output::new_mainnet_genesis()?.id {
+            if self.network_type != NetworkType::MainNet {
+                return Err(ErrorKind::InvalidNetwork.into());
+            }
+
+            return Ok(true);
+        }
+
+        if self.network_type != NetworkType::RegTest {
+            return Err(ErrorKind::InvalidNetwork.into());    
+        }
+
+        Ok(true)
     }
 
-    /// Returns the total amount sent.
+    /// Returns the total amount sent in the `Transaction`.
     pub fn total_amount(&self) -> Amount {
-        &self.outputs_amount + &self.fee_amount()
+        &self.outputs_amount + &self.fee
+    }
+
+    /// Returns the size of the `Transaction`.
+    pub fn size(&self) -> Result<u32> {
+        Ok(self.to_bytes()?.len() as u32)
     }
 }
 
@@ -250,8 +322,11 @@ impl Default for Transaction {
             inputs: Vec::new(),
             outputs_amount: Amount::new(),
             outputs_length: 0,
-            outputs_ids: Vec::new(),
-            fee: Output::default(),
+            outputs: Vec::new(),
+            data_size: 0,
+            data_length: 0,
+            data_ids: Vec::new(),
+            fee: Amount::default(),
         }
     }
 }
@@ -277,7 +352,7 @@ impl<'a> Identify<'a> for Transaction {
         
         buf.write_u32::<BigEndian>(self.outputs_length)?;
         for i in 0..self.outputs_length as usize {
-            let id = &self.outputs_ids[i];
+            let id = &self.outputs[i].id;
             buf.write_all(&id.to_bytes()?)?;
         }
 
@@ -320,13 +395,19 @@ impl Validate for Transaction {
         self.version.validate()?;
         self.timestamp.validate()?;
 
+        if self.id != self.id()? {
+            return Err(ErrorKind::InvalidDigest.into());
+        }
+
         if self.inputs_length as usize != self.inputs.len() {
             return Err(ErrorKind::InvalidLength.into()); 
         }
 
-        self.outputs_amount.validate()?;
+        if self.outputs_length as usize != self.outputs.len() {
+            return Err(ErrorKind::InvalidLength.into()); 
+        }
 
-        if self.outputs_length as usize != self.outputs_ids.len() {
+        if self.data_length as usize != self.data_ids.len() {
             return Err(ErrorKind::InvalidLength.into()); 
         }
 
@@ -336,25 +417,42 @@ impl Validate for Transaction {
             inputs_binary_ids.push(input.binary_id()?);
         }
 
-        if inputs_binary_ids.iter().unique().count() != self.inputs_length as usize {
+        if inputs_binary_ids.iter().unique().count() !=
+            self.inputs_length as usize {
             return Err(ErrorKind::DuplicatesFound.into()); 
         }
 
         let mut outputs_binary_ids = Vec::new();
-        for id in self.outputs_ids.clone() {
-            outputs_binary_ids.push(id.to_bytes()?);
+        for output in self.outputs.clone() {
+            outputs_binary_ids.push(output.id.to_bytes()?);
         }
 
-        if outputs_binary_ids.iter().unique().count() != self.outputs_length as usize {
+        if outputs_binary_ids.iter().unique().count() !=
+            self.outputs_length as usize {
             return Err(ErrorKind::DuplicatesFound.into()); 
         }
-        
-        self.fee.validate()?;
-        if self.fee.network_type != self.network_type {
-            return Err(ErrorKind::InvalidNetwork.into());
+
+        let mut data_binary_ids = Vec::new();
+        for id in self.data_ids.clone() {
+            data_binary_ids.push(id.to_bytes()?);
         }
 
-        let _ = self.verify_genesis()?;
+        if data_binary_ids.iter().unique().count() !=
+            self.data_length as usize {
+            return Err(ErrorKind::DuplicatesFound.into()); 
+        }
+
+        if !self.is_genesis()? && !self.is_coinbase()? {
+            if self.inputs_length == 0 {
+                return Err(ErrorKind::InvalidLength.into());
+            } 
+            
+            for output in self.outputs.clone() {
+                if output.is_genesis()? {
+                    return Err(ErrorKind::InvalidTransaction.into());
+                }
+            }
+        }
 
         Ok(())
     }
@@ -367,9 +465,14 @@ impl<'a> Serialize<'a> for Transaction {
             json_inputs.push(input.to_json()?);
         }
 
-        let mut json_outputs_ids = Vec::new();
-        for id in self.outputs_ids.clone() {
-            json_outputs_ids.push(id.to_hex()?);
+        let mut json_outputs = Vec::new();
+        for output in self.outputs.clone() {
+            json_outputs.push(output.to_json()?);
+        }
+
+        let mut json_data_ids = Vec::new();
+        for id in self.data_ids.clone() {
+            json_data_ids.push(id.to_hex()?);
         }
 
         let obj = json!({
@@ -381,8 +484,11 @@ impl<'a> Serialize<'a> for Transaction {
             "inputs": json_inputs,
             "outputs_amount": self.outputs_amount.to_string(),
             "outputs_length": self.outputs_length,
-            "outputs_ids": json_outputs_ids,
-            "fee": self.fee.to_json()?,
+            "outputs": json_outputs,
+            "data_size": self.data_size,
+            "data_length": self.data_length,
+            "data_ids": json_data_ids,
+            "fee": self.fee.to_hex()?,
         });
 
         let s = obj.to_string();
@@ -429,19 +535,35 @@ impl<'a> Serialize<'a> for Transaction {
         let outputs_length_value = obj["outputs_length"].clone();
         let outputs_length: u32 = json::from_value(outputs_length_value)?;
 
-        let outputs_ids_value = obj["outputs_ids"].clone();
-        let outputs_ids_json: Vec<String> = json::from_value(outputs_ids_value)?;
+        let outputs_value = obj["outputs"].clone();
+        let outputs_json: Vec<String> = json::from_value(outputs_value)?;
 
-        let mut outputs_ids = Vec::new();
+        let mut outputs = Vec::new();
 
-        for output_id_hex in outputs_ids_json {
-            let id = Digest::from_hex(&output_id_hex)?;
-            outputs_ids.push(id);
+        for output_json in outputs_json {
+            let output = Output::from_json(&output_json)?;
+            outputs.push(output);
+        }
+
+        let data_size_value = obj["data_size"].clone();
+        let data_size: u32 = json::from_value(data_size_value)?;
+
+        let data_length_value = obj["data_length"].clone();
+        let data_length: u32 = json::from_value(data_length_value)?;
+
+        let data_ids_value = obj["data_ids"].clone();
+        let data_ids_json: Vec<String> = json::from_value(data_ids_value)?;
+
+        let mut data_ids = Vec::new();
+
+        for data_id_hex in data_ids_json {
+            let id = Digest::from_hex(&data_id_hex)?;
+            data_ids.push(id);
         }
         
         let fee_value = obj["fee"].clone();
-        let fee_json: String = json::from_value(fee_value)?;
-        let fee = Output::from_json(&fee_json)?;
+        let fee_hex: String = json::from_value(fee_value)?;
+        let fee = Amount::from_hex(&fee_hex)?;
 
         let transaction = Transaction {
             id: id,
@@ -452,7 +574,10 @@ impl<'a> Serialize<'a> for Transaction {
             inputs: inputs,
             outputs_amount: outputs_amount,
             outputs_length: outputs_length,
-            outputs_ids: outputs_ids,
+            outputs: outputs,
+            data_size: data_size,
+            data_length: data_length,
+            data_ids: data_ids,
             fee: fee,
         };
 

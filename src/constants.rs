@@ -14,37 +14,19 @@ pub const NAME: &str = "Yobicash";
 pub const CODE: &str = "YBC";
 
 /// The version of the cryptocurrency library.
-pub const VERSION: &str = "0.2.1";
+pub const VERSION: &str = "0.3.0";
 
 /// The starting date time.
-pub const MINDATETIME: &str = "2018-01-18T00:00:00Z";
+pub const MIN_DATETIME: &str = "2018-01-18T00:00:00Z";
 
 /// The maximum accepted error noise of time measures. The internet is messy.
-pub const MAXTIMENOISE: i64 = 3_600;
+pub const MAX_TIMENOISE: i64 = 3_600;
 
-/// The maximum amount of coins.
-pub const MAXAMOUNT: f32 = 21_000_000.000_000_000_000_000;
+/// The genesis output amount.
+pub const GENESIS_AMOUNT: u32 = 21;
 
 /// The minimum data duration in hours.
 pub const MIN_DATA_DURATION: u32 = 1;
-    
-/// The default maximum number of concurrently connected peers.
-pub const DEFAULT_MAX_CONNECTIONS: u32 = 8;
-
-/// The default maximum size per message.
-pub const DEFAULT_MAX_SIZE: u32 = 1<<20;
-
-/// The default recursion limit.
-pub const DEFAULT_MAX_RECURSION: u32 = 6;
-
-/// The default base fee per byte.
-pub const DEFAULT_BASE_FEE: f32 = 0.0;
-
-/// The default base difficulty per connection.
-pub const DEFAULT_BASE_DIFFICULTY: u32 = 0;
-
-/// The maximum number of bytes per chunk in a network stream.
-pub const MAX_CHUNK_SIZE: u32 = 1<<9;
 
 /// The mainnet witness.
 pub const MAINWITNESS: &str = "1e9f288451e2beb8b5c7ae598c4ca0cfe88722a8d0c44b5ff1d42c6fde17b7f6";
@@ -60,3 +42,28 @@ pub const TESTPORT: u16 = 3113;
 
 /// The regtest port.
 pub const REGTESTPORT: u16 = 4114;
+
+/// Confirmation time, which is the target number of seconds between
+/// two blocks.
+pub const CONFIRMATION_TIME: u32 = 10;
+
+/// Retarget time, which is the number of blocks before a retarget.
+pub const RETARGET_TIME: u32 = 10;
+
+/// Mining interest rate.
+pub const INTEREST_RATE: f32 = 1.4;
+
+/// Minimum difficulty.
+pub const MIN_DIFFICULTY: u32 = 3;
+
+/// Maximum difficulty.
+pub const MAX_DIFFICULTY: u32 = 63;
+
+/// Difficulty used to mine the genesis block header.
+pub const GENESIS_DIFFICULTY: u32 = 3;
+
+/// Memory used to mine the genesis block header.
+pub const GENESIS_MEMORY: u32 = 64;
+
+/// Heights to pass before a coinbase is spendable.
+pub const MATURITY_TIME: u32 = 60_480; // 1 week

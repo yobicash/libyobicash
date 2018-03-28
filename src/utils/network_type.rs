@@ -16,7 +16,7 @@ use error::ErrorKind;
 use result::Result;
 use traits::{BinarySerialize, HexSerialize};
 
-/// The possible network types in Yobicash.
+/// A `NetworkType` is the set of possible types of network in Yobicash.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum NetworkType {
     MainNet=0,
@@ -25,7 +25,7 @@ pub enum NetworkType {
 }
 
 impl NetworkType {
-    /// Returns the network type port.
+    /// Returns the `NetworkType` network port.
     pub fn port(&self) -> u16 {
         match *self {
             NetworkType::MainNet => MAINPORT,

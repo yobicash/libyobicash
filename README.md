@@ -11,10 +11,10 @@ The [Yobicash](https://yobicash.org) cryptocurrency library.
 
 *NOTES*:
 
-- This is definitely alpha quality code.
-- Some tests are still missing.
-- The API is unstable.
-- The genesis will be updated.
+- This is still an alpha: use with caution.
+- Some tests may be still missing.
+- The API may change.
+- The genesis transactions will be updated.
 
 ## Table of Contents
 
@@ -32,7 +32,7 @@ To install libyobicash add in your Cargo.toml:
 # Cargo.toml
 
 [dependencies]
-libyobicash = "^0.2"
+libyobicash = "^0.3"
 ```
 
 and in the root of your crate:
@@ -46,54 +46,6 @@ extern crate libyobicash;
 ## Usage
 
 Look at the [documentation](https://docs.rs/libyobicash) or at the tests for guidance.
-
-```rust
-// main.rs
-
-// Bob wants to send some data to Alice through Yobicash and has found
-// a node offering a good price for broadcasting the data.
-
-// Bob and Alice are dealing in the Yobicash production network.
-let network_type = NetworkType::MainNet;
-
-// let plain = some super important secret.
-// let alice_pk = Alice public key;
-let bob_sk = SecretKey::random();
-let bob_data = Data::new(network_type, bob_sk, alice_pk, &plain)?;
-
-// let bob_coins = some spendable coins Bob owns that pay the node fee.
-// required by the node;
-// let bob_fee = the output to the node that will broadcast Bob write operation;
-
-// One secret instance from Bob. Bob will use it to permit the network to
-// delete his data.
-let bob_instance = Scalar::random();
-
-// The write operation containing the encrypted data that only
-// Bob and Alice can read. After confirmation, it will be broadcasted
-// to the network.
-let bob_write = WriteOp::new(network_type, &bob_coins, &bob_data, bob_instance, &bob_fee)?;
-
-println!(write_op.to_json()?);
-
-// Now that the secret is not needed anymore, Bob and Alice agree that it
-// can be erased from the dagchain. Bob finds a node making a good offer
-// to delete the data and broadcast the delete operation to the network.
-
-// let node_coins = some spendable coins the node owns that pay Bob's fee;
-// let node_fee = the fee promised to Bob by the node;
-
-// Bob generates the proof of the bob_write witness instance to send to the node
-// using the fee that the node will use and bob_write itself.
-let bob_proof = DeleteOp::proof(network_type, &bob_write, &bob_instance, &node_fee)?;
-
-// The node creates a delete operation with Bob's witness.
-// The node will delete bob_writes' Data after node_delete get confirmed.
-// The other nodes of the network will do the same.
-let node_delete = DeleteOp::new(network_type, &node_coins, &bob_write, &bob_proof, &node_fee)?;
-
-println!(node_delete.to_json()?);
-```
 
 ## Maintainers
 

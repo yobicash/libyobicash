@@ -1,6 +1,6 @@
 [package]
 name = "libyobicash"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Christian Nyumbayire <christian@yobicash.org>"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/yobicash/libyobicash"
@@ -28,6 +28,7 @@ hex = "^0.3"
 rug = { version = "^0.9", features = ["serde"] }
 byteorder = "^1.2"
 itertools = "^0.7"
-yobicrypto = "^0.2"
+yobicrypto = "0.2.4"
 chrono = { version = "^0.4", features = ["serde"] }
 regex = "^0.2"
+futures = "^0.1"

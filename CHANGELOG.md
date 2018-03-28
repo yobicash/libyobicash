@@ -1,3 +1,8 @@
+0.3.0 / 2018-03-28
+==================
+
+  * Use a scalable blockchain instead of a dagchain. Clean up.
+
 0.2.1 / 2018-02-16
 ==================
 

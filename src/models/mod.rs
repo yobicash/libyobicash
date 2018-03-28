@@ -5,20 +5,20 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `models` module provides the Yobicash models' types and methods.
+//! The `models` module provides the Yobicash model types and methods.
 
-pub mod peer;
 pub mod data;
 pub mod output;
 pub mod coin;
 pub mod input;
 pub mod transaction;
-pub mod write_op;
+pub mod block;
+pub mod block_header;
 
-pub use self::peer::*;
 pub use self::data::*;
 pub use self::output::*;
 pub use self::coin::*;
 pub use self::input::*;
 pub use self::transaction::*;
-pub use self::write_op::*;
+pub use self::block::*;
+pub use self::block_header::*;

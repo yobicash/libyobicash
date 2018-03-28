@@ -7,7 +7,6 @@
 
 //! Libyobicash `amount` module tests.
 
-use libyobicash::traits::Validate;
 use libyobicash::utils::amount::Amount;
 
 #[test]
@@ -47,22 +46,6 @@ fn amount_to_string_fail() {
     let amount_b = Amount::from_string(&s).unwrap();
     
     assert_ne!(amount_a, amount_b)
-}
-
-#[test]
-fn amount_validate_succ() {
-    let amount = Amount::max_value();
-    
-    let res = amount.validate();
-    assert!(res.is_ok())
-}
-
-#[test]
-fn amount_validate_fail() {
-    let amount = Amount::max_value() + Amount::from(1.0);
-    
-    let res = amount.validate();
-    assert!(res.is_err())
 }
 
 #[test]

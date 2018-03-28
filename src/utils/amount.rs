@@ -9,19 +9,19 @@
 
 use rmp_serde as messagepack;
 use hex;
-use rug::Rational;
+use rug::{Rational, ops::Pow};
 
-use constants::MAXAMOUNT;
+use constants::GENESIS_AMOUNT;
 use error::ErrorKind;
 use result::Result;
-use traits::{Validate, BinarySerialize, HexSerialize};
+use traits::{BinarySerialize, HexSerialize};
 
 use std::fmt;
 use std::cmp::Eq;
 use std::convert::From;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign};
 
-/// Type used for amounts and balances.
+/// An `Amount` is a bounded integer used for amounts and balances.
 #[derive(Clone, Ord, PartialOrd, Debug, Default, Serialize, Deserialize)]
 pub struct Amount(Rational);
 
@@ -31,9 +31,24 @@ impl Amount {
         Amount(Rational::new())
     }
 
-    /// Returns the `Amount` maximum value.
-    pub fn max_value() -> Amount {
-        Amount::from(MAXAMOUNT)
+    /// Returns the zero `Amount`.
+    pub fn zero() -> Amount {
+        Amount::new()
+    }
+
+    /// Returns the unit `Amount`.
+    pub fn one() -> Amount {
+        Amount(1u32.into())
+    }
+
+    /// Power operation on an `Amount`.
+    pub fn pow(&self, exp: i32) -> Amount {
+        Amount(self.0.clone().pow(exp))
+    }
+
+    /// Returns the genesis `Amount`.
+    pub fn genesis_value() -> Amount {
+        Amount::from(GENESIS_AMOUNT)
     }
 
     /// Converts the `Amount` to string.
@@ -75,16 +90,6 @@ impl HexSerialize for Amount {
     }
 }
 
-impl Validate for Amount {
-    fn validate(&self) -> Result<()> {
-        if self > &Amount::max_value() {
-            return Err(ErrorKind::OutOfBound.into());
-        }
-
-        Ok(())
-    }
-}
-
 impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -98,6 +103,18 @@ impl PartialEq for Amount {
 }
 
 impl Eq for Amount {}
+
+impl From<u32> for Amount {
+    fn from(n: u32) -> Amount {
+        Amount(Rational::from_f32(n as f32).unwrap())
+    }
+}
+
+impl From<u64> for Amount {
+    fn from(n: u64) -> Amount {
+        Amount(Rational::from_f64(n as f64).unwrap())
+    }
+}
 
 impl From<f32> for Amount {
     fn from(n: f32) -> Amount {

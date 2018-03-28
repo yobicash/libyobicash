@@ -5,8 +5,7 @@
 // This file may not be copied, modified, or distributed except according to those
 // terms.
 
-//! The `output` module provides the transaction output types and
-//! methods.
+//! The `output` module provides the transaction output type and methods.
 
 use serde_json as json;
 use rmp_serde as messagepack;
@@ -15,8 +14,8 @@ use hex;
 use constants::{TESTWITNESS, MAINWITNESS};
 use error::ErrorKind;
 use result::Result;
-use traits::{Validate, Identify, BinarySerialize, HexSerialize, Serialize};
-use utils::{Version, NetworkType, Amount};
+use traits::{Validate, Identify, BinarySerialize, Serialize};
+use utils::Amount;
 use crypto::{Digest, ZKPWitness};
 use crypto::Validate as CryptoValidate;
 use crypto::BinarySerialize as CryptoBinarySerialize;
@@ -25,16 +24,12 @@ use models::input::Input;
 
 use std::io::Write;
 
-/// Output is an allocation of balance to a user. It can be spent only
+/// An `Output` is an allocation of balance to a user. It can be spent only
 /// providing a zero-knowledge proof verifing its zero-knowledge challenge.
 #[derive(Clone, PartialEq, Default, Debug, Serialize, Deserialize)]
 pub struct Output {
     /// The id of the output.
     pub id: Digest,
-    /// The protocol version.
-    pub version: Version,
-    /// The protocol network type.
-    pub network_type: NetworkType,
     /// The amount of coins sent.
     pub amount: Amount,
     /// The Schnorr Protocol zero-knowledge-proof witness of the receiver.
@@ -43,98 +38,71 @@ pub struct Output {
 
 impl Output {
     /// Creates a new `Output`.
-    pub fn new(network_type: NetworkType, amount: &Amount, witness: ZKPWitness) -> Result<Output> {
-        amount.validate()?;
+    pub fn new(amount: &Amount, witness: ZKPWitness) -> Result<Output> {
         witness.validate()?;
 
-        let mut output = Output {
-            id: Digest::default(),
-            version: Version::default(),
-            network_type: network_type,
-            amount: amount.clone(),
-            witness: witness,
-        };
-        
+        if witness == ZKPWitness::from_hex(TESTWITNESS)? ||
+            witness == ZKPWitness::from_hex(MAINWITNESS)? {
+            if amount != &Amount::genesis_value() {
+                return Err(ErrorKind::OutOfBound.into());
+            }
+        }
+
+        let mut output = Output::default();
+        output.amount = amount.clone();
+        output.witness = witness;
         output.id = output.id()?;
 
         Ok(output)
     }
 
-    /// Creates a new genesis fee.
-    fn new_genesis_fee(version: Version, network_type: NetworkType, witness: ZKPWitness) -> Result<Output> {
-        version.validate()?;
+    /// Creates a new genesis `Output`.
+    fn new_genesis_output(witness: ZKPWitness) -> Result<Output> {
         witness.validate()?;
-        
-        let mut genesis_output = Output {
-            id: Digest::default(),
-            version: version,
-            network_type: network_type,
-            amount: Amount::max_value(),
-            witness: witness,
-        };
-        
-        genesis_output.id = genesis_output.id()?;
 
-        Ok(genesis_output)
+        let amount = Amount::genesis_value();
+        
+        Output::new(&amount, witness)
     }
 
-    /// Creates a new regtest genesis fee.
+    /// Creates a new regtest genesis `Output`.
     pub fn new_regtest_genesis(witness: ZKPWitness) -> Result<Output> {
-        let version = Version::current()?;
-        let network_type = NetworkType::RegTest;
-
-        Output::new_genesis_fee(version, network_type, witness)
+        Output::new_genesis_output(witness)
     }
 
-    /// Creates a new testnet genesis fee.
+    /// Creates a new testnet genesis `Output`.
     pub fn new_testnet_genesis() -> Result<Output> {
-        let version = Version::min_value()?;
-        let network_type = NetworkType::TestNet;
         let witness = ZKPWitness::from_hex(TESTWITNESS)?;
 
-        Output::new_genesis_fee(version, network_type, witness)
+        Output::new_genesis_output(witness)
     }
 
-    /// Creates a new mainnet genesis fee.
+    /// Creates a new mainnet genesis `Output`.
     pub fn new_mainnet_genesis() -> Result<Output> {
-        let version = Version::min_value()?;
-        let network_type = NetworkType::MainNet;
         let witness = ZKPWitness::from_hex(MAINWITNESS)?;
 
-        Output::new_genesis_fee(version, network_type, witness)
+        Output::new_genesis_output(witness)
     }
 
-    /// Verify if it is a genesis.
-    pub fn verify_genesis(&self) -> Result<bool> {
-        let network_type = self.network_type;
-        let version = self.version.clone();
+    /// Verify if the `Output` is a genesis.
+    pub fn is_genesis(&self) -> Result<bool> {
         let amount = self.amount.clone();
         let witness = self.witness;
 
-        if network_type != NetworkType::TestNet ||
-            amount != Amount::max_value() {
-                if witness == ZKPWitness::from_hex(TESTWITNESS)? {
-                    return Err(ErrorKind::InvalidWitness.into());
-                }
-        }
-            
-        if network_type != NetworkType::MainNet ||
-            amount != Amount::max_value() {
-                if witness == ZKPWitness::from_hex(MAINWITNESS)? {
-                    return Err(ErrorKind::InvalidWitness.into());
-                }
+        if witness == ZKPWitness::from_hex(TESTWITNESS)? ||
+            witness == ZKPWitness::from_hex(MAINWITNESS)? {
+            if amount != Amount::genesis_value() {
+                return Err(ErrorKind::InvalidWitness.into());
+            } else {
+                return Ok(true);
+            }
+        } else {
+            if amount == Amount::genesis_value() {
+                return Ok(true);
+            } 
         }
 
-        if amount == Amount::max_value() {
-            if network_type != NetworkType::RegTest && 
-                version != Version::min_value()? {
-                    return Err(ErrorKind::InvalidVersion.into());
-            }
-        
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        Ok(false)
     }
 
     /// Verify the `Output` against an `Input`.
@@ -152,8 +120,6 @@ impl<'a> Identify<'a> for Output {
     fn id(&self) -> Result<Self::ID> {
         let mut buf = Vec::new();
 
-        buf.write_all(&self.version.to_bytes()?)?;
-        buf.write_all(&self.network_type.to_bytes()?)?;
         buf.write_all(&self.amount.to_bytes()?)?;
         buf.write_all(&self.witness.to_bytes()?)?;
 
@@ -189,10 +155,11 @@ impl<'a> Identify<'a> for Output {
 
 impl Validate for Output {
     fn validate(&self) -> Result<()> {
-        self.version.validate()?;
-        self.amount.validate()?;
-
-        let _ = self.verify_genesis()?;
+        if self.id != self.id()? {
+            return Err(ErrorKind::InvalidDigest.into());
+        }
+        
+        let _ = self.is_genesis()?;
 
         Ok(())
     }
@@ -202,8 +169,6 @@ impl<'a> Serialize<'a> for Output {
     fn to_json(&self) -> Result<String> {
         let obj = json!({
             "id": self.string_id()?,
-            "version": self.version.to_string(),
-            "network_type": self.network_type.to_hex()?,
             "amount": self.amount.to_string(),
             "witness": self.witness.to_hex()?,
         });
@@ -219,14 +184,6 @@ impl<'a> Serialize<'a> for Output {
         let id_value = obj["id"].clone();
         let id_str: String = json::from_value(id_value)?;
         let id = Output::id_from_string(&id_str)?;
-        
-        let version_value = obj["version"].clone();
-        let version_string: String = json::from_value(version_value)?;
-        let version = Version::from_string(&version_string)?;
-        
-        let network_type_value = obj["network_type"].clone();
-        let network_type_hex: String = json::from_value(network_type_value)?;
-        let network_type = NetworkType::from_hex(&network_type_hex)?;
 
         let amount_value = obj["amount"].clone();
         let amount_str: String = json::from_value(amount_value)?;
@@ -238,8 +195,6 @@ impl<'a> Serialize<'a> for Output {
 
         let output = Output {
             id: id,
-            version: version,
-            network_type: network_type,
             amount: amount,
             witness: witness,
         };

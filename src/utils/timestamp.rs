@@ -11,14 +11,14 @@ use chrono::{DateTime, TimeZone, Utc};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use hex;
 
-use constants::{MINDATETIME, MAXTIMENOISE};
+use constants::{MIN_DATETIME, MAX_TIMENOISE};
 use error::ErrorKind;
 use result::Result;
 use traits::{BinarySerialize, HexSerialize, Validate};
 
 use std::fmt;
 
-/// A timestamp is an integer representing the number of seconds elapsed since
+/// A `Timestamp` is an integer representing the number of seconds elapsed since
 /// the `Epoch` time (1970-01-01:00:00:00.0000...).
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub struct Timestamp(i64);
@@ -58,7 +58,7 @@ impl Timestamp {
 
     /// Returns the minimum `Timestamp`.
     pub fn min_value() -> Timestamp {
-        Timestamp::parse(MINDATETIME).unwrap()
+        Timestamp::parse(MIN_DATETIME).unwrap()
     }
 
     /// Creates a `Timestamp` from a UTC date time string in rfc3339 format.
@@ -88,7 +88,7 @@ impl Timestamp {
 
     /// Returns the `Timestamp` with the maximum time noise.
     pub fn with_noise(&self) -> Timestamp {
-        Timestamp(self.0 + MAXTIMENOISE)
+        Timestamp(self.0 + MAX_TIMENOISE)
     }
 
     /// Returns the time difference between this `Timestamp` and an other.
@@ -133,7 +133,7 @@ impl HexSerialize for Timestamp {
 
 impl Validate for Timestamp {
     fn validate(&self) -> Result<()> {
-        if *self < Timestamp::min_value().with_noise() {
+        if *self < Timestamp::min_value() {
             return Err(ErrorKind::InvalidTimestamp.into());
         }
      
