@@ -14,7 +14,7 @@ pub const NAME: &str = "Yobicash";
 pub const CODE: &str = "YBC";
 
 /// The version of the cryptocurrency library.
-pub const VERSION: &str = "0.3.0";
+pub const VERSION: &str = "0.3.1";
 
 /// The starting date time.
 pub const MIN_DATETIME: &str = "2018-01-18T00:00:00Z";
