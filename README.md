@@ -14,7 +14,6 @@ The [Yobicash](https://yobicash.org) cryptocurrency library.
 - This is still an alpha: use with caution.
 - Some tests may be still missing.
 - The API may change.
-- The genesis transactions will be updated.
 
 ## Table of Contents
 
