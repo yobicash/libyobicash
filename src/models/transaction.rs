@@ -475,7 +475,7 @@ impl<'a> Serialize<'a> for Transaction {
             json_data_ids.push(id.to_hex()?);
         }
 
-        let obj = json!({
+        let obj = json::json!({
             "id": self.string_id()?,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,

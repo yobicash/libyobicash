@@ -594,7 +594,7 @@ impl Validate for BlockHeader {
 
 impl<'a> Serialize<'a> for BlockHeader {
     fn to_json(&self) -> Result<String> {
-        let obj = json!({
+        let obj = json::json!({
             "id": self.string_id()?,
             "version": self.version.to_string(),
             "network_type": self.network_type.to_hex()?,

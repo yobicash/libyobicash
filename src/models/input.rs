@@ -98,7 +98,7 @@ impl Validate for Input {
 
 impl<'a> Serialize<'a> for Input {
     fn to_json(&self) -> Result<String> {
-        let obj = json!({
+        let obj = json::json!({
             "id": self.id.to_hex()?,
             "proof": self.proof.to_hex()?,
         });

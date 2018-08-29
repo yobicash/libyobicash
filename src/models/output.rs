@@ -167,7 +167,7 @@ impl Validate for Output {
 
 impl<'a> Serialize<'a> for Output {
     fn to_json(&self) -> Result<String> {
-        let obj = json!({
+        let obj = json::json!({
             "id": self.string_id()?,
             "amount": self.amount.to_string(),
             "witness": self.witness.to_hex()?,

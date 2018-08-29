@@ -124,7 +124,7 @@ impl Validate for Coin {
 
 impl<'a> Serialize<'a> for Coin {
     fn to_json(&self) -> Result<String> {
-        let obj = json!({
+        let obj = json::json!({
             "id": self.string_id()?,
             "instance": self.instance.to_hex()?,
             "witness": self.witness.to_hex()?,
