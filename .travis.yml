@@ -2,7 +2,6 @@ dist: trusty
 language: rust
 rust:
   - stable
-  - nightly
 sudo: required
 
 before_install:
